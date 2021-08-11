@@ -1,0 +1,40 @@
+// Copyright 2021 Tomas Bartipan and Technical University of Munich.
+// Licensed under MIT license - See License.txt for details.
+// Special credits go to : Temaran (compute shader tutorial), TheHugeManatee (original concept, supervision) and Ryan Brucks
+// (original raymarching code).
+
+// This file contains functions used in Custom nodes in Windowed raymarching materials and in Illumination Compute Shaders.
+// Because editing in custom node is horrible, it's nicer to just include and use a single 
+// function from this file.
+
+// Beware, modifications to this file will not be detected by the material shaders and they will not
+// be recompiled. Shaders using this file have to be recompiled manually! (unless I find a way
+// to tell the shadercompiler to always recompile the raymarch shaders on startup)
+
+#pragma once
+
+float GetTransferFuncPosition(float Value, float WindowCenter, float WindowWidth)
+{
+    return (Value - WindowCenter + (WindowWidth / 2.0)) / WindowWidth;
+}
+
+// Samples a Data volume, transforms it to fit the Windowing parameters and then transforms it by the TF. Corrects the opacity to account for StepSize (in Unreal units).
+float4 SampleWindowedVolumeStep(float3 CurPos, float StepSize, Texture3D Volume, SamplerState VolumeSampler, Texture2D TF, SamplerState TFSampler, float4 WindowingParams)
+{
+    float DataValue = Volume.SampleLevel(VolumeSampler, CurPos, 0).r;
+  
+    // WindowingParams.x == Center, WindowingParams.y = Width
+    float TFPos = GetTransferFuncPosition(DataValue, WindowingParams.x, WindowingParams.y);
+
+    // If TF position is above 1 and high cutoff is enabled or 
+    // it's below 0 and low cutoff is enabled, return zero (value is not on the Transfer function range)
+    if ((TFPos < 0.0 && WindowingParams.z > 0.0) || (TFPos > 1.0 && WindowingParams.w > 0.0))
+    {
+        return float4(0, 0, 0, 0);
+    }
+
+    float4 ColorSample = TF.SampleLevel(TFSampler, float2(TFPos, 0.5), 0);
+    ColorSample.a = saturate(ColorSample.a);
+    ColorSample.a = 1.0 - pow(1.0 - ColorSample.a, StepSize);
+    return ColorSample;
+}

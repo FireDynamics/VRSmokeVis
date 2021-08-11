@@ -3,6 +3,13 @@
 	"EngineAssociation": "5.0EA",
 	"Category": "",
 	"Description": "",
+	"Modules": [
+		{
+			"Name": "VRSmokeVis",
+			"Type": "Runtime",
+			"LoadingPhase": "PostConfigInit"
+		}
+	],
 	"Plugins": [
 		{
 			"Name": "XRVisualization",

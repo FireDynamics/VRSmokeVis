@@ -1,0 +1,100 @@
+// Copyright 2021 Tomas Bartipan and Technical University of Munich.
+// Licensed under MIT license - See License.txt for details.
+// Special credits go to : Temaran (compute shader tutorial), TheHugeManatee (original concept, supervision) and Ryan Brucks
+// (original raymarching code).
+
+// This file contains functions that can be used for raymarching normalized volumes (0-1 values).
+// These have no support for windowing and are not currently used in the main project.
+
+// Beware, modifications to this file will not be detected by the material shaders and they will not
+// be recompiled. Shaders using this file have to be recompiled manually! (unless I find a way
+// to tell the shadercompiler to always recompile the raymarch shaders on startup)
+
+#pragma once
+#include "RaymarchMaterialCommon.usf"
+
+// Performs lit raymarch for the current pixel.
+// Will only work on normalized volumes (no windowing)
+float4 PerformRaymarch(Texture3D DataVolume, // Data Volume 
+                          Texture2D TF, float2 TFIntensityDomain, // Transfer func and intensity domain modifier
+                          float3 CurPos, float MaxSteps, float StepSize, float FinalStep, // Position of ray entry to cube, number of steps, size of a step and a 0-1 value of how big the final step is compared to regular steps 
+                          FMaterialPixelParameters MaterialParameters)                      // Material Parameters
+{
+    // Get camera vector in local space and multiply it by step size.
+    float3 LocalCamVec = -normalize(mul(MaterialParameters.CameraVector, GetPrimitiveData(MaterialParameters.PrimitiveId).WorldToLocal)) * StepSize;
+    // Get step size in local units to get consistent opacity at different volume scale and to be consistent with compute shaders' opacity calculations.
+    float StepSizeWorld = VOLUME_DENSITY * StepSize;
+    // Initialize accumulated light energy.
+    float4 LightEnergy = 0;
+    // Jitter Entry position to avoid artifacts.
+    JitterEntryPos(CurPos, LocalCamVec, MaterialParameters);
+
+    int i = 0;
+    for (i = 0; i < MaxSteps; i++)
+    {
+        CurPos += LocalCamVec; // Because we jitter only "against" the direction of LocalCamVec, start marching before first sample.
+
+        AccumulateOneRaymarchStep(LightEnergy, CurPos, DataVolume, TF, TFIntensityDomain, StepSizeWorld);
+
+
+        // Exit early if light energy (opacity) is already very high (so future steps would have almost no impact on color).
+        if (LightEnergy.a > 0.95f)
+        {
+            LightEnergy.a = 1.0f;
+            break;
+        };
+    }
+
+    // Handle FinalStep (only if we went through all the previous steps and the final step size is above zero)
+    if (i == MaxSteps && FinalStep > 0.0f)
+    {
+        CurPos += LocalCamVec * (FinalStep);
+        AccumulateOneRaymarchStep(LightEnergy, CurPos, DataVolume, TF, TFIntensityDomain, StepSizeWorld * FinalStep);
+    }
+
+    return LightEnergy;
+}
+
+// Performs raymarch for the current pixel. Also takes into account a provided labeling volume.
+float4 PerformRaymarchLabeled(Texture3D DataVolume, // Data Volume
+                                 Texture2D TF, float2 TFIntensityDomain, // Transfer func and intensity domain modifier
+                                 Texture3D LabelVolume, 
+                                 float3 CurPos, float MaxSteps, float StepSize, float FinalStep, // Position of ray entry to cube, number of steps, size of a step and a 0-1 value of how big the final step is compared to regular steps 
+                                 FMaterialPixelParameters MaterialParameters)                    // Material Parameters
+{
+    // Get camera vector in local space and multiply it by step size.
+    float3 LocalCamVec = -normalize(mul(MaterialParameters.CameraVector, GetPrimitiveData(MaterialParameters.PrimitiveId).WorldToLocal)) * StepSize;
+    // Get step size in local units to get consistent opacity at different volume scale and to be consistent with compute shaders' opacity calculations.
+    float StepSizeWorld = VOLUME_DENSITY * StepSize;
+    // Initialize accumulated light energy.
+    float4 LightEnergy = 0;
+    // Jitter Entry position to avoid artifacts.
+    JitterEntryPos(CurPos, LocalCamVec, MaterialParameters);
+
+    int i = 0;
+    for (i = 0; i < MaxSteps; i++)
+    {
+        CurPos += LocalCamVec;
+        // Label volume ignores clipping.
+        AccumulateOneRaymarchLabelStep(LightEnergy, CurPos, LabelVolume, StepSizeWorld);	    
+        AccumulateOneRaymarchStep(LightEnergy, CurPos, DataVolume, TF, TFIntensityDomain, StepSizeWorld);
+
+        // Exit early if light energy (opacity) is already very high (so future steps would have almost no impact on color).
+        if (LightEnergy.a > 0.95f)
+        {
+            LightEnergy.a = 1.0f;
+            break;
+        };
+    }
+
+    // Handle FinalStep (only if we went through all the previous steps and the final step size is above zero)
+    if (i == MaxSteps && FinalStep > 0.0f)
+    {
+        CurPos += LocalCamVec * (FinalStep);
+        // Accumulate label.
+        AccumulateOneRaymarchLabelStep(LightEnergy, CurPos, LabelVolume, StepSizeWorld * FinalStep);
+        AccumulateOneRaymarchStep(LightEnergy, CurPos, DataVolume, TF, TFIntensityDomain, StepSizeWorld * FinalStep);
+    }
+
+    return LightEnergy;
+}
