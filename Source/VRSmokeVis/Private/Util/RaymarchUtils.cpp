@@ -25,7 +25,7 @@ VRSMOKEVIS_API void URaymarchUtils::MakeDefaultTFTexture(UTexture2D*& OutTexture
 	FFloat16* Samples = new FFloat16[SampleCount * 4 * TextureHeight];
 	for (unsigned i = 0; i < SampleCount; i++)
 	{
-		float Whiteness = (float) i / (float) (SampleCount - 1);
+		float Whiteness = static_cast<float>(i) / static_cast<float>(SampleCount - 1);
 		Samples[i * 4] = Whiteness;
 		Samples[i * 4 + 1] = Whiteness;
 		Samples[i * 4 + 2] = Whiteness;
@@ -37,8 +37,8 @@ VRSMOKEVIS_API void URaymarchUtils::MakeDefaultTFTexture(UTexture2D*& OutTexture
 		FMemory::Memcpy(Samples + (i * SampleCount * 4), Samples, SampleCount * 4 * 2);
 	}
 
-	UVolumeTextureToolkit::Create2DTextureTransient(
-		OutTexture, PF_FloatRGBA, FIntPoint(SampleCount, TextureHeight), (uint8*) Samples);
+	FVolumeTextureToolkit::Create2DTextureTransient(
+		OutTexture, PF_FloatRGBA, FIntPoint(SampleCount, TextureHeight), reinterpret_cast<uint8*>(Samples));
 
 	// Don't forget to free the memory here
 	delete[] Samples;
@@ -56,7 +56,7 @@ void URaymarchUtils::ColorCurveToTexture(UCurveLinearColor* Curve, UTexture2D*& 
 
 	for (unsigned i = 0; i < sampleCount; i++)
 	{
-		float index = ((float) i) / ((float) sampleCount - 1);
+		float index = static_cast<float>(i) / (static_cast<float>(sampleCount) - 1);
 		FLinearColor picked = Curve->GetLinearColorValue(index);
 
 		samples[i * 4] = picked.R;
@@ -70,7 +70,7 @@ void URaymarchUtils::ColorCurveToTexture(UCurveLinearColor* Curve, UTexture2D*& 
 		FMemory::Memcpy(samples + (i * sampleCount * 4), samples, sampleCount * 4 * 2);
 	}
 
-	UVolumeTextureToolkit::Create2DTextureTransient(
+	FVolumeTextureToolkit::Create2DTextureTransient(
 		OutTexture, PF_FloatRGBA, FIntPoint(sampleCount, TextureHeight), (uint8*) samples);
 
 	delete[] samples;	 // Don't forget to free the memory here

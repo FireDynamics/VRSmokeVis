@@ -7,7 +7,7 @@
 
 int64 FVolumeInfo::GetByteSize() const
 {
-	return Dimensions.X * Dimensions.Y * Dimensions.Z * BytesPerVoxel;
+	return Dimensions.X * Dimensions.Y * Dimensions.Z * Dimensions.W * BytesPerVoxel;
 }
 
 int64 FVolumeInfo::GetTotalVoxels() const
@@ -58,19 +58,19 @@ int32 FVolumeInfo::VoxelFormatByteSize(EVolumeVoxelFormat InFormat)
 {
 	switch (InFormat)
 	{
-		case EVolumeVoxelFormat::UnsignedChar:	  // fall through
-		case EVolumeVoxelFormat::SignedChar:
-			return 1;
-		case EVolumeVoxelFormat::UnsignedShort:	   // fall through
-		case EVolumeVoxelFormat::SignedShort:
-			return 2;
-		case EVolumeVoxelFormat::UnsignedInt:	 // fall through
-		case EVolumeVoxelFormat::SignedInt:		 // fall through
-		case EVolumeVoxelFormat::Float:
-			return 4;
-		default:
-			ensure(false);
-			return 0;
+	case EVolumeVoxelFormat::UnsignedChar: // fall through
+	case EVolumeVoxelFormat::SignedChar:
+		return 1;
+	case EVolumeVoxelFormat::UnsignedShort: // fall through
+	case EVolumeVoxelFormat::SignedShort:
+		return 2;
+	case EVolumeVoxelFormat::UnsignedInt: // fall through
+	case EVolumeVoxelFormat::SignedInt: // fall through
+	case EVolumeVoxelFormat::Float:
+		return 4;
+	default:
+		ensure(false);
+		return 0;
 	}
 }
 
@@ -78,18 +78,18 @@ bool FVolumeInfo::IsVoxelFormatSigned(EVolumeVoxelFormat InFormat)
 {
 	switch (InFormat)
 	{
-		case EVolumeVoxelFormat::UnsignedChar:	   // fall through
-		case EVolumeVoxelFormat::UnsignedShort:	   // fall through
-		case EVolumeVoxelFormat::UnsignedInt:
-			return false;
-		case EVolumeVoxelFormat::SignedChar:	 // fall through
-		case EVolumeVoxelFormat::SignedShort:	 // fall through
-		case EVolumeVoxelFormat::SignedInt:		 // fall through
-		case EVolumeVoxelFormat::Float:
-			return true;
-		default:
-			ensure(false);
-			return false;
+	case EVolumeVoxelFormat::UnsignedChar: // fall through
+	case EVolumeVoxelFormat::UnsignedShort: // fall through
+	case EVolumeVoxelFormat::UnsignedInt:
+		return false;
+	case EVolumeVoxelFormat::SignedChar: // fall through
+	case EVolumeVoxelFormat::SignedShort: // fall through
+	case EVolumeVoxelFormat::SignedInt: // fall through
+	case EVolumeVoxelFormat::Float:
+		return true;
+	default:
+		ensure(false);
+		return false;
 	}
 }
 
@@ -97,33 +97,31 @@ EPixelFormat FVolumeInfo::VoxelFormatToPixelFormat(EVolumeVoxelFormat InFormat)
 {
 	switch (InFormat)
 	{
-		case EVolumeVoxelFormat::UnsignedChar:	  // fall through
-		case EVolumeVoxelFormat::SignedChar:
-			return EPixelFormat::PF_G8;
+	case EVolumeVoxelFormat::UnsignedChar: // fall through
+	case EVolumeVoxelFormat::SignedChar:
+		return PF_G8;
 
-		case EVolumeVoxelFormat::UnsignedShort:	   // fall through
-		case EVolumeVoxelFormat::SignedShort:
-			return EPixelFormat::PF_G16;
+	case EVolumeVoxelFormat::UnsignedShort: // fall through
+	case EVolumeVoxelFormat::SignedShort:
+		return PF_G16;
 
-		case EVolumeVoxelFormat::UnsignedInt:
-			return EPixelFormat::PF_R32_SINT;	 // Experimental - materials will need to use asuint() to read the actual value!
-		case EVolumeVoxelFormat::SignedInt:
-			return EPixelFormat::PF_R32_SINT;	 // Experimental - materials will need to use asint() to read the actual value!
+	case EVolumeVoxelFormat::UnsignedInt:
+		return PF_R32_SINT; // Experimental - materials will need to use asuint() to read the actual value!
+	case EVolumeVoxelFormat::SignedInt:
+		return PF_R32_SINT; // Experimental - materials will need to use asint() to read the actual value!
 
-		case EVolumeVoxelFormat::Float:
-			return EPixelFormat::PF_R32_FLOAT;	  // Cannot be saved.
-		default:
-			ensure(false);
-			return EPixelFormat::PF_Unknown;
+	case EVolumeVoxelFormat::Float:
+		return PF_R32_FLOAT; // Cannot be saved.
+	default:
+		ensure(false);
+		return PF_Unknown;
 	}
 }
 
 FString FVolumeInfo::ToString() const
 {
 	FString text = "File name " + DataFileName + " details:" + "\nDimensions = " + Dimensions.ToString() +
-				   "\nSpacing : " + Spacing.ToString() + "\nWorld Size MM : " + Dimensions.ToString() +
-				   "\nDefault window center : " + FString::SanitizeFloat(DefaultWindowingParameters.Center) +
-				   "\nDefault window width : " + FString::SanitizeFloat(DefaultWindowingParameters.Width) + "\nOriginal Range : [" +
-				   FString::SanitizeFloat(MinValue) + " - " + FString::SanitizeFloat(MaxValue) + "]";
+		"\nSpacing : " + Spacing.ToString() + "\nWorld Size MM : " + Dimensions.ToString() +
+		"\nOriginal Range : [" + FString::SanitizeFloat(MinValue) + " - " + FString::SanitizeFloat(MaxValue) + "]";
 	return text;
 }

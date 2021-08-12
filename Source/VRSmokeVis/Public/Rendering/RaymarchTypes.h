@@ -56,12 +56,6 @@ struct FBasicRaymarchRenderingResources
 	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Transient, Category = "Basic Raymarch Rendering Resources")
 	UTexture2D* TFTextureRef;
 
-	/// Windowing parameters that dictate how a value read from the volume is transferred onto the transfer function.
-	UPROPERTY(BlueprintReadWrite, EditAnywhere)
-	FWindowingParameters WindowingParameters;
-
-	// Following is not visible in BPs, it's too low level to be useful in BP.
-
 	// Read-write buffers for all 3 major axes. Used in compute shaders.
 	OneAxisReadWriteBufferResources XYZReadWriteBuffers[3];
 };

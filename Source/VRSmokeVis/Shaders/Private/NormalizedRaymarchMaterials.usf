@@ -13,8 +13,7 @@
 #pragma once
 #include "RaymarchMaterialCommon.usf"
 
-// Performs lit raymarch for the current pixel.
-// Will only work on normalized volumes (no windowing)
+// Performs raymarch for the current pixel.
 float4 PerformRaymarch(Texture3D DataVolume, // Data Volume 
                           Texture2D TF, float2 TFIntensityDomain, // Transfer func and intensity domain modifier
                           float3 CurPos, float MaxSteps, float StepSize, float FinalStep, // Position of ray entry to cube, number of steps, size of a step and a 0-1 value of how big the final step is compared to regular steps 

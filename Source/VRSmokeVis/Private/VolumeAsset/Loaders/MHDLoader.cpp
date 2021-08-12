@@ -5,9 +5,8 @@
 
 #include "VolumeAsset/Loaders/MHDLoader.h"
 
+#include "Misc/DefaultValueHelper.h"
 #include "Util/TextureUtilities.h"
-#include "sstream"
-#include "string"
 
 UMHDLoader* UMHDLoader::Get()
 {
@@ -15,215 +14,97 @@ UMHDLoader* UMHDLoader::Get()
 	return NewObject<UMHDLoader>();
 }
 
-FVolumeInfo UMHDLoader::ParseVolumeInfoFromHeader(FString FileName)
+EVolumeVoxelFormat UMHDLoader::MHDFormatToVoxelFormat(const FString& MHDFormat)
 {
-	// #TODO UE probably has a nicer string parser than istringstream...
-	// And the way I'm doing this is the ugliest you could imagine.
-	// But hey, this is probably literally the first C++ code I ever wrote in Unreal, so I'm keeping it this way, so
-	// I can look at it and shed a tear of remembering the sweet, sweet days of yesteryear.
+	if (MHDFormat.Equals(TEXT("MET_UCHAR")))
+	{
+		return EVolumeVoxelFormat::UnsignedChar;
+	}
+	else if (MHDFormat.Equals(TEXT("MET_CHAR")))
+	{
+		return EVolumeVoxelFormat::SignedChar;
+	}
 
-	FString FileString = IVolumeLoader::ReadFileAsString(FileName);
+	else if (MHDFormat.Equals(TEXT("MET_USHORT")))
+	{
+		return EVolumeVoxelFormat::UnsignedShort;
+	}
+	else if (MHDFormat.Equals(TEXT("MET_SHORT")))
+	{
+		return EVolumeVoxelFormat::SignedShort;
+	}
+	else if (MHDFormat.Equals(TEXT("MET_UINT")))
+	{
+		return EVolumeVoxelFormat::UnsignedInt;
+	}
+	else if (MHDFormat.Equals(TEXT("MET_INT")))
+	{
+		return EVolumeVoxelFormat::SignedInt;
+	}
+	else if (MHDFormat.Equals(TEXT("MET_FLOAT")))
+	{
+		return EVolumeVoxelFormat::Float;
+	}
+	return EVolumeVoxelFormat::Float;
+}
+
+FVolumeInfo UMHDLoader::ParseVolumeInfoFromHeader(const FString& FileName)
+{
+	FString FileString = ReadFileAsString(FileName);
+	TArray<FString> Lines;
+	int32 LineCount = FileString.ParseIntoArray(Lines, _T("\n"));
 
 	FVolumeInfo OutVolumeInfo;
-	OutVolumeInfo.bParseWasSuccessful = false;
 
-	// #TODO stop being sentimental and use FConsole::Parse()
+	FString Left, Right;
+	for (int i = 0; i < LineCount; ++i)
 	{
-		std::string MyStdString(TCHAR_TO_UTF8(*FileString));
-		std::istringstream inStream = std::istringstream(MyStdString);
-
-		std::string ReadWord;
-
-		// Skip until we get to Dimensions.
-		while (inStream.good() && ReadWord != "DimSize")
+		Lines[i].Split(TEXT(" = "), &Left, &Right);
+		if (Left.Equals(TEXT("DimSize")))
 		{
-			inStream >> ReadWord;
+			int Val;
+			Right.Split(TEXT(" "), &Left, &Right);
+			FDefaultValueHelper::ParseInt(Left, Val);
+			OutVolumeInfo.Dimensions.W = Val;
+			Right.Split(TEXT(" "), &Left, &Right);
+			FDefaultValueHelper::ParseInt(Left, Val);
+			OutVolumeInfo.Dimensions.X = Val;
+			Right.Split(TEXT(" "), &Left, &Right);
+			FDefaultValueHelper::ParseInt(Left, Val);
+			OutVolumeInfo.Dimensions.Y = Val;
+			FDefaultValueHelper::ParseInt(Right, Val);
+			OutVolumeInfo.Dimensions.Z = Val;
 		}
-		// Should be at the "=" after DimSize now.
-		if (inStream.good())
+		else if (Left.Equals(TEXT("ElementSpacing")))
 		{
-			// Get rid of equal sign.
-			inStream >> ReadWord;
-			// Read the three values;
-			inStream >> OutVolumeInfo.Dimensions.X;
-			inStream >> OutVolumeInfo.Dimensions.Y;
-			inStream >> OutVolumeInfo.Dimensions.Z;
+			Right.Split(TEXT(" "), &Left, &Right);
+			FDefaultValueHelper::ParseFloat(Left, OutVolumeInfo.Spacing.W);
+			Right.Split(TEXT(" "), &Left, &Right);
+			FDefaultValueHelper::ParseFloat(Left, OutVolumeInfo.Spacing.X);
+			Right.Split(TEXT(" "), &Left, &Right);
+			FDefaultValueHelper::ParseFloat(Left, OutVolumeInfo.Spacing.Y);
+			FDefaultValueHelper::ParseFloat(Right, OutVolumeInfo.Spacing.Z);
 		}
-		else
+		else if (Left.Equals(TEXT("ElementType")))
 		{
-			return OutVolumeInfo;
+			OutVolumeInfo.OriginalFormat = MHDFormatToVoxelFormat(Right);
 		}
-
-		// Go back to beginning
-		inStream = std::istringstream(MyStdString);
-		// Skip until we get to spacing.
-		while (inStream.good() && ReadWord != "ElementSpacing" && ReadWord != "ElementSize")
+		else if (Left.Equals(TEXT("ElementDataFile")))
 		{
-			inStream >> ReadWord;
+			OutVolumeInfo.DataFileName = Right;
 		}
-		// Should be at the "=" after ElementSpacing/ElementSize now.
-		if (inStream.good())
-		{
-			// Get rid of equal sign.
-			inStream >> ReadWord;
-			// Read the three values;
-			inStream >> OutVolumeInfo.Spacing.X;
-			inStream >> OutVolumeInfo.Spacing.Y;
-			inStream >> OutVolumeInfo.Spacing.Z;
-
-			OutVolumeInfo.WorldDimensions = OutVolumeInfo.Spacing * FVector(OutVolumeInfo.Dimensions);
-		}
-		else
-		{
-			return OutVolumeInfo;
-		}
-
-		// Go back to beginning
-		inStream = std::istringstream(MyStdString);
-		// Skip until we get to ElementType
-		while (inStream.good() && ReadWord != "ElementType")
-		{
-			inStream >> ReadWord;
-		}
-		// Should be at the "=" after ElementType now.
-		if (inStream.good())
-		{
-			// Get rid of equal sign.
-			inStream >> ReadWord;
-
-			inStream >> ReadWord;
-			if (ReadWord == "MET_UCHAR")
-			{
-				OutVolumeInfo.OriginalFormat = EVolumeVoxelFormat::UnsignedChar;
-			}
-			else if (ReadWord == "MET_CHAR")
-			{
-				OutVolumeInfo.OriginalFormat = EVolumeVoxelFormat::SignedChar;
-			}
-
-			else if (ReadWord == "MET_USHORT")
-			{
-				OutVolumeInfo.OriginalFormat = EVolumeVoxelFormat::UnsignedShort;
-			}
-			else if (ReadWord == "MET_SHORT")
-			{
-				OutVolumeInfo.OriginalFormat = EVolumeVoxelFormat::SignedShort;
-			}
-			else if (ReadWord == "MET_UINT")
-			{
-				OutVolumeInfo.OriginalFormat = EVolumeVoxelFormat::UnsignedInt;
-			}
-			else if (ReadWord == "MET_INT")
-			{
-				OutVolumeInfo.OriginalFormat = EVolumeVoxelFormat::SignedInt;
-			}
-			else if (ReadWord == "MET_FLOAT")
-			{
-				OutVolumeInfo.OriginalFormat = EVolumeVoxelFormat::Float;
-			}
-			else
-			{
-				return OutVolumeInfo;
-			}
-		}
-		else
-		{
-			return OutVolumeInfo;
-		}
-
-		OutVolumeInfo.BytesPerVoxel = FVolumeInfo::VoxelFormatByteSize(OutVolumeInfo.OriginalFormat);
-		OutVolumeInfo.bIsSigned = FVolumeInfo::IsVoxelFormatSigned(OutVolumeInfo.OriginalFormat);
-
-		// Check for compressed data size tag.
-
-		// Go back to beginning
-		inStream = std::istringstream(MyStdString);
-		// Skip until we get to ElementType
-		while (inStream.good() && ReadWord != "CompressedDataSize")
-		{
-			inStream >> ReadWord;
-		}
-		// Should be at the "=" after ElementType now.
-		if (inStream.good())
-		{
-			OutVolumeInfo.bIsCompressed = true;
-
-			// Get rid of equal sign.
-			inStream >> ReadWord;
-
-			inStream >> OutVolumeInfo.CompressedByteSize;
-		}
-
-		// Go back to beginning
-		inStream = std::istringstream(MyStdString);
-		// Skip until we get to ElementType
-		while (inStream.good() && ReadWord != "ElementDataFile")
-		{
-			inStream >> ReadWord;
-		}
-		// Should be at the "=" after ElementType now.
-		if (inStream.good())
-		{
-			// Get rid of equal sign.
-			inStream >> ReadWord;
-
-			inStream >> ReadWord;
-		}
-		else
-		{
-			return OutVolumeInfo;
-		}
-		OutVolumeInfo.DataFileName = FString(ReadWord.c_str());
-		OutVolumeInfo.bParseWasSuccessful = true;
-		// Return with constructor that sets success to true.
-		return OutVolumeInfo;
 	}
+
+	OutVolumeInfo.WorldDimensions = OutVolumeInfo.Spacing * FVector(OutVolumeInfo.Dimensions);
+
+	OutVolumeInfo.BytesPerVoxel = FVolumeInfo::VoxelFormatByteSize(OutVolumeInfo.OriginalFormat);
+	OutVolumeInfo.bIsSigned = FVolumeInfo::IsVoxelFormatSigned(OutVolumeInfo.OriginalFormat);
+
+	OutVolumeInfo.bParseWasSuccessful = true;
+	return OutVolumeInfo;
 }
 
-UVolumeAsset* UMHDLoader::CreateVolumeFromFile(
-	FString FileName, bool bNormalize /*= true*/, bool bConvertToFloat /*= true*/)
-{
-	FVolumeInfo VolumeInfo = ParseVolumeInfoFromHeader(FileName);
-	if (!VolumeInfo.bParseWasSuccessful)
-	{
-		return nullptr;
-	}
-	// Get valid package name and filepath.
-	FString FilePath, VolumeName;
-	GetValidPackageNameFromFileName(FileName, FilePath, VolumeName);
-
-	// Create the transient volume asset.
-	UVolumeAsset* OutAsset = UVolumeAsset::CreateTransient(VolumeName);
-	if (!OutAsset)
-	{
-		return nullptr;
-	}
-
-	// Perform complete load and conversion of data.
-	uint8* LoadedArray = LoadAndConvertData(FilePath, VolumeInfo, bNormalize, bConvertToFloat);
-
-	// Get proper pixel format depending on what got saved into the MHDInfo during conversion.
-	EPixelFormat PixelFormat = FVolumeInfo::VoxelFormatToPixelFormat(VolumeInfo.ActualFormat);
-
-	// Create the transient Volume texture.
-	UVolumeTextureToolkit::CreateVolumeTextureTransient(OutAsset->DataTexture, PixelFormat, VolumeInfo.Dimensions, LoadedArray);
-
-	delete[] LoadedArray;
-
-	// Check that the texture got created properly.
-	if (OutAsset->DataTexture)
-	{
-		OutAsset->ImageInfo = VolumeInfo;
-		return OutAsset;
-	}
-	else
-	{
-		return nullptr;
-	}
-}
-
-UVolumeAsset* UMHDLoader::CreatePersistentVolumeFromFile(
-	const FString& FileName, const FString& OutFolder, bool bNormalize /*= true*/)
+UVolumeAsset* UMHDLoader::CreateVolumeFromFile(const FString& FileName, UPackage* OutPackage)
 {
 	FVolumeInfo VolumeInfo = ParseVolumeInfoFromHeader(FileName);
 	if (!VolumeInfo.bParseWasSuccessful)
@@ -235,77 +116,30 @@ UVolumeAsset* UMHDLoader::CreatePersistentVolumeFromFile(
 	GetValidPackageNameFromFileName(FileName, FilePath, VolumeName);
 
 	// Create persistent volume asset.
-	UVolumeAsset* OutAsset = UVolumeAsset::CreatePersistent(OutFolder, VolumeName);
+	UVolumeAsset* OutAsset = UVolumeAsset::CreatePersistent(OutPackage, VolumeName);
 	if (!OutAsset)
 	{
 		return nullptr;
 	}
 
-	uint8* LoadedArray = LoadAndConvertData(FilePath, VolumeInfo, bNormalize, false);
+	uint8* LoadedArray = LoadAndConvertData(FilePath, VolumeInfo);
 	EPixelFormat PixelFormat = FVolumeInfo::VoxelFormatToPixelFormat(VolumeInfo.ActualFormat);
 
-	// Create the persistent volume texture.
-	FString VolumeTextureName = "VA_" + VolumeName + "_Data";
-	UVolumeTextureToolkit::CreateVolumeTextureAsset(
-		OutAsset->DataTexture, VolumeTextureName, OutFolder, PixelFormat, VolumeInfo.Dimensions, LoadedArray, true);
+	for (int t = 0; t < VolumeInfo.Dimensions.W; ++t)
+	{
+		// Create the persistent volume texture.
+		FString VolumeTextureName = "VA_" + VolumeName + "_Data_t" + FString::FromInt(t);
+		const long SingleTextureSize = static_cast<long>(VolumeInfo.Dimensions.X) * VolumeInfo.Dimensions.Y * VolumeInfo
+			.Dimensions.Z;
+		// Set pointer to current Volume position at timestep t
+		FVolumeTextureToolkit::CreateVolumeTextureAsset(
+			OutAsset->DataTextures[t], VolumeTextureName, OutPackage, PixelFormat, VolumeInfo.Dimensions,
+			LoadedArray + SingleTextureSize * t, true);
+	}
+
 	OutAsset->ImageInfo = VolumeInfo;
 
 	delete[] LoadedArray;
-	// Check that the texture got created properly.
-	if (OutAsset->DataTexture)
-	{
-		OutAsset->ImageInfo = VolumeInfo;
-		return OutAsset;
-	}
-	else
-	{
-		return nullptr;
-	}
-}
 
-UVolumeAsset* UMHDLoader::CreateVolumeFromFileInExistingPackage(
-	FString FileName, UObject* ParentPackage, bool bNormalize /*= true*/, bool bConvertToFloat /*= true*/)
-{
-	FVolumeInfo VolumeInfo = ParseVolumeInfoFromHeader(FileName);
-	if (!VolumeInfo.bParseWasSuccessful)
-	{
-		return nullptr;
-	}
-	// Get valid package name and filepath.
-	FString FilePath, VolumeName;
-	GetValidPackageNameFromFileName(FileName, FilePath, VolumeName);
-
-	// Create the transient volume asset.
-	UVolumeAsset* OutAsset =
-		NewObject<UVolumeAsset>(ParentPackage, FName("VA_" + VolumeName), RF_Standalone | RF_Public);
-	if (!OutAsset)
-	{
-		return nullptr;
-	}
-
-	// Perform complete load and conversion of data.
-	uint8* LoadedArray = LoadAndConvertData(FilePath, VolumeInfo, bNormalize, bConvertToFloat);
-
-	// Get proper pixel format depending on what got saved into the MHDInfo during conversion.
-	EPixelFormat PixelFormat = FVolumeInfo::VoxelFormatToPixelFormat(VolumeInfo.ActualFormat);
-
-	// Create the transient Volume texture.
-	OutAsset->DataTexture =
-		NewObject<UVolumeTexture>(ParentPackage, FName("VA_" + VolumeName + "_Data"), RF_Public | RF_Standalone);
-
-	UVolumeTextureToolkit::SetupVolumeTexture(
-		OutAsset->DataTexture, PixelFormat, VolumeInfo.Dimensions, LoadedArray, !bConvertToFloat);
-
-	delete[] LoadedArray;
-
-	// Check that the texture got created properly.
-	if (OutAsset->DataTexture)
-	{
-		OutAsset->ImageInfo = VolumeInfo;
-		return OutAsset;
-	}
-	else
-	{
-		return nullptr;
-	}
+	return OutAsset;
 }

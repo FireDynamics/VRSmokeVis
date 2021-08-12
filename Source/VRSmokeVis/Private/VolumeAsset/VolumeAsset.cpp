@@ -6,35 +6,19 @@
 #include "VolumeAsset/VolumeAsset.h"
 
 #include "Misc/FileHelper.h"
-#include "Misc/Paths.h"
-#include "Util/TextureUtilities.h"
 
 #include <AssetRegistryModule.h>
 
-UVolumeAsset* UVolumeAsset::CreateTransient(FString Name)
-{
-	return NewObject<UVolumeAsset>(
-		GetTransientPackage(), UVolumeAsset::StaticClass(), FName("VA_" + Name), RF_Standalone | RF_Public);
-}
 
-UVolumeAsset* UVolumeAsset::CreatePersistent(FString SaveFolder, const FString SaveName)
+UVolumeAsset* UVolumeAsset::CreatePersistent(UPackage* SavePackage, const FString SaveName)
 {
-	// Add slash at the end if it's not already there.
-	if (!SaveFolder.EndsWith("/"))
-	{
-		SaveFolder += "/";
-	}
-	// Create persistent package if we want the Volume info to be saveable.
-	FString VolumePackageName = SaveFolder + "VA_" + SaveName;
-	UPackage* VolumePackage = CreatePackage(*VolumePackageName);
-	VolumePackage->FullyLoad();
-
 	UVolumeAsset* VolumeAsset =
-		NewObject<UVolumeAsset>(VolumePackage, UVolumeAsset::StaticClass(), FName("VA_" + SaveName), RF_Standalone | RF_Public);
+		NewObject<UVolumeAsset>(SavePackage, StaticClass(), FName("VA_" + SaveName), RF_Standalone | RF_Public);
 	if (VolumeAsset)
 	{
 		FAssetRegistryModule::AssetCreated(VolumeAsset);
 	}
+	SavePackage->MarkPackageDirty();
 	return VolumeAsset;
 }
 

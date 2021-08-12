@@ -21,8 +21,9 @@ void AccumulateWindowedRaymarchStep(inout float4 AccumulatedLightEnergy, float3 
                                     SamplerState DataVolumeSampler, Texture2D TF, float StepSize,
                                     float4 WindowingParams)
 {
-	float4 ColorSample = SampleWindowedVolumeStep(CurPos, StepSize, DataVolume, DataVolumeSampler,
-	                                              TF, Material.Clamp_WorldGroupSettings, WindowingParams);
+	// Use SampleWindowedVolumeStep(...) for windowing
+	float4 ColorSample = SampleDataVolume(CurPos, StepSize, DataVolume, DataVolumeSampler, TF,
+	                                      Material.Clamp_WorldGroupSettings, WindowingParams);
 
 	// Accumulate current colored sample to the final values.
 	AccumulateLightEnergy(AccumulatedLightEnergy, ColorSample);

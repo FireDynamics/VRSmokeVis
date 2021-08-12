@@ -26,38 +26,12 @@ enum class EVolumeVoxelFormat : uint8
 	// #TODO maybe double? Unreal materials don't support them anyways...
 };
 
-
-/// Struct for raymarch windowing parameters. These work exactly the same as DICOM window.
-USTRUCT(BlueprintType)
-struct FWindowingParameters
-{
-	GENERATED_BODY()
-
-	UPROPERTY(BlueprintReadWrite, EditAnywhere)
-	float Center = 0.5;
-
-	UPROPERTY(BlueprintReadWrite, EditAnywhere)
-	float Width = 1.0;
-
-	UPROPERTY(BlueprintReadWrite, EditAnywhere)
-	bool LowCutoff = true;
-
-	UPROPERTY(BlueprintReadWrite, EditAnywhere)
-	bool HighCutoff = true;
-
-	/** Transforms the 4 values into a FLinear color to be used in materials.**/
-	FLinearColor ToLinearColor()
-	{
-		return FLinearColor(Center, Width, LowCutoff, HighCutoff);
-	}
-};
-
 /// Contains information about the volume loaded from the Various volumetric data file formats supported.
 USTRUCT(BlueprintType)
 struct VRSMOKEVIS_API FVolumeInfo
 {
 	GENERATED_BODY()
-public:
+
 	/// If true, parsing succeeded. If false, this Volume Info is unusable.
 	bool bParseWasSuccessful = false;
 
@@ -68,27 +42,23 @@ public:
 	/// Format of voxels loaded from the volume. Does NOT have to match the actual PixelFormat that the VolumeTexture is stored in!
 	/// e.g. this could be UChar and VolumeTexture is saved as a EPixelFormat::Float - so don't use for calculating sizes!
 	UPROPERTY(VisibleAnywhere)
-	EVolumeVoxelFormat OriginalFormat;
+	EVolumeVoxelFormat OriginalFormat = EVolumeVoxelFormat::SignedShort;
 
 	/// The format we're using after load has been finished. Takes into account being normalized or converted to float.
 	UPROPERTY(VisibleAnywhere)
-	EVolumeVoxelFormat ActualFormat;
+	EVolumeVoxelFormat ActualFormat = EVolumeVoxelFormat::SignedShort;
 
 	// Size of volume in voxels.
 	UPROPERTY(VisibleAnywhere)
-	FIntVector Dimensions;
+	FVector4 Dimensions;
 
 	// Size of a voxel in mm.
 	UPROPERTY(VisibleAnywhere)
-	FVector Spacing;
+	FVector4 Spacing;
 
 	// Size of the whole volume in mm (equals VoxelDimensions * Spacing)
 	UPROPERTY(VisibleAnywhere)
 	FVector WorldDimensions;
-
-	// Default windowing parameters used when this volume is loaded.
-	UPROPERTY(EditAnywhere)
-	FWindowingParameters DefaultWindowingParameters;
 
 	// If true, the values in the texture have been normalized from [MinValue, MaxValue] to [0, 1] range.
 	UPROPERTY(VisibleAnywhere)
@@ -101,10 +71,6 @@ public:
 	// Highest value voxel in the volume in the original volume (before normalization).
 	UPROPERTY(VisibleAnywhere)
 	float MaxValue = 3000;
-
-	bool bIsCompressed = false;
-
-	int32 CompressedByteSize = 0;
 
 	// Returns the number of bytes needed to store this Volume.
 	int64 GetByteSize() const;

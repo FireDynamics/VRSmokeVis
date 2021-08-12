@@ -7,22 +7,9 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
-#include "WindowingParameters.h"
 #include "VolumeInfo.h"
 
 #include "VolumeAsset.Generated.h"
-
-// Sample MHD header
-//
-// ObjectType = Image
-// NDims = 3
-// DimSize = 512 512 128
-// ElementSpacing = 0.00390625 0.0117188 0.046875
-// Position = 0 -4.19925 -4.19785
-// ElementType = MET_UCHAR
-// ElementNumberOfChannels = 1
-// ElementByteOrderMSB = False
-// ElementDataFile = preprocessed.raw
 
 /// Delegate that is broadcast when the color curve is changed.
 DECLARE_MULTICAST_DELEGATE_OneParam(FCurveAssetChangedDelegate, UCurveLinearColor*);
@@ -38,7 +25,7 @@ class VRSMOKEVIS_API UVolumeAsset : public UDataAsset
 public:
 	/// Volume texture containing the data loaded from the MHD file.
 	UPROPERTY(VisibleAnywhere)
-	UVolumeTexture* DataTexture;
+	TArray<UVolumeTexture*> DataTextures;
 
 	/// A color curve that will be used as a transfer function to display this volume.
 	UPROPERTY(EditAnywhere)
@@ -48,9 +35,7 @@ public:
 	UPROPERTY(EditAnywhere)
 	FVolumeInfo ImageInfo;
 
-	static UVolumeAsset* CreateTransient(FString Name);
-
-	static UVolumeAsset* CreatePersistent(FString SaveFolder, const FString SaveName);
+	static UVolumeAsset* CreatePersistent(UPackage* SavePackage, const FString SaveName);
 
 #if WITH_EDITOR
 	/// Called when the Transfer function curve is changed (as in, a different asset is selected).

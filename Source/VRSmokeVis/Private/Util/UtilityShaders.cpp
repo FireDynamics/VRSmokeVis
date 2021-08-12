@@ -36,8 +36,8 @@ void ClearVolumeTexture_RenderThread(FRHICommandListImmediate& RHICmdList, FRHIT
 
 	ComputeShader->SetParameters(RHICmdList, VolumeUAVRef, ClearValues, VolumeResourceRef->GetSizeZ());
 
-	uint32 GroupSizeX = FMath::DivideAndRoundUp((int32) VolumeResourceRef->GetSizeX(), NUM_THREADS_PER_GROUP_DIMENSION);
-	uint32 GroupSizeY = FMath::DivideAndRoundUp((int32) VolumeResourceRef->GetSizeY(), NUM_THREADS_PER_GROUP_DIMENSION);
+	uint32 GroupSizeX = FMath::DivideAndRoundUp(static_cast<int32>(VolumeResourceRef->GetSizeX()), NUM_THREADS_PER_GROUP_DIMENSION);
+	uint32 GroupSizeY = FMath::DivideAndRoundUp(static_cast<int32>(VolumeResourceRef->GetSizeY()), NUM_THREADS_PER_GROUP_DIMENSION);
 
 	RHICmdList.DispatchComputeShader(GroupSizeX, GroupSizeY, 1);
 	ComputeShader->UnbindUAV(RHICmdList);

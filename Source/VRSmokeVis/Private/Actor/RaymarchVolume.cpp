@@ -145,14 +145,6 @@ void ARaymarchVolume::OnTFColorCurveUpdated(UCurveBase* Curve, EPropertyChangeTy
 	SetTFCurve(Cast<UCurveLinearColor>(Curve));
 }
 
-void ARaymarchVolume::OnImageInfoChangedInEditor()
-{
-	// Just update parameters from default VolumeAsset values, that's the only thing that can change that's interesting in the Image Info
-	// we're initialized.
-	RaymarchResources.WindowingParameters = VolumeAsset->ImageInfo.DefaultWindowingParameters;
-	SetMaterialWindowingParameters();
-}
-
 void ARaymarchVolume::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
@@ -161,16 +153,6 @@ void ARaymarchVolume::PostEditChangeProperty(FPropertyChangedEvent& PropertyChan
 	if (PropertyName == GET_MEMBER_NAME_CHECKED(ARaymarchVolume, VolumeAsset))
 	{
 		SetVolumeAsset(VolumeAsset);
-		return;
-	}
-
-	// Only writable property in rendering resources is windowing parameters -> update those
-	if (PropertyName == GET_MEMBER_NAME_CHECKED(FWindowingParameters, Center) ||
-		PropertyName == GET_MEMBER_NAME_CHECKED(FWindowingParameters, Width) ||
-		PropertyName == GET_MEMBER_NAME_CHECKED(FWindowingParameters, HighCutoff) ||
-		PropertyName == GET_MEMBER_NAME_CHECKED(FWindowingParameters, LowCutoff))
-	{
-		SetMaterialWindowingParameters();
 		return;
 	}
 
@@ -209,6 +191,11 @@ void ARaymarchVolume::Tick(float DeltaTime)
 	// 	GEngine->AddOnScreenDebugMessage(0, 0, FColor::Yellow, Log);
 }
 
+bool ARaymarchVolume::UpdateVolume()
+{
+	return true;
+}
+
 bool ARaymarchVolume::SetVolumeAsset(UVolumeAsset* InVolumeAsset)
 {
 	if (!InVolumeAsset)
@@ -227,14 +214,11 @@ bool ARaymarchVolume::SetVolumeAsset(UVolumeAsset* InVolumeAsset)
 			{
 				OldVolumeAsset->TransferFuncCurve->OnUpdateCurve.Remove(CurveGradientUpdateDelegateHandle);
 				OldVolumeAsset->OnCurveChanged.Remove(CurveChangedInVolumeDelegateHandle);
-				OldVolumeAsset->OnImageInfoChanged.Remove(VolumeAssetUpdatedDelegateHandle);
 			}
 			if (InVolumeAsset)
 			{
 				CurveChangedInVolumeDelegateHandle =
 					InVolumeAsset->OnCurveChanged.AddUObject(this, &ARaymarchVolume::OnVolumeAssetChangedTF);
-				VolumeAssetUpdatedDelegateHandle =
-					InVolumeAsset->OnImageInfoChanged.AddUObject(this, &ARaymarchVolume::OnImageInfoChangedInEditor);
 			}
 		}
 	}
@@ -267,27 +251,27 @@ bool ARaymarchVolume::SetVolumeAsset(UVolumeAsset* InVolumeAsset)
 	VolumeAsset = InVolumeAsset;
 	OldVolumeAsset = InVolumeAsset;
 
-	InitializeRaymarchResources(VolumeAsset->DataTexture);
+	InitializeRaymarchResources(VolumeAsset->DataTextures[0]);
 
 	if (!RaymarchResources.bIsInitialized)
 	{
 		UE_LOG(LogRaymarchVolume, Warning, TEXT("Could not initialize raymarching resources!"), 3);
 		return false;
 	}
-
-	// Set TF Texture in the material (after resource init, so FlushRenderingCommands has been called).
+	
+	FlushRenderingCommands();
+	
+	// Set TF Texture in the material
 	if (RaymarchMaterial)
 	{
 		RaymarchMaterial->SetTextureParameterValue(RaymarchParams::TransferFunction, RaymarchResources.TFTextureRef);
 	}
 
-	RaymarchResources.WindowingParameters = VolumeAsset->ImageInfo.DefaultWindowingParameters;
-
 	// Unreal units = cm, MHD has sizes in mm -> divide by 10.
 	StaticMeshComponent->SetRelativeScale3D(InVolumeAsset->ImageInfo.WorldDimensions / 10);
 
 	// Update world and set all parameters.
-	SetAllMaterialParameters();
+	SetMaterialVolumeParameters();
 
 	// Notify listeners that we've loaded a new volume.
 	OnVolumeLoaded.ExecuteIfBound();
@@ -314,47 +298,11 @@ void ARaymarchVolume::SaveCurrentParamsToVolumeAsset()
 	if (VolumeAsset)
 	{
 		VolumeAsset->TransferFuncCurve = CurrentTFCurve;
-		VolumeAsset->ImageInfo.DefaultWindowingParameters = RaymarchResources.WindowingParameters;
-
 		UPackage* Package = VolumeAsset->GetOutermost();
 
-		UPackage::SavePackage(Package, VolumeAsset, EObjectFlags::RF_Public | EObjectFlags::RF_Standalone,
+		UPackage::SavePackage(Package, VolumeAsset, RF_Public | RF_Standalone,
 			*(Package->GetLoadedPath().GetLocalBaseFilenameWithPath()), GError, nullptr, false, true, SAVE_NoError);
 	}
-}
-
-bool ARaymarchVolume::LoadMHDFileIntoVolumeTransientR32F(FString FileName)
-{
-	UVolumeAsset* NewVolumeAsset;
-
-	UMHDLoader* Loader = UMHDLoader::Get();
-	NewVolumeAsset = Loader->CreateVolumeFromFile(FileName, false, true);
-
-	if (NewVolumeAsset)
-	{
-		return SetVolumeAsset(NewVolumeAsset);
-	}
-	return false;
-}
-
-bool ARaymarchVolume::LoadMHDFileIntoVolumeNormalized(FString FileName, bool bPersistent, FString OutFolder)
-{
-	UVolumeAsset* NewVolumeAsset;
-
-	UMHDLoader* Loader = UMHDLoader::Get();
-	NewVolumeAsset = Loader->CreateVolumeFromFile(FileName, true, false);
-
-	if (NewVolumeAsset)
-	{
-		return SetVolumeAsset(NewVolumeAsset);
-	}
-	return false;
-}
-
-void ARaymarchVolume::SetAllMaterialParameters()
-{
-	SetMaterialVolumeParameters();
-	SetMaterialWindowingParameters();
 }
 
 void ARaymarchVolume::SetMaterialVolumeParameters()
@@ -365,43 +313,10 @@ void ARaymarchVolume::SetMaterialVolumeParameters()
 	}
 }
 
-void ARaymarchVolume::SetMaterialWindowingParameters()
-{
-	if (RaymarchMaterial)
-	{
-		RaymarchMaterial->SetVectorParameterValue(
-			RaymarchParams::WindowingParams, RaymarchResources.WindowingParameters.ToLinearColor());
-	}
-}
-
 void ARaymarchVolume::GetMinMaxValues(float& Min, float& Max)
 {
 	Min = VolumeAsset->ImageInfo.MinValue;
 	Max = VolumeAsset->ImageInfo.MaxValue;
-}
-
-void ARaymarchVolume::SetWindowCenter(const float& Center)
-{
-	RaymarchResources.WindowingParameters.Center = Center;
-	SetMaterialWindowingParameters();
-}
-
-void ARaymarchVolume::SetWindowWidth(const float& Width)
-{
-	RaymarchResources.WindowingParameters.Width = Width;
-	SetMaterialWindowingParameters();
-}
-
-void ARaymarchVolume::SetLowCutoff(const bool& LowCutoff)
-{
-	RaymarchResources.WindowingParameters.LowCutoff = LowCutoff;
-	SetMaterialWindowingParameters();
-}
-
-void ARaymarchVolume::SetHighCutoff(const bool& HighCutoff)
-{
-	RaymarchResources.WindowingParameters.HighCutoff = HighCutoff;
-	SetMaterialWindowingParameters();
 }
 
 void ARaymarchVolume::SetRaymarchSteps(float InRaymarchingSteps)
