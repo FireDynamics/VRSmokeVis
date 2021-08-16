@@ -3,21 +3,12 @@
 // Special credits go to : Temaran (compute shader tutorial), TheHugeManatee (original concept, supervision) and Ryan Brucks
 // (original raymarching code).
 
-// This file contains both files used by ligt propagation shaders and material shaders used in-editor.
-// After changing anything in this, the shaders in-editor need to be recompiled manually! (no file change detection there)
-//#include "WindowedHelpers.usf"
-
 #pragma once
-
-// The fixed volume density. Used to multiply all StepSizes (when raymarching or calculating illumination).
-// Increasing this will lead to more opaque volumes, all other things being equal.
-// #TODO Find out what's the standard in e.g. Slicer or ITK use that.
-#define VOLUME_DENSITY 100.0f
 
 // Convert a uint in one byte range (0-255) to a corresponding U8 float (0 - 1 normalized).
 float CharToFloat(uint inChar)
 {
-    return static_cast<float>(inChar) / 255.0;
+    return (float)(inChar) / 255.0;
 }
 
 // Convert a normalized 0-1 float to a 0-255 uint;
@@ -26,25 +17,18 @@ uint FloatToChar(float inFloat)
     return round(inFloat * 255.0);
 }
 
-// Remaps the input intensity to fit inside the intensity domain.
-void RemapIntensity(inout float intensity, float2 TFIntensityDomain)
-{
-    intensity = clamp((intensity - TFIntensityDomain.x) / (TFIntensityDomain.y - TFIntensityDomain.x), 0, 1);
-}
-
 // Transforms pixel position into UVWs of the given pixel's center (center is why we add 0.5)
 float3 GetUVW(uint3 pos, float3 dimensions)
 {
     return (pos + float3(0.5, 0.5, 0.5)) / dimensions;
 }
 
-// Samples a Data volume, transforms it to fit the TF Intensity domain and then transforms it by the TF. Corrects the opacity to account for StepSize (in World units).
-float4 SampleDataVolume(float3 CurPos, float StepSize, Texture3D Volume, SamplerState VolumeSampler, Texture2D TF, SamplerState TFSampler, float2 TFIntensityDomain)
+// Samples a Data volume and corrects the opacity to account for StepSize (in World units).
+float4 SampleDataVolume(float3 CurPos, float StepSize, Texture3D Volume, SamplerState VolumeSampler)
 {
     float VolumeSample = Volume.SampleLevel(VolumeSampler, saturate(CurPos), 0).r;
-    RemapIntensity(VolumeSample, TFIntensityDomain);
 
-    float4 ColorSample = TF.SampleLevel(TFSampler, float2(VolumeSample, 0.5), 0);
+    float4 ColorSample = float4(1 - VolumeSample, 1 - VolumeSample, 1 - VolumeSample, VolumeSample);
     ColorSample.a = 1.0 - pow(1.0 - ColorSample.a, StepSize);
     return ColorSample;
 }
@@ -53,14 +37,6 @@ float4 SampleDataVolume(float3 CurPos, float StepSize, Texture3D Volume, Sampler
 float SampleDataIntensityLoded(float3 CurPos, Texture3D Volume, SamplerState VolumeSampler, float LOD)
 {
     return Volume.SampleLevel(VolumeSampler, saturate(CurPos), LOD).r;
-}
-
-// Samples a Data volume, transforms it to fit the TF Intensity domain and thand transforms it by the TF. Does not take into account the step size
-float4 SampleDataVolumeUniformStep(float3 CurPos, Texture3D Volume, SamplerState VolumeSampler, Texture2D TF, SamplerState TFSampler, float2 TFIntensityDomain)
-{
-    float VolumeSample = Volume.SampleLevel(VolumeSampler, CurPos, 0).r;
-    RemapIntensity(VolumeSample, TFIntensityDomain);
-    return TF.SampleLevel(TFSampler, float2(VolumeSample, 0.5), 0);
 }
 
 // Returns intensity corrected for stepsize.

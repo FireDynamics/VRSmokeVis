@@ -1,0 +1,14 @@
+﻿
+#include "RaymarchMaterialCommon.usf"
+
+// Performs raymarch for the current pixel.
+float4 PerformRaymarch(Texture3D DataVolume, // Data Volume 
+					SamplerState DataVolumeSampler,
+					float3 CurPos, float Thickness,
+					// CurPos = Entry Position, Thickness is thickness of cube along the ray. Both in UVW space.
+					float StepCount,
+					// How many steps we should take. Actual number of steps taken is StepCount * Thickness.
+					FMaterialPixelParameters MaterialParameters) // Material Parameters provided by UE.
+{
+	
+}

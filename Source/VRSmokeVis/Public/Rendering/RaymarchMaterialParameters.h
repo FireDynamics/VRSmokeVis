@@ -13,7 +13,6 @@
 namespace RaymarchParams
 {
 const static FName DataVolume = "Volume";
-const static FName WindowingParams = "WindowingParameters";
 const static FName TransferFunction = "TransferFunction";
 const static FName Steps = "Steps";
 

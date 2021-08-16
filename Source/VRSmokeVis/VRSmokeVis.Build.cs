@@ -8,8 +8,6 @@ public class VRSmokeVis : ModuleRules
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 		
-		AddEngineThirdPartyPrivateStaticDependencies(Target, "zlib");
-		
         CppStandard = CppStandardVersion.Cpp17;
 
         PublicIncludePaths.AddRange(

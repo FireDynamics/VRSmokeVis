@@ -34,7 +34,7 @@ VRSMOKEVIS_API void URaymarchUtils::MakeDefaultTFTexture(UTexture2D*& OutTexture
 
 	for (unsigned i = 1; i < TextureHeight; i++)
 	{
-		FMemory::Memcpy(Samples + (i * SampleCount * 4), Samples, SampleCount * 4 * 2);
+		FMemory::Memcpy(Samples + i * SampleCount * 4, Samples, SampleCount * 4 * 2);
 	}
 
 	FVolumeTextureToolkit::Create2DTextureTransient(
@@ -67,7 +67,7 @@ void URaymarchUtils::ColorCurveToTexture(UCurveLinearColor* Curve, UTexture2D*& 
 
 	for (unsigned i = 1; i < TextureHeight; i++)
 	{
-		FMemory::Memcpy(samples + (i * sampleCount * 4), samples, sampleCount * 4 * 2);
+		FMemory::Memcpy(samples + i * sampleCount * 4, samples, sampleCount * 4 * 2);
 	}
 
 	FVolumeTextureToolkit::Create2DTextureTransient(
@@ -140,7 +140,7 @@ void URaymarchUtils::TransformToMatrix(const FTransform Transform, FMatrix& OutM
 
 void URaymarchUtils::LocalToTextureCoords(FVector LocalCoords, FVector& TextureCoords)
 {
-	TextureCoords = (LocalCoords / 2.0f) + 0.5f;
+	TextureCoords = LocalCoords / 2.0f + 0.5f;
 }
 
 void URaymarchUtils::TextureToLocalCoords(FVector TextureCoors, FVector& LocalCoords)

@@ -5,14 +5,13 @@
 
 #include "Actor/RaymarchVolume.h"
 
-#include "GenericPlatform/GenericPlatformTime.h"
+// #include "GenericPlatform/GenericPlatformTime.h"
 #include "Rendering/RaymarchMaterialParameters.h"
 #include "Util/TextureUtilities.h"
 #include "Util/RaymarchUtils.h"
 #include "VolumeAsset/VolumeAsset.h"
-
+#include "TimerManager.h"
 #include <Curves/CurveLinearColor.h>
-#include "VolumeAsset/Loaders/MHDLoader.h"
 
 DEFINE_LOG_CATEGORY(LogRaymarchVolume)
 
@@ -32,7 +31,7 @@ ARaymarchVolume::ARaymarchVolume() : AActor()
 	RootComponent->SetWorldScale3D(FVector(1.0f));
 
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> UnitCubeInsideOut(
-		TEXT("/TBRaymarcherPlugin/Meshes/Unit_Cube_Inside_Out"));
+		TEXT("StaticMesh'/Game/Meshes/Unit_Cube_Inside_Out.Unit_Cube_Inside_Out'"));
 
 	StaticMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Raymarch Cube Static Mesh"));
 	/// Set basic unit cube properties.
@@ -51,13 +50,14 @@ ARaymarchVolume::ARaymarchVolume() : AActor()
 	CubeBorderMeshComponent->SetRelativeScale3D(FVector(1.01));
 	CubeBorderMeshComponent->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
 
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeBorder(TEXT("/TBRaymarcherPlugin/Meshes/Unit_Cube"));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeBorder(TEXT("StaticMesh'/Game/Meshes/Unit_Cube.Unit_Cube'"));
 
 	if (CubeBorder.Succeeded())
 	{
 		// Find and assign cube material.
 		CubeBorderMeshComponent->SetStaticMesh(CubeBorder.Object);
-		static ConstructorHelpers::FObjectFinder<UMaterial> BorderMaterial(TEXT("/TBRaymarcherPlugin/Materials/M_CubeBorder"));
+		static ConstructorHelpers::FObjectFinder<UMaterial> BorderMaterial(
+			TEXT("Material'/Game/Materials/M_CubeBorder.M_CubeBorder'"));
 		if (BorderMaterial.Succeeded())
 		{
 			CubeBorderMeshComponent->SetMaterial(0, BorderMaterial.Object);
@@ -65,7 +65,8 @@ ARaymarchVolume::ARaymarchVolume() : AActor()
 	}
 
 	// Find and assign default raymarch materials.
-	static ConstructorHelpers::FObjectFinder<UMaterial> IntensityMaterial(TEXT("/TBRaymarcherPlugin/Materials/M_Raymarch"));
+	static ConstructorHelpers::FObjectFinder<UMaterial> IntensityMaterial(
+		TEXT("Material'/Game/Materials/M_Raymarch.M_Raymarch'"));
 
 	if (IntensityMaterial.Succeeded())
 	{
@@ -191,9 +192,28 @@ void ARaymarchVolume::Tick(float DeltaTime)
 	// 	GEngine->AddOnScreenDebugMessage(0, 0, FColor::Yellow, Log);
 }
 
-bool ARaymarchVolume::UpdateVolume()
+void ARaymarchVolume::UpdateVolume()
 {
-	return true;
+	++CurrentTimeStep;
+
+	if (CurrentTimeStep >= VolumeAsset->ImageInfo.Dimensions.W)
+	{
+		CurrentTimeStep = 0;
+	}
+	
+	InitializeRaymarchResources(VolumeAsset->DataTextures[CurrentTimeStep]);
+
+	if (!RaymarchResources.bIsInitialized)
+	{
+		UE_LOG(LogRaymarchVolume, Warning,
+		       TEXT("Could not initialize raymarching resources when trying to update volume!"), 3);
+		return;
+	}
+
+	FlushRenderingCommands();
+
+	// Update dynamic material instance
+	SetMaterialVolumeParameters();
 }
 
 bool ARaymarchVolume::SetVolumeAsset(UVolumeAsset* InVolumeAsset)
@@ -251,30 +271,33 @@ bool ARaymarchVolume::SetVolumeAsset(UVolumeAsset* InVolumeAsset)
 	VolumeAsset = InVolumeAsset;
 	OldVolumeAsset = InVolumeAsset;
 
-	InitializeRaymarchResources(VolumeAsset->DataTextures[0]);
+	// Set timer to set next frame (update next volume) after some time
+	GetWorldTimerManager().SetTimer(UpdateTimerHandle, this, &ARaymarchVolume::UpdateVolume, .3f, true);
+
+	InitializeRaymarchResources(VolumeAsset->DataTextures[CurrentTimeStep]);
 
 	if (!RaymarchResources.bIsInitialized)
 	{
 		UE_LOG(LogRaymarchVolume, Warning, TEXT("Could not initialize raymarching resources!"), 3);
 		return false;
 	}
-	
+
 	FlushRenderingCommands();
-	
+
 	// Set TF Texture in the material
 	if (RaymarchMaterial)
 	{
 		RaymarchMaterial->SetTextureParameterValue(RaymarchParams::TransferFunction, RaymarchResources.TFTextureRef);
 	}
 
-	// Unreal units = cm, MHD has sizes in mm -> divide by 10.
-	StaticMeshComponent->SetRelativeScale3D(InVolumeAsset->ImageInfo.WorldDimensions / 10);
+	// Unreal units = cm, FDS has sizes in m -> multiply by 10.
+	StaticMeshComponent->SetRelativeScale3D(InVolumeAsset->ImageInfo.WorldDimensions * 100);
 
 	// Update world and set all parameters.
 	SetMaterialVolumeParameters();
 
 	// Notify listeners that we've loaded a new volume.
-	OnVolumeLoaded.ExecuteIfBound();
+	bool _ = OnVolumeLoaded.ExecuteIfBound();
 	return true;
 }
 
@@ -284,9 +307,7 @@ void ARaymarchVolume::SetTFCurve(UCurveLinearColor* InTFCurve)
 	{
 		CurrentTFCurve = InTFCurve;
 		URaymarchUtils::ColorCurveToTexture(CurrentTFCurve, RaymarchResources.TFTextureRef);
-		// #TODO flushing rendering commands can lead to hitches, maybe figure out a better way to make sure TF is created in time
-		// for the texture parameter to be set.
-		// e.g. render-thread promise and game-thread future?
+
 		FlushRenderingCommands();
 		// Set TF Texture in the lit material.
 		RaymarchMaterial->SetTextureParameterValue(RaymarchParams::TransferFunction, RaymarchResources.TFTextureRef);
@@ -301,7 +322,8 @@ void ARaymarchVolume::SaveCurrentParamsToVolumeAsset()
 		UPackage* Package = VolumeAsset->GetOutermost();
 
 		UPackage::SavePackage(Package, VolumeAsset, RF_Public | RF_Standalone,
-			*(Package->GetLoadedPath().GetLocalBaseFilenameWithPath()), GError, nullptr, false, true, SAVE_NoError);
+		                      *Package->GetLoadedPath().GetLocalBaseFilenameWithPath(), GError, nullptr, false, true,
+		                      SAVE_NoError);
 	}
 }
 
@@ -328,29 +350,32 @@ void ARaymarchVolume::SetRaymarchSteps(float InRaymarchingSteps)
 	}
 }
 
-void ARaymarchVolume::InitializeRaymarchResources(UVolumeTexture* Volume)
+void ARaymarchVolume::InitializeRaymarchResources(UVolumeTexture* VolumeTexture)
 {
 	if (RaymarchResources.bIsInitialized)
 	{
 		FreeRaymarchResources();
 	}
 
-	if (!Volume)
+	if (!VolumeTexture)
 	{
 		UE_LOG(LogRaymarchVolume, Error, TEXT("Tried to initialize Raymarch resources with no data volume!"));
 		return;
 	}
-	else if (!Volume->PlatformData || Volume->GetSizeX() == 0 || Volume->GetSizeY() == 0 || Volume->GetSizeY() == 0)
+
+	if (!VolumeTexture->PlatformData || VolumeTexture->GetSizeX() == 0 || VolumeTexture->GetSizeY() == 0 ||
+		VolumeTexture->GetSizeY() == 0)
 	{
 		// Happens in cooking stage where per-platform data isn't initalized. Return.
 		UE_LOG(LogRaymarchVolume, Warning,
-			TEXT("Following is safe to ignore during cooking :\nTried to initialize Raymarch resources with an unitialized data "
-				 "volume with size 0!\nRaymarch volume name = %s, VolumeTexture name = %s"),
-			*(GetName()), *(Volume->GetName()));
+		       TEXT(
+			       "Following is safe to ignore during cooking :\nTried to initialize Raymarch resources with an unitialized data "
+			       "volume with size 0!\nRaymarch volume name = %s, VolumeTexture name = %s"),
+		       *GetName(), *VolumeTexture->GetName());
 		return;
-	};
+	}
 
-	RaymarchResources.DataVolumeTextureRef = Volume;
+	RaymarchResources.DataVolumeTextureRef = VolumeTexture;
 
 	RaymarchResources.bIsInitialized = true;
 }

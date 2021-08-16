@@ -23,7 +23,6 @@ enum class EVolumeVoxelFormat : uint8
 	SignedInt = 5,
 	// 4 bytes float
 	Float = 6
-	// #TODO maybe double? Unreal materials don't support them anyways...
 };
 
 /// Contains information about the volume loaded from the Various volumetric data file formats supported.

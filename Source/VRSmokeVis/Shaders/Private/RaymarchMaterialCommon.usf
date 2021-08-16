@@ -22,168 +22,102 @@
 // and thickness of the cube in alpha. All values returned are in UVW space.
 float4 PerformRaymarchCubeSetup(FMaterialPixelParameters MaterialParameters)
 {
-    // Get scene depth at this pixel.
-    float LocalSceneDepth = CalcSceneDepth(ScreenAlignedPosition(GetScreenPosition(MaterialParameters)));
-    
-    // Get camera forward vector in world space.
-    float3 CameraFWDVecWorld = mul(float3(0.00000000, 0.00000000, 1.00000000), ResolvedView.ViewToTranslatedWorld);
+	// Get scene depth at this pixel.
+	float LocalSceneDepth = CalcSceneDepth(ScreenAlignedPosition(GetScreenPosition(MaterialParameters)));
 
-    // Get world space vector going from camera center to current scene depth.
-    float3 WorldDepthVec = normalize(MaterialParameters.CameraVector) * LocalSceneDepth;
+	// Get camera forward vector in world space.
+	float3 CameraFWDVecWorld = mul(float3(0.00000000, 0.00000000, 1.00000000), ResolvedView.ViewToTranslatedWorld);
 
-    // Transform this vector into the box's local space
-    WorldDepthVec = mul(WorldDepthVec, GetPrimitiveData(MaterialParameters.PrimitiveId).WorldToLocal);
+	// Get world space vector going from camera center to current scene depth.
+	float3 WorldDepthVec = normalize(MaterialParameters.CameraVector) * LocalSceneDepth;
 
-    // Get actual depth in local space, account for mesh bounds (by default, we use a centered 1x1x1 cube mesh, so this is unnecessary)
-    LocalSceneDepth = length(WorldDepthVec);
-    
-    // We use unit cubes now, uncomment this if you want to use non-unit meshes for some reason.
-    // LocalSceneDepth /= (GetPrimitiveData(MaterialParameters.PrimitiveId).LocalObjectBoundsMax.x * 2);
+	// Transform this vector into the box's local space
+	WorldDepthVec = mul(WorldDepthVec, GetPrimitiveData(MaterialParameters.PrimitiveId).WorldToLocal);
 
-    // Account for difference between camera center vector and camera-to-pixel depth
-    LocalSceneDepth /= abs(dot(CameraFWDVecWorld, MaterialParameters.CameraVector));
+	// Get actual depth in local space, account for mesh bounds (by default, we use a centered 1x1x1 cube mesh, so this is unnecessary)
+	LocalSceneDepth = length(WorldDepthVec);
 
-    // Get cam pos and vector into local space too.
-    float3 LocalCamPos = mul(float4(ResolvedView.WorldCameraOrigin, 1.00000000), (GetPrimitiveData(MaterialParameters.PrimitiveId).WorldToLocal)).xyz;
-    float3 LocalCamVec = -normalize(mul(MaterialParameters.CameraVector, GetPrimitiveData(MaterialParameters.PrimitiveId).WorldToLocal));
+	// We use unit cubes now, uncomment this if you want to use non-unit meshes for some reason.
+	LocalSceneDepth /= (GetPrimitiveData(MaterialParameters.PrimitiveId).LocalObjectBoundsMax.x * 2);
 
-    // Transform camera pos from local to UVW coords (from +-0.5 to [0 - 1]).
-    LocalCamPos += 0.5;
-    float3 InverseRayDirVec = 1 / LocalCamVec;
+	// Account for difference between camera center vector and camera-to-pixel depth
+	LocalSceneDepth /= abs(dot(CameraFWDVecWorld, MaterialParameters.CameraVector));
 
-    // Because now we're in texture space where our box is at [0, 1] on each axis, it's easy to get intersections.
-    // LowIntersections will have the distance of the ray in X,Y,Z when it hits 0 on the respective axis.
-    // HighIntersections will have the distance of the ray in X,Y,Z when it reaches 1 on the respective axis.
-    float3 LowIntersections = (0 - LocalCamPos) * InverseRayDirVec;
-    float3 HighIntersections = (1 - LocalCamPos) * InverseRayDirVec;
+	// Get cam pos and vector into local space too.
+	float3 LocalCamPos = mul(float4(ResolvedView.WorldCameraOrigin, 1.00000000),
+	                         GetPrimitiveData(MaterialParameters.PrimitiveId).WorldToLocal).xyz;
+	float3 LocalCamVec = -normalize(mul(MaterialParameters.CameraVector,
+	                                    GetPrimitiveData(MaterialParameters.PrimitiveId).WorldToLocal));
 
-    // Get closest and furthest intersections
-    float3 ClosestIntersections = min(LowIntersections, HighIntersections);
-    float3 FurthestIntersections = max(LowIntersections, HighIntersections);
+	// Transform camera pos from local to UVW coords (from +-0.5 to [0 - 1]).
+	LocalCamPos += 0.5;
+	float3 InverseRayDirVec = 1 / LocalCamVec;
 
-    // The actual intersections of the box are the 2 values in the middle of the pack.
-    // T0 (entry) = the farthest of the closest intersections
-    float t0 = max(ClosestIntersections.x, max(ClosestIntersections.y, ClosestIntersections.z));
-    // T1 (exit) = the closest of the furthest intersections
-    float t1 = min(FurthestIntersections.x, min(FurthestIntersections.y, FurthestIntersections.z));
+	// Because now we're in texture space where our box is at [0, 1] on each axis, it's easy to get intersections.
+	// LowIntersections will have the distance of the ray in X,Y,Z when it hits 0 on the respective axis.
+	// HighIntersections will have the distance of the ray in X,Y,Z when it reaches 1 on the respective axis.
+	float3 LowIntersections = (0 - LocalCamPos) * InverseRayDirVec;
+	float3 HighIntersections = (1 - LocalCamPos) * InverseRayDirVec;
 
-    // Make sure the entry point is not behind the camera
-    t0 = max(0, t0);
+	// Get closest and furthest intersections
+	float3 ClosestIntersections = min(LowIntersections, HighIntersections);
+	float3 FurthestIntersections = max(LowIntersections, HighIntersections);
 
-    // Make sure the exit point is not behind other scene geometry.
-    t1 = min(t1, LocalSceneDepth);
+	// The actual intersections of the box are the 2 values in the middle of the pack.
+	// T0 (entry) = the farthest of the closest intersections
+	float t0 = max(ClosestIntersections.x, max(ClosestIntersections.y, ClosestIntersections.z));
+	// T1 (exit) = the closest of the furthest intersections
+	float t1 = min(FurthestIntersections.x, min(FurthestIntersections.y, FurthestIntersections.z));
 
-    // Calculate box thickness at this pixel (in local space).
-    float BoxThickness = max(0, t1 - t0);
+	// Make sure the entry point is not behind the camera
+	t0 = max(0, t0);
 
-    // Get entry position in UVW space.
-    float3 EntryPos = LocalCamPos + (t0 * LocalCamVec);
-    
-    return float4(EntryPos, BoxThickness);
-}
+	// Make sure the exit point is not behind other scene geometry.
+	t1 = min(t1, LocalSceneDepth);
 
+	// Calculate box thickness at this pixel (in local space).
+	float BoxThickness = max(0, t1 - t0);
 
-// Performs raymarch cube setup for this pixel. Returns the position of entry to the cube in rgb channels 
-// and thickness of the cube in alpha. All values returned are in UVW space.
-// Can scale the cube to act as if it was smaller/larger than your actual mesh.
-float4 PerformExperimentalRaymarchCubeSetup(FMaterialPixelParameters MaterialParameters, out float4 EntryPos, out float3 ExitPos, in float Scaling)
-{
-    // Get scene depth at this pixel.
-    float LocalSceneDepth = CalcSceneDepth(ScreenAlignedPosition(GetScreenPosition(MaterialParameters)));
+	// Get entry position in UVW space.
+	float3 EntryPos = LocalCamPos + t0 * LocalCamVec;
 
-    // Get camera forward vector in world space.
-    float3 CameraFWDVecWorld = mul(float3(0.00000000, 0.00000000, 1.00000000), ResolvedView.ViewToTranslatedWorld);
-
-    // Get world space vector going from camera center to current scene depth.
-    float3 WorldDepthVec = normalize(MaterialParameters.CameraVector) * LocalSceneDepth;
-
-    // Transform this vector into the box's local space
-    WorldDepthVec = mul(WorldDepthVec, GetPrimitiveData(MaterialParameters.PrimitiveId).WorldToLocal);
-
-    // Get actual depth in local space, account for mesh bounds (by default, we use a centered 1x1x1 cube mesh, so this is unnecessary)
-    LocalSceneDepth = length(WorldDepthVec);
-    // LocalSceneDepth /= (GetPrimitiveData(MaterialParameters.PrimitiveId).LocalObjectBoundsMax.x * 2);
-
-    // Account for difference between camera center vector and camera-to-pixel depth
-    LocalSceneDepth /= abs(dot(CameraFWDVecWorld, MaterialParameters.CameraVector));
-
-    // Get cam pos and vector into local space too.
-    float3 LocalCamPos = mul(float4(ResolvedView.WorldCameraOrigin, 1.00000000), (GetPrimitiveData(MaterialParameters.PrimitiveId).WorldToLocal) * Scaling).xyz;
-    float3 LocalCamVec = -normalize(mul(MaterialParameters.CameraVector, GetPrimitiveData(MaterialParameters.PrimitiveId).WorldToLocal));
-
-    // Transform camera pos from local to UVW coords (from +-0.5 to [0 - 1]). Again, The LocalObjectBoundsMax only have an effect if using a non-default cube mesh.
-    LocalCamPos += 0.5; //  ((LocalCamPos / (GetPrimitiveData(MaterialParameters.PrimitiveId).LocalObjectBoundsMax * 2))) + 0.5;
-    float3 InverseRayDirVec = 1 / LocalCamVec;
-
-    // Because now we're in texture space where our box is at [0, 1] in each axis, it's easy to get intersections.
-    // LowIntersections will have the distance of the ray in X,Y,Z before it hits the respective axis.
-    // HighIntersections will have the distance of the ray in X,Y,Z before it reaches 1 in the respective axis.
-    float3 LowIntersections = (0 - LocalCamPos) * InverseRayDirVec;
-    float3 HighIntersections = (1 - LocalCamPos) * InverseRayDirVec;
-
-    // Get closest and furthest intersections
-    float3 ClosestIntersections = min(LowIntersections, HighIntersections);
-    float3 FurthestIntersections = max(LowIntersections, HighIntersections);
-
-    // The actual intersections of the box are the 2 values in the middle of the pack.
-    // T0 (entry) = the farthest of the closest intersections
-    float t0 = max(ClosestIntersections.x, max(ClosestIntersections.y, ClosestIntersections.z));
-    // T1 (exit) = the closest of the furthest intersections
-    float t1 = min(FurthestIntersections.x, min(FurthestIntersections.y, FurthestIntersections.z));
-
-    // Make sure the entry point is not behind the camera
-    t0 = max(0, t0);
-
-    // Make sure the exit point is not behind other scene geometry.
-    t1 = min(t1, LocalSceneDepth * Scaling);
-
-    // Calculate box thickness at this pixel (in local space).
-    float BoxThickness = max(0, t1 - t0);
-
-    // Get entry position in UVW space.
-    EntryPos.xyz = LocalCamPos + (t0 * LocalCamVec);
-    EntryPos.a = BoxThickness;
-    ExitPos = LocalCamPos + (t1 * LocalCamVec);
-
-    return EntryPos;
+	return float4(EntryPos, BoxThickness);
 }
 
 // Version 3
 float RandomNum(in float2 p)
 {
-    float2 K1 = float2(
-        23.14069263277926, // e^pi (Gelfond's constant)
-         2.665144142690225 // 2^sqrt(2) (Gelfond–Schneider constant)
-    );
-    return frac( cos( dot(p,K1) ) * 12345.6789 );
+	float2 K1 = float2(
+		23.14069263277926, // e^pi (Gelfond's constant)
+		2.665144142690225 // 2^sqrt(2) (Gelfond–Schneider constant)
+	);
+	return frac(cos(dot(p, K1)) * 12345.6789);
 }
 
 // Jitter position by random temporal jitter (in the direction of the camera).
 void JitterEntryPos(inout float3 EntryPos, float3 LocalCamVec, FMaterialPixelParameters MaterialParameters)
 {
-    int3 RandomPos = int3(MaterialParameters.SvPosition.xy, View.StateFrameIndexMod8);
-    float rand = static_cast<float>(Rand3DPCG16(RandomPos).x) / 0xffff;
-    EntryPos -= LocalCamVec * rand;
+	int3 RandomPos = int3(MaterialParameters.SvPosition.xy, View.StateFrameIndexMod8);
+	float rand = (float)(Rand3DPCG16(RandomPos).x) / 0xffff;
+	EntryPos -= LocalCamVec * rand;
 }
-
 
 // Adds current sampled color and opacity to the accumulated LightEnergy
 void AccumulateLightEnergy(inout float4 LightEnergy, in float4 CurrentSample)
 {
-    // Affect the color depending on how much opaque the current sample is and how strong the existing accumulated Light Energy is.
-    LightEnergy.rgb = LightEnergy.rgb + (CurrentSample.rgb * CurrentSample.a * (1.0 - LightEnergy.a));
-    // Affect the accumulated light energy strength.
-    LightEnergy.a = LightEnergy.a + (CurrentSample.a * (1.0 - LightEnergy.a));
+	// Affect the color depending on how much opaque the current sample is and how strong the existing accumulated Light Energy is.
+	LightEnergy.rgb = LightEnergy.rgb + CurrentSample.rgb * CurrentSample.a * (1.0 - LightEnergy.a);
+	// Affect the accumulated light energy strength.
+	LightEnergy.a = LightEnergy.a + CurrentSample.a * (1.0 - LightEnergy.a);
 }
 
 // Performs one raymarch step and accumulates the result to the existing Accumulated Light Energy.
 // Notice "Material.Clamp_WorldGroupSettings" used as a sampler. These are UE shared samplers.
-void AccumulateOneRaymarchStep(inout float4 AccumulatedLightEnergy, float3 CurPos, Texture3D DataVolume,
-                               Texture2D TF, float2 TFIntensityDomain, float StepSize)
+void AccumulateRaymarchStep(inout float4 AccumulatedLightEnergy, float3 CurPos, Texture3D DataVolume,
+                            SamplerState DataVolumeSampler, float StepSize)
 {
-    // Sample intensity from the volume and get corresponding color-opacity from transfer function.
-    float4 ColorSample = SampleDataVolume(CurPos, StepSize, DataVolume, Material.Wrap_WorldGroupSettings, TF, Material.Wrap_WorldGroupSettings, TFIntensityDomain);
-    
-    // Accumulate current colored sample to the final values.
-    AccumulateLightEnergy(AccumulatedLightEnergy, ColorSample);
+	float4 ColorSample = SampleDataVolume(CurPos, StepSize, DataVolume, DataVolumeSampler);
+
+	// Accumulate current colored sample to the final values.
+	AccumulateLightEnergy(AccumulatedLightEnergy, ColorSample);
 }

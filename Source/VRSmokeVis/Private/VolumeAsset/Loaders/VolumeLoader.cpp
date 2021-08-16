@@ -63,7 +63,7 @@ void IVolumeLoader::GetValidPackageNameFromFileName(const FString& FullPath, FSt
 uint8* IVolumeLoader::LoadAndConvertData(const FString& FilePath, FVolumeInfo& VolumeInfo)
 {
 	// Load raw data
-	uint8* LoadedArray = FVolumeTextureToolkit::LoadRawFileIntoArray(FilePath + "/" + VolumeInfo.DataFileName, VolumeInfo.GetByteSize());
+	uint8* LoadedArray = FVolumeTextureToolkit::LoadRawFileIntoArray( FPaths::Combine(FilePath, VolumeInfo.DataFileName), VolumeInfo.GetByteSize());
 	LoadedArray = ConvertData(LoadedArray, VolumeInfo);
 	return LoadedArray;
 }

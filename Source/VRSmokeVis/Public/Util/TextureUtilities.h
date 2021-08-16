@@ -76,12 +76,13 @@ public:
 	 * and return if unsuccessful */
 	static void LoadRawIntoVolumeTextureAsset(FString RawFileName, UVolumeTexture* inTexture, FIntVector4 Dimensions,
 	                                          uint32 BytesPerVoxel, EPixelFormat OutPixelFormat);
-	
+
 	/** Creates a transient 2D Texture (no asset name, cannot be saved)*/
 	static bool Create2DTextureTransient(UTexture2D*& OutTexture, EPixelFormat PixelFormat, FIntPoint Dimensions,
-		uint8* BulkData = nullptr, TextureAddress TilingX = TA_Clamp, TextureAddress TilingY = TA_Clamp);
+	                                     uint8* BulkData = nullptr, TextureAddress TilingX = TA_Clamp,
+	                                     TextureAddress TilingY = TA_Clamp);
 
-	
+
 	/** Converts an array to an array normalized on the range of the OutType, based on the minimum and maximum values
 		found in the InArray, when cast to the type InType.*/
 	template <typename InType, typename OutType>
@@ -143,12 +144,11 @@ uint8* FVolumeTextureToolkit::ConvertArrayToNormalizedArray(uint8* InArray, unsi
 	OutType OutMin = std::numeric_limits<OutType>::min();
 	OutType OutMax = std::numeric_limits<OutType>::max();
 
-	// #TODO this could use a ParallelFor
-	for (unsigned long i = 0; i < ElementCount; i++)
+	float ValueRange = static_cast<float>(InMax) - InMin;
+	ParallelFor(ElementCount, [&](int Idx)
 	{
-		float Normalized = (static_cast<float>(InCastArray[i]) - InMin) / (static_cast<float>(InMax) - InMin);
-		OutArray[i] = OutMin + (Normalized * (OutMax - OutMin));
-	}
+		OutArray[Idx] = OutMin + (static_cast<float>(InCastArray[Idx]) - InMin) / ValueRange * (OutMax - OutMin);
+	});
 
 	// Output the original min and max.
 	OutOriginalMin = static_cast<float>(InMin);
@@ -171,7 +171,7 @@ float* FVolumeTextureToolkit::ConvertArrayToFloatTemplated(uint8* Data, int32 Vo
 		int32 index = 0;
 		for (int32 i = 0; i < NumVoxelsPerThread; i++)
 		{
-			index = (NumVoxelsPerThread * ThreadId) + i;
+			index = NumVoxelsPerThread * ThreadId + i;
 			NewData[index] = static_cast<float>(TypedData[index]);
 		}
 	});

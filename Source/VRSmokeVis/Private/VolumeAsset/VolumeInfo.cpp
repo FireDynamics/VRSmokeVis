@@ -22,7 +22,7 @@ float FVolumeInfo::NormalizeValue(float InValue)
 		return InValue;
 	}
 	// Normalize on the range of [Min, Max]
-	return ((InValue - MinValue) / (MaxValue - MinValue));
+	return (InValue - MinValue) / (MaxValue - MinValue);
 }
 
 float FVolumeInfo::DenormalizeValue(float InValue)
@@ -31,7 +31,7 @@ float FVolumeInfo::DenormalizeValue(float InValue)
 	{
 		return InValue;
 	}
-	return ((InValue * (MaxValue - MinValue)) + MinValue);
+	return InValue * (MaxValue - MinValue) + MinValue;
 }
 
 float FVolumeInfo::NormalizeRange(float InRange)
@@ -41,7 +41,7 @@ float FVolumeInfo::NormalizeRange(float InRange)
 		return InRange;
 	}
 	// Normalize the range from [Max - Min] to 1
-	return ((InRange) / (MaxValue - MinValue));
+	return InRange / (MaxValue - MinValue);
 }
 
 float FVolumeInfo::DenormalizeRange(float InRange)
@@ -51,7 +51,7 @@ float FVolumeInfo::DenormalizeRange(float InRange)
 		return InRange;
 	}
 	// Normalize the range from [Max - Min] to 1
-	return (InRange * (MaxValue - MinValue));
+	return InRange * (MaxValue - MinValue);
 }
 
 int32 FVolumeInfo::VoxelFormatByteSize(EVolumeVoxelFormat InFormat)

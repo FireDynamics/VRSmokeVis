@@ -52,6 +52,12 @@ protected:
 
 	/** Called before initializing new Raymarch resources to free all old resources.*/
 	void FreeRaymarchResources();
+	
+	UFUNCTION()
+	void UpdateVolume();
+	
+	/** Handle to manage the timer **/
+	FTimerHandle UpdateTimerHandle;
 
 public:
 #if WITH_EDITOR
@@ -79,10 +85,11 @@ public:
 
 	/** Called every frame */
 	virtual void Tick(float DeltaTime) override;
-
-	UFUNCTION()
-	bool UpdateVolume();
 	
+	/** The current time step. Update volume after some time has passed. **/
+	UPROPERTY(BlueprintReadOnly, EditAnywhere)
+	int CurrentTimeStep = 0;
+
 	/** The loaded Volume asset belonging to this volume*/
 	UPROPERTY(BlueprintReadOnly, EditAnywhere)
 	UVolumeAsset* VolumeAsset = nullptr;
@@ -116,10 +123,10 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SetTFCurve(UCurveLinearColor* InTFCurve);
 
-	/** Saves the current windowing parameters as default in the Volume Asset.*/
+	/** Saves the current parameters as default in the Volume Asset.*/
 	void SaveCurrentParamsToVolumeAsset();
 
-	/** Sets material Windowing Parameters. Called after changing Window Center or Width.**/
+	/** Sets material Parameters. Called after updating the volume. **/
 	void SetMaterialVolumeParameters();
 
 	/** API function to get the Min and Max values of the current VolumeAsset file.**/

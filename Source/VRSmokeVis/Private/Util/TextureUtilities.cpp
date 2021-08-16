@@ -133,9 +133,6 @@ bool FVolumeTextureToolkit::UpdateVolumeTextureAsset(UVolumeTexture* VolumeTextu
 bool FVolumeTextureToolkit::CreateVolumeTextureEditorData(
 	UTexture* Texture, const EPixelFormat PixelFormat, const FVector4 Dimensions, const uint8* BulkData)
 {
-	// Todo - figure out how to tell the Texture Builder to REALLY LEAVE THE
-	// BLOODY MIPS ALONE when setting TMGS_LeaveExistingMips and being persistent.
-	// Until then, we simply don't support mips on generated textures.
 	Texture->MipGenSettings = TMGS_NoMipmaps;
 
 	// CompressionNone assures the texture is actually saved in the format we want and not DXT1.

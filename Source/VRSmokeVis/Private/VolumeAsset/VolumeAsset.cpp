@@ -28,7 +28,7 @@ void UVolumeAsset::PostEditChangeChainProperty(struct FPropertyChangedChainEvent
 	Super::PostEditChangeChainProperty(PropertyChangedEvent);
 
 	const FName MemberPropertyName =
-		(PropertyChangedEvent.MemberProperty != nullptr) ? PropertyChangedEvent.MemberProperty->GetFName() : NAME_None;
+		PropertyChangedEvent.MemberProperty != nullptr ? PropertyChangedEvent.MemberProperty->GetFName() : NAME_None;
 
 	// If the curve property changed, broadcast the delegate.
 	if (MemberPropertyName != GET_MEMBER_NAME_CHECKED(UVolumeAsset, TransferFuncCurve))
@@ -41,7 +41,7 @@ void UVolumeAsset::PostEditChangeProperty(struct FPropertyChangedEvent& Property
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 	const FName MemberPropertyName =
-		(PropertyChangedEvent.MemberProperty != nullptr) ? PropertyChangedEvent.MemberProperty->GetFName() : NAME_None;
+		PropertyChangedEvent.MemberProperty != nullptr ? PropertyChangedEvent.MemberProperty->GetFName() : NAME_None;
 
 	// If the curve property changed, broadcast the delegate.
 	if (MemberPropertyName == GET_MEMBER_NAME_CHECKED(UVolumeAsset, TransferFuncCurve))

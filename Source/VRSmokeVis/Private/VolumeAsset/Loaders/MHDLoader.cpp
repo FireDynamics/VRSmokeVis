@@ -16,32 +16,32 @@ UMHDLoader* UMHDLoader::Get()
 
 EVolumeVoxelFormat UMHDLoader::MHDFormatToVoxelFormat(const FString& MHDFormat)
 {
-	if (MHDFormat.Equals(TEXT("MET_UCHAR")))
+	if (MHDFormat.Contains(TEXT("MET_UCHAR")))
 	{
 		return EVolumeVoxelFormat::UnsignedChar;
 	}
-	else if (MHDFormat.Equals(TEXT("MET_CHAR")))
+	else if (MHDFormat.Contains(TEXT("MET_CHAR")))
 	{
 		return EVolumeVoxelFormat::SignedChar;
 	}
 
-	else if (MHDFormat.Equals(TEXT("MET_USHORT")))
+	else if (MHDFormat.Contains(TEXT("MET_USHORT")))
 	{
 		return EVolumeVoxelFormat::UnsignedShort;
 	}
-	else if (MHDFormat.Equals(TEXT("MET_SHORT")))
+	else if (MHDFormat.Contains(TEXT("MET_SHORT")))
 	{
 		return EVolumeVoxelFormat::SignedShort;
 	}
-	else if (MHDFormat.Equals(TEXT("MET_UINT")))
+	else if (MHDFormat.Contains(TEXT("MET_UINT")))
 	{
 		return EVolumeVoxelFormat::UnsignedInt;
 	}
-	else if (MHDFormat.Equals(TEXT("MET_INT")))
+	else if (MHDFormat.Contains(TEXT("MET_INT")))
 	{
 		return EVolumeVoxelFormat::SignedInt;
 	}
-	else if (MHDFormat.Equals(TEXT("MET_FLOAT")))
+	else if (MHDFormat.Contains(TEXT("MET_FLOAT")))
 	{
 		return EVolumeVoxelFormat::Float;
 	}
@@ -60,7 +60,7 @@ FVolumeInfo UMHDLoader::ParseVolumeInfoFromHeader(const FString& FileName)
 	for (int i = 0; i < LineCount; ++i)
 	{
 		Lines[i].Split(TEXT(" = "), &Left, &Right);
-		if (Left.Equals(TEXT("DimSize")))
+		if (Left.Contains(TEXT("DimSize")))
 		{
 			int Val;
 			Right.Split(TEXT(" "), &Left, &Right);
@@ -75,7 +75,7 @@ FVolumeInfo UMHDLoader::ParseVolumeInfoFromHeader(const FString& FileName)
 			FDefaultValueHelper::ParseInt(Right, Val);
 			OutVolumeInfo.Dimensions.Z = Val;
 		}
-		else if (Left.Equals(TEXT("ElementSpacing")))
+		else if (Left.Contains(TEXT("ElementSpacing")))
 		{
 			Right.Split(TEXT(" "), &Left, &Right);
 			FDefaultValueHelper::ParseFloat(Left, OutVolumeInfo.Spacing.W);
@@ -85,11 +85,11 @@ FVolumeInfo UMHDLoader::ParseVolumeInfoFromHeader(const FString& FileName)
 			FDefaultValueHelper::ParseFloat(Left, OutVolumeInfo.Spacing.Y);
 			FDefaultValueHelper::ParseFloat(Right, OutVolumeInfo.Spacing.Z);
 		}
-		else if (Left.Equals(TEXT("ElementType")))
+		else if (Left.Contains(TEXT("ElementType")))
 		{
 			OutVolumeInfo.OriginalFormat = MHDFormatToVoxelFormat(Right);
 		}
-		else if (Left.Equals(TEXT("ElementDataFile")))
+		else if (Left.Contains(TEXT("ElementDataFile")))
 		{
 			OutVolumeInfo.DataFileName = Right;
 		}
@@ -130,11 +130,13 @@ UVolumeAsset* UMHDLoader::CreateVolumeFromFile(const FString& FileName, UPackage
 		// Create the persistent volume texture.
 		FString VolumeTextureName = "VA_" + VolumeName + "_Data_t" + FString::FromInt(t);
 		const long SingleTextureSize = static_cast<long>(VolumeInfo.Dimensions.X) * VolumeInfo.Dimensions.Y * VolumeInfo
-			.Dimensions.Z;
+			.Dimensions.Z * VolumeInfo.BytesPerVoxel;
 		// Set pointer to current Volume position at timestep t
+		UVolumeTexture* VolumeTexture;
 		FVolumeTextureToolkit::CreateVolumeTextureAsset(
-			OutAsset->DataTextures[t], VolumeTextureName, OutPackage, PixelFormat, VolumeInfo.Dimensions,
+			VolumeTexture, VolumeTextureName, OutPackage, PixelFormat, VolumeInfo.Dimensions,
 			LoadedArray + SingleTextureSize * t, true);
+		OutAsset->DataTextures.Add(VolumeTexture);
 	}
 
 	OutAsset->ImageInfo = VolumeInfo;

@@ -250,3 +250,4 @@ $RECYCLE.BIN/
 /fds_raw/*
 /fds_data/*
 !/fds_data/*.fds
+/Content/SmokeData/*
