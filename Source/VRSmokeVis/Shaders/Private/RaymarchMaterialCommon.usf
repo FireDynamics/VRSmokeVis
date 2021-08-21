@@ -1,13 +1,10 @@
-// Copyright 2021 Tomas Bartipan and Technical University of Munich.
-// Licensed under MIT license - See License.txt for details.
-// Special credits go to : Temaran (compute shader tutorial), TheHugeManatee (original concept, supervision) and Ryan Brucks
-// (original raymarching code).
+
 
 // This file contains functions used for raymarching in in-game materials, not for precomputing. 
 
 // Beware, modifications to this file will not be detected by the material shaders and they will not
 // be recompiled. Shaders using this file have to be recompiled manually! (unless I find a way
-// to tell the shadercompiler to always recompile the raymarch shaders on startup)
+// to tell the shader compiler to always recompile the raymarch shaders on startup)
 
 // Notice we're using FMaterialPixelParameters and Primitive, which are not defined by us anywhere. 
 // Since this file is only used in materials, we know that these structs are defined and provided to us 
@@ -15,8 +12,6 @@
 // structs that can be stolen like this.
 
 #pragma once
-
-#include "RaymarcherCommon.usf"
 
 // Performs raymarch cube setup for this pixel. Returns the position of entry to the cube in rgb channels 
 // and thickness of the cube in alpha. All values returned are in UVW space.
@@ -84,16 +79,6 @@ float4 PerformRaymarchCubeSetup(FMaterialPixelParameters MaterialParameters)
 	return float4(EntryPos, BoxThickness);
 }
 
-// Version 3
-float RandomNum(in float2 p)
-{
-	float2 K1 = float2(
-		23.14069263277926, // e^pi (Gelfond's constant)
-		2.665144142690225 // 2^sqrt(2) (Gelfond–Schneider constant)
-	);
-	return frac(cos(dot(p, K1)) * 12345.6789);
-}
-
 // Jitter position by random temporal jitter (in the direction of the camera).
 void JitterEntryPos(inout float3 EntryPos, float3 LocalCamVec, FMaterialPixelParameters MaterialParameters)
 {
@@ -102,22 +87,21 @@ void JitterEntryPos(inout float3 EntryPos, float3 LocalCamVec, FMaterialPixelPar
 	EntryPos -= LocalCamVec * rand;
 }
 
-// Adds current sampled color and opacity to the accumulated LightEnergy
-void AccumulateLightEnergy(inout float4 LightEnergy, in float4 CurrentSample)
-{
-	// Affect the color depending on how much opaque the current sample is and how strong the existing accumulated Light Energy is.
-	LightEnergy.rgb = LightEnergy.rgb + CurrentSample.rgb * CurrentSample.a * (1.0 - LightEnergy.a);
-	// Affect the accumulated light energy strength.
-	LightEnergy.a = LightEnergy.a + CurrentSample.a * (1.0 - LightEnergy.a);
-}
-
 // Performs one raymarch step and accumulates the result to the existing Accumulated Light Energy.
 // Notice "Material.Clamp_WorldGroupSettings" used as a sampler. These are UE shared samplers.
-void AccumulateRaymarchStep(inout float4 AccumulatedLightEnergy, float3 CurPos, Texture3D DataVolume,
-                            SamplerState DataVolumeSampler, float StepSize)
+void AccumulateRaymarchStep(inout float AccumulatedLightEnergy, float3 CurPos, float TimePassedPercentage, Texture3D DataVolumeT0,
+	SamplerState DataVolumeSamplerT0, Texture3D DataVolumeT1, SamplerState DataVolumeSamplerT1, float StepSize)
 {
-	float4 ColorSample = SampleDataVolume(CurPos, StepSize, DataVolume, DataVolumeSampler);
+	float VolumeSampleT0 = DataVolumeT0.SampleLevel(DataVolumeSamplerT0, saturate(CurPos), 0).r;
+	float VolumeSampleT1 = DataVolumeT1.SampleLevel(DataVolumeSamplerT1, saturate(CurPos), 0).r;
+	float VolumeSample = TimePassedPercentage * VolumeSampleT1 + (1 - TimePassedPercentage) * VolumeSampleT0;
+	
+	// Todo: Extinction coefficient
+	float Opacity = 1.0 - pow(1.0 - VolumeSample, StepSize);
 
 	// Accumulate current colored sample to the final values.
-	AccumulateLightEnergy(AccumulatedLightEnergy, ColorSample);
+	// Affect the color depending on how much opaque the current sample is and how strong the existing accumulated Light Energy is.
+	// LightEnergy.rgb = LightEnergy.rgb + CurrentSample.rgb * CurrentSample.a * (1.0 - LightEnergy.a);
+	// Affect the accumulated light energy strength.
+	AccumulatedLightEnergy = AccumulatedLightEnergy + Opacity * (1.0 - AccumulatedLightEnergy);
 }

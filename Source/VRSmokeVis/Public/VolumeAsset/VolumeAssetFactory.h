@@ -1,7 +1,4 @@
-// Copyright 2021 Tomas Bartipan and Technical University of Munich.
-// Licensed under MIT license - See License.txt for details.
-// Special credits go to : Temaran (compute shader tutorial), TheHugeManatee (original concept, supervision) and Ryan Brucks
-// (original raymarching code).
+
 
 #pragma once
 
@@ -10,8 +7,11 @@
 
 #include "VolumeAssetFactory.generated.h"
 
+
+DECLARE_LOG_CATEGORY_EXTERN(LogAssetFactory, Log, All);
+
 /**
- * Implements a factory for creating volume texture assets by drag'n'dropping .mhd files into the content browser.
+ * Implements a factory for creating volume texture assets by drag'n'dropping .yaml files into the content browser.
  */
 UCLASS(hidecategories = Object)
 class UVolumeAssetFactory : public UFactory

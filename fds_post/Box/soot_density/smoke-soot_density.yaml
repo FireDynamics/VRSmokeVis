@@ -1,0 +1,9 @@
+DataValMax: 0.0
+DataValMin: 0.0
+MeshNum: 1
+Meshes:
+- DataFile: smoke-soot_density_mesh-MESH_0000001.dat
+  DimSize: 101 73 57 45
+  Mesh: MESH_0000001
+  MeshPos: 0.0 -1.4 0.0
+  Spacing: 20.006 0.05 0.05 0.04841

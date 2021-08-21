@@ -1,7 +1,4 @@
-// Copyright 2021 Tomas Bartipan and Technical University of Munich.
-// Licensed under MIT license - See License.txt for details.
-// Special credits go to : Temaran (compute shader tutorial), TheHugeManatee (original concept, supervision) and Ryan Brucks
-// (original raymarching code).
+
 
 #pragma once
 
@@ -36,30 +33,30 @@ public:
 	UPROPERTY(EditAnywhere)
 	USphereComponent* CollisionComponent;
 
-	/// The motion controller component used to drive this MotionController.
+	// The motion controller component used to drive this MotionController.
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "MotionController | Component")
 	UMotionControllerComponent* MotionControllerComponent = nullptr;
 
-	/// Skeletal mesh of the controller.
+	// Skeletal mesh of the controller.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "MotionController | Component")
 	UStaticMeshComponent* ControllerStaticMeshComponent = nullptr;
 
-	/// Widget interactor which allows interacting with VR UI.
+	// Widget interactor which allows interacting with VR UI.
 	UPROPERTY(EditAnywhere)
 	UWidgetInteractionComponent* WidgetInteractor;
 
-	/// Skeletal mesh representing the WidgetInteractor ray.
+	// Skeletal mesh representing the WidgetInteractor ray.
 	UPROPERTY(EditAnywhere)
 	UStaticMeshComponent* WidgetInteractorVisualizer;
 
-	/// If true, this controller should go into the right hand.
+	// If true, this controller should go into the right hand.
 	UPROPERTY(EditAnywhere)
 	bool bIsInRightHand = true;
 
-	/// Sets up this controller's actions to the provided InputComponent.
+	// Sets up this controller's actions to the provided InputComponent.
 	virtual void SetupInput(UInputComponent* InInputComponent);
 
-	/// True if the controller grip is pressed.
+	// True if the controller grip is pressed.
 	bool bIsGripPressed = false;
 
 	virtual void OnGripPressed();
@@ -87,10 +84,10 @@ public:
 	UFUNCTION()
 	void OnWidgetInteractorHoverChanged(UWidgetComponent* Old, UWidgetComponent* New);
 
-	/// The actor currently hovered by the sphere collision, if any.
-	/// Could be remade into an array to allow hovering multiple actors at once.
+	// The actor currently hovered by the sphere collision, if any.
+	// Could be remade into an array to allow hovering multiple actors at once.
 	IGrabbable* HoveredActor = nullptr;
 
-	/// The currently grabbed actor, if any.
+	// The currently grabbed actor, if any.
 	IGrabbable* GrabbedActor = nullptr;
 };

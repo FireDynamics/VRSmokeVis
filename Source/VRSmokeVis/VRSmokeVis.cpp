@@ -6,7 +6,7 @@
 
 void FVRSmokeVisModule::StartupModule()
 {
-	FString ShaderDir = FPaths::Combine(FPaths::ProjectDir(), TEXT("Source"), TEXT("VRSmokeVis"), TEXT("Shaders"));
+	const FString ShaderDir = FPaths::Combine(FPaths::ProjectDir(), TEXT("Source"), TEXT("VRSmokeVis"), TEXT("Shaders"));
 	// This creates an alias "Raymarcher" for the folder of our shaders, which can be used when calling
 	// IMPLEMENT_GLOBAL_SHADER to find our shaders.
 	AddShaderSourceDirectoryMapping(TEXT("/Raymarcher"), ShaderDir);

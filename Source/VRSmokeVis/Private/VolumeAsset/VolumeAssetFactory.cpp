@@ -1,20 +1,17 @@
-// Copyright 2021 Tomas Bartipan and Technical University of Munich.
-// Licensed under MIT license - See License.txt for details.
-// Special credits go to : Temaran (compute shader tutorial), TheHugeManatee (original concept, supervision) and Ryan Brucks
-// (original raymarching code).
+
 
 #include "VolumeAsset//VolumeAssetFactory.h"
 #include "Containers/UnrealString.h"
 #include "Engine/VolumeTexture.h"
-#include "VolumeAsset/Loaders/MHDLoader.h"
+#include "VolumeAsset/VolumeLoader.h"
 #include "VolumeAsset/VolumeAsset.h"
 
-/* UMHDVolumeTextureFactory structors
- *****************************************************************************/
+DEFINE_LOG_CATEGORY(LogAssetFactory)
+
 
 UVolumeAssetFactory::UVolumeAssetFactory(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
-	Formats.Add(FString(TEXT("mhd;")) + NSLOCTEXT("UMHDVolumeTextureFactory", "FormatMhd", ".mhd File").ToString());
+	Formats.Add(FString(TEXT("yaml;")) + NSLOCTEXT("UYamlVolumeTextureFactory", "FormatYaml", ".yaml File").ToString());
 
 	SupportedClass = UVolumeAsset::StaticClass();
 	bCreateNew = false;
@@ -26,33 +23,25 @@ UVolumeAssetFactory::UVolumeAssetFactory(const FObjectInitializer& ObjectInitial
 UObject* UVolumeAssetFactory::FactoryCreateFile(UClass* InClass, UObject* InParent, FName InName, EObjectFlags Flags,
 	const FString& Filename, const TCHAR* Parms, FFeedbackContext* Warn, bool& bOutOperationCanceled)
 {
-	IVolumeLoader* Loader;
-
-	FString FileNamePart, FolderPart, ExtensionPart;
-	FPaths::Split(Filename, FolderPart, FileNamePart, ExtensionPart);
-	if (ExtensionPart.Equals(TEXT("mhd")))
+	TMap<FString, FVolumeInfo> VolumeInfos = UVolumeLoader::ParseVolumeInfoFromHeader(Filename);
+	UVolumeAsset* OutVolume = nullptr;
+	for (auto It = VolumeInfos.CreateIterator(); It; ++It)
 	{
-		Loader = UMHDLoader::Get();
+		TArray<UVolumeTexture *> VolumeTextures;
+		OutVolume = UVolumeLoader::CreateVolumeFromFile(It.Value(), Filename, InParent, It.Key(), VolumeTextures);
+	
+		OutVolume->VolumeTextures.Reserve(It.Value().Dimensions.W);
+		
+		// Add VolumeTextures to AdditionalImportedObjects so it also gets saved in-editor.
+		for (UVolumeTexture *VolumeTexture : VolumeTextures)
+		{
+			AdditionalImportedObjects.Add(VolumeTexture);		
+		}
+		AdditionalImportedObjects.Add(OutVolume);
 	}
-	else
-	{
-		return nullptr;
-	}
-
-	FVolumeInfo Info = Loader->ParseVolumeInfoFromHeader(Filename);
-	if (!Info.bParseWasSuccessful)
-	{
-		return nullptr;
-	}
-
-	UVolumeAsset* OutVolume = Loader->CreateVolumeFromFile(Filename, dynamic_cast<UPackage*>(InParent));
 	bOutOperationCanceled = false;
-
-	// Add to AdditionalImportedObjects so it also gets saved in-editor.
-	for (int i = 0; i < OutVolume->DataTextures.Num(); i++) {
-		AdditionalImportedObjects.Add(OutVolume->DataTextures[i]);
-	}
-
+	
+	// Return last volume
 	return OutVolume;
 }
 #pragma optimize("", on)
