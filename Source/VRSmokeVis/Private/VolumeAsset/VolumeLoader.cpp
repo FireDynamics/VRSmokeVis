@@ -58,39 +58,6 @@ uint8* UVolumeLoader::LoadAndConvertData(const FString& FilePath, const FVolumeI
 	return LoadedArray;
 }
 
-EVolumeVoxelFormat UVolumeLoader::YamlFormatToVoxelFormat(const FString& YamlFormat)
-{
-	if (YamlFormat.Contains(TEXT("uchar")))
-	{
-		return EVolumeVoxelFormat::UnsignedChar;
-	}
-	if (YamlFormat.Contains(TEXT("char")))
-	{
-		return EVolumeVoxelFormat::SignedChar;
-	}
-	if (YamlFormat.Contains(TEXT("ushort")))
-	{
-		return EVolumeVoxelFormat::UnsignedShort;
-	}
-	if (YamlFormat.Contains(TEXT("short")))
-	{
-		return EVolumeVoxelFormat::SignedShort;
-	}
-	if (YamlFormat.Contains(TEXT("uint")))
-	{
-		return EVolumeVoxelFormat::UnsignedInt;
-	}
-	if (YamlFormat.Contains(TEXT("int")))
-	{
-		return EVolumeVoxelFormat::SignedInt;
-	}
-	if (YamlFormat.Contains(TEXT("float")))
-	{
-		return EVolumeVoxelFormat::Float;
-	}
-	return EVolumeVoxelFormat::Float;
-}
-
 TMap<FString, FVolumeInfo> UVolumeLoader::ParseVolumeInfoFromHeader(const FString& FileName)
 {
 	TMap<FString, FVolumeInfo> VolumeInfos;

@@ -61,8 +61,13 @@ FUpdateVolumeEvent& UVRSSGameInstanceSubsystem::RegisterTextureLoad(const FStrin
 
 	VolumeTextureArrays.Add(TextureArray);
 	
-	// Load first 10 textures synchronously so they will be available from the very beginning
-	for (int i = 0; i < 10; ++i)
+	// Load first n (max 10) textures synchronously so they will be available from the very beginning
+	const int TexturesToLoad = FMath::Min(TextureArray->Num(), 10);
+
+	// Make sure any Textures could be found
+	check(TexturesToLoad)
+	
+	for (int i = 0; i < TexturesToLoad; ++i)
 	{
 		StreamableManager->LoadSynchronous((*TextureArray)[i].ToSoftObjectPath());
 	}

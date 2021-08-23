@@ -21,14 +21,13 @@ public:
 	/** Called after the actor is loaded from disk in editor or when spawned in game.
 		This is the last action that is performed before BeginPlay.*/
 	virtual void PostRegisterAllComponents() override;
-
-	/** MeshComponent that contains the raymarching cube. */
-	UPROPERTY(VisibleAnywhere)
-	UStaticMeshComponent* StaticMeshComponent;
-
+	
 	/** Called every frame. **/
 	virtual void Tick(float DeltaTime) override;
-
+	
+	UFUNCTION(CallInEditor, Category="RaymarchVolume")
+	void UseSimulationTransform();
+	
 protected:
 	virtual void BeginPlay() override;
 
@@ -36,7 +35,11 @@ protected:
 	UFUNCTION()
 	void UpdateVolume(const int CurrentTimeStep);
 
-public:
+public:	
+	/** MeshComponent that contains the raymarching cube. */
+	UPROPERTY(VisibleAnywhere)
+	UStaticMeshComponent* StaticMeshComponent;
+
 	/** The loaded Volume asset belonging to this volume. **/
 	UPROPERTY(BlueprintReadOnly, EditAnywhere)
 	UVolumeAsset* VolumeAsset;
@@ -67,8 +70,12 @@ public:
 	UPROPERTY(EditAnywhere)
 	float RaymarchingSteps = 150;
 
+	/** The maximum radius of the Jitter that is applied for each ray that enters the volume. **/
+	UPROPERTY(EditAnywhere)
+	float JitterRadius = 1;
+
 protected:
-	/** The % of time that has passed  **/
+	/** The % of time that has passed until the next frame is reached. **/
 	UPROPERTY(VisibleAnywhere)
 	float TimePassedPercentage = 0;
 };

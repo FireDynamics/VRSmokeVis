@@ -80,11 +80,11 @@ float4 PerformRaymarchCubeSetup(FMaterialPixelParameters MaterialParameters)
 }
 
 // Jitter position by random temporal jitter (in the direction of the camera).
-void JitterEntryPos(inout float3 EntryPos, float3 LocalCamVec, FMaterialPixelParameters MaterialParameters)
+void JitterEntryPos(inout float3 EntryPos, float3 LocalCamVec, float JitterRadius, FMaterialPixelParameters MaterialParameters)
 {
 	int3 RandomPos = int3(MaterialParameters.SvPosition.xy, View.StateFrameIndexMod8);
 	float rand = (float)(Rand3DPCG16(RandomPos).x) / 0xffff;
-	EntryPos -= LocalCamVec * rand;
+	EntryPos -= LocalCamVec * rand * JitterRadius;
 }
 
 // Performs one raymarch step and accumulates the result to the existing Accumulated Light Energy.

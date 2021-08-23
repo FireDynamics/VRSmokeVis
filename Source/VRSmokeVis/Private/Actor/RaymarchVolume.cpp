@@ -42,32 +42,23 @@ ARaymarchVolume::ARaymarchVolume() : AActor()
 	CubeBorderMeshComponent->SetRelativeScale3D(FVector(1.01));
 	CubeBorderMeshComponent->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
 
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeBorder(
-		TEXT("StaticMesh'/Game/Meshes/Unit_Cube.Unit_Cube'"));
-
-	if (CubeBorder.Succeeded())
+	if (static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeBorder(
+		TEXT("StaticMesh'/Game/Meshes/Unit_Cube.Unit_Cube'")); CubeBorder.Succeeded())
 	{
 		// Find and assign cube material.
 		CubeBorderMeshComponent->SetStaticMesh(CubeBorder.Object);
-		static ConstructorHelpers::FObjectFinder<UMaterial> BorderMaterial(
-			TEXT("Material'/Game/Materials/M_CubeBorder.M_CubeBorder'"));
-		if (BorderMaterial.Succeeded())
+		if (static ConstructorHelpers::FObjectFinder<UMaterial> BorderMaterial(
+			TEXT("Material'/Game/Materials/M_CubeBorder.M_CubeBorder'")); BorderMaterial.Succeeded())
 		{
 			CubeBorderMeshComponent->SetMaterial(0, BorderMaterial.Object);
 		}
 	}
 
-	// Find and assign default raymarch materials.
-	static ConstructorHelpers::FObjectFinder<UMaterial> IntensityMaterial(
-		TEXT("Material'/Game/Materials/M_Raymarch.M_Raymarch'"));
-
-	if (IntensityMaterial.Succeeded())
+	if (static ConstructorHelpers::FObjectFinder<UMaterial> IntensityMaterial(
+		TEXT("Material'/Game/Materials/M_Raymarch.M_Raymarch'")); IntensityMaterial.Succeeded())
 	{
 		RaymarchMaterialBase = IntensityMaterial.Object;
 	}
-
-	// Set default values for steps and half-res.
-	RaymarchingSteps = 150;
 }
 
 // Called after registering all components. This is the last action performed before editor window is spawned and before BeginPlay.
@@ -87,6 +78,7 @@ void ARaymarchVolume::PostRegisterAllComponents()
 			UMaterialInstanceDynamic::Create(RaymarchMaterialBase, this, "Intensity Raymarch Mat Dynamic Inst");
 
 		RaymarchMaterial->SetScalarParameterValue("Steps", RaymarchingSteps);
+		RaymarchMaterial->SetScalarParameterValue("JitterRadius", JitterRadius);
 	}
 
 	if (StaticMeshComponent)
@@ -155,9 +147,18 @@ void ARaymarchVolume::Tick(const float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	
-	UE_LOG(LogRaymarchVolume, Warning, TEXT("Tick called"))
 	TimePassedPercentage = FMath::Clamp<float>(TimePassedPercentage + DeltaTime / UPDATERATE, 0, 1);
 	RaymarchMaterial->SetScalarParameterValue("TimePassedPercentage", TimePassedPercentage);
+}
+
+void ARaymarchVolume::UseSimulationTransform()
+{
+	if (VolumeAsset)
+	{
+		// Unreal units = cm, FDS has sizes in m -> multiply by 10.
+		StaticMeshComponent->SetRelativeScale3D(VolumeAsset->VolumeInfo.WorldDimensions * 100);
+		SetActorLocation(VolumeAsset->VolumeInfo.MeshPos);
+	}
 }
 
 #if !UE_BUILD_SHIPPING

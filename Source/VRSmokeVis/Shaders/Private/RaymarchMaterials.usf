@@ -16,7 +16,7 @@ int3 GetVolumeLoadingDimensions(Texture3D Volume)
 // Actual number of steps taken is StepCount * Thickness. Material Parameters are provided by UE.
 float PerformRaymarch(Texture3D DataVolumeT0, SamplerState DataVolumeSamplerT0,
                        Texture3D DataVolumeT1, SamplerState DataVolumeSamplerT1,
-                       float3 CurPos, float Thickness, float StepCount, float TimePassedPercentage,
+                       float3 CurPos, float Thickness, float StepCount, float TimePassedPercentage, float JitterRadius,
                        FMaterialPixelParameters MaterialParameters) 
 {
 	// StepSize in UVW is inverse to StepCount.
@@ -39,10 +39,9 @@ float PerformRaymarch(Texture3D DataVolumeT0, SamplerState DataVolumeSamplerT0,
 	// Initialize accumulated light energy.
 	float LightEnergy = 0;
 	// Jitter Entry position to avoid artifacts.
-	JitterEntryPos(CurPos, LocalCamVec, MaterialParameters);
+	JitterEntryPos(CurPos, LocalCamVec, JitterRadius, MaterialParameters);
 
-	int i = 0;
-	for (; i < MaxSteps; i++)
+	for (int i = 0; i < MaxSteps; i++)
 	{
 		CurPos += LocalCamVec;
 		// Because we jitter only "against" the direction of LocalCamVec, start marching before first sample.
@@ -52,13 +51,12 @@ float PerformRaymarch(Texture3D DataVolumeT0, SamplerState DataVolumeSamplerT0,
 		// Exit early if light energy (opacity) is already very high (so future steps would have almost no impact on color).
 		if (LightEnergy > 0.95f)
 		{
-			LightEnergy = 1.0f;
-			break;
+			return 1.0f;
 		}
 	}
 
 	// Handle FinalStep (only if we went through all the previous steps and the final step size is above zero)
-	if (i == MaxSteps && FinalStep > 0.0f)
+	if (FinalStep > 0.0f)
 	{
 		CurPos += LocalCamVec * FinalStep;
 		AccumulateRaymarchStep(LightEnergy, CurPos, TimePassedPercentage, DataVolumeT0, DataVolumeSamplerT0, DataVolumeT1, DataVolumeSamplerT1, StepSizeWorld * FinalStep);

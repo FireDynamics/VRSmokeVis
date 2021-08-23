@@ -15,8 +15,6 @@ class VRSMOKEVIS_API UVolumeLoader : public UObject
 {
 	GENERATED_BODY()
 	
-	static EVolumeVoxelFormat YamlFormatToVoxelFormat(const FString& YamlFormat);
-	
 public:
 	// Getting info about volumes before loading them.
 	static TMap<FString, FVolumeInfo> ParseVolumeInfoFromHeader(const FString& FileName);
@@ -38,7 +36,4 @@ public:
 
 	// Loads the raw data specified in the VolumeInfo and converts it so that it's useable with our raymarching materials.
 	static uint8* LoadAndConvertData(const FString& FilePath, const FVolumeInfo& VolumeInfo);
-	
-	// Converts raw data read from a Volume file so that it's useable by our materials.
-	static uint8* ConvertData(uint8* LoadedArray, FVolumeInfo& VolumeInfo);
 };

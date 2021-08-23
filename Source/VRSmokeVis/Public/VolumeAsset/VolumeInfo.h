@@ -5,23 +5,6 @@
 #include "CoreMinimal.h"
 #include "VolumeInfo.generated.h"
 
-// Voxel format of a loaded volume.
-UENUM(BlueprintType)
-enum class EVolumeVoxelFormat : uint8
-{
-	// 1 byte
-	UnsignedChar = 0,
-	SignedChar = 1,
-	// 2 bytes
-	UnsignedShort = 2,
-	SignedShort = 3,
-	// 4 bytes
-	UnsignedInt = 4,
-	SignedInt = 5,
-	// 4 bytes float
-	Float = 6
-};
-
 // Contains information about the volume loaded from the Various volumetric data file formats supported.
 USTRUCT(BlueprintType)
 struct VRSMOKEVIS_API FVolumeInfo

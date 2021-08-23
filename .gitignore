@@ -247,7 +247,7 @@ $RECYCLE.BIN/
 
 # PROJECT SPECIFIC
 /Plugins/Developer/RiderLink/
-/fds_raw/*
+/fds_post/*
 /fds_data/*
 !/fds_data/*.fds
 /Content/SmokeData/*
