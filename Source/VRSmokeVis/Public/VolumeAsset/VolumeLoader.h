@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
 #include "VolumeAsset/VolumeAsset.h"
 #include "VolumeAsset/VolumeInfo.h"
 
@@ -34,6 +33,6 @@ public:
 	// OutPackageName = "img0_0_1" and OutFilePath = "/user/somebody/"
 	static void SplitPath(const FString& FullPath, FString& OutFilePath, FString& OutPackageName);
 
-	// Loads the raw data specified in the VolumeInfo and converts it so that it's useable with our raymarching materials.
+	// Loads the raw data specified in the VolumeInfo and converts it so that it's usable with our raymarching materials.
 	static uint8* LoadAndConvertData(const FString& FilePath, const FVolumeInfo& VolumeInfo);
 };

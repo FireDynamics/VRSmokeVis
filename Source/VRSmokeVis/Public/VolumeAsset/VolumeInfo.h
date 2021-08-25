@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
 #include "VolumeInfo.generated.h"
 
 // Contains information about the volume loaded from the Various volumetric data file formats supported.
@@ -28,17 +27,17 @@ struct VRSMOKEVIS_API FVolumeInfo
 
 	// Origin of the mesh in simulation (fourth Dimension empty).
 	UPROPERTY(VisibleAnywhere)
-	FVector4 MeshPos;  // TODO
+	FVector MeshPos;
 
 	// Size of the whole volume in mm (equals VoxelDimensions * Spacing)
 	UPROPERTY(VisibleAnywhere)
 	FVector WorldDimensions;
 
-	// Lowest value voxel in the volume in the original volume (before normalization).
+	// Lowest value possible for this type of data.
 	UPROPERTY(VisibleAnywhere)
 	float MinValue;
 
-	// Highest value voxel in the volume in the original volume (before normalization).
+	// Highest value possible for this type of data.
 	UPROPERTY(VisibleAnywhere)
 	float MaxValue;
 

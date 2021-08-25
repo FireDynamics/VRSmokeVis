@@ -154,10 +154,9 @@ UVolumeAsset* UVolumeLoader::CreateVolumeFromFile(FVolumeInfo& VolumeInfo, const
 	SplitPath(FileName, Directory, VolumeName);
 
 	// Create persistent volume asset.
-	UVolumeAsset* VolumeAsset = NewObject<UVolumeAsset>(Package, UVolumeAsset::StaticClass(), FName("VA_" + VolumeName),
+	UVolumeAsset* VolumeAsset = NewObject<UVolumeAsset>(Package, UVolumeAsset::StaticClass(),
+	                                                    FName("VA_" + VolumeName + "_" + MeshName),
 	                                                    RF_Standalone | RF_Public);
-	// UPackage::Save(Cast<UPackage>(Package), VolumeAsset, RF_Standalone | RF_Public,
-	// *(FPackageName::LongPackageNameToFilename(Package->GetFullName().RightChop(8)) + ".VA_" + VolumeName + ".uasset");
 
 	uint8* LoadedArray = LoadAndConvertData(FPaths::Combine(Directory, VolumeInfo.DataFileName), VolumeInfo);
 

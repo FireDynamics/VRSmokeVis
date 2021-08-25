@@ -2,14 +2,18 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
 #include "Engine/StreamableManager.h"
 #include "Engine/ObjectLibrary.h"
 #include "VRSSGameInstanceSubsystem.generated.h"
 
 DECLARE_EVENT_OneParam(UVRSSGameInstanceSubsystem, FUpdateVolumeEvent, int)
 
-#define UPDATERATE 1.0f
+static TAutoConsoleVariable<float> CVarUpdateRate(
+	TEXT("VolumeUpdateRate"),
+	-1,
+	TEXT("Controls the time between two updates of RaymarchingVolume textures.\n")
+	TEXT("Defaults to the rate specified by the input from FDS.")
+);
 
 UCLASS()
 class VRSMOKEVIS_API UVRSSGameInstanceSubsystem : public UGameInstanceSubsystem 
@@ -28,7 +32,7 @@ protected:
 	UFUNCTION()
 	void NextTimeStep();
 	
-public:
+public:	
 	UPROPERTY(EditAnywhere)
 	int CurrentTimeStep;
 

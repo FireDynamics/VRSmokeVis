@@ -4,7 +4,7 @@
 
 #include "VR/Grabbable.h"
 #include "VolumeAsset/VolumeAsset.h"
-
+#include "VRSSGameInstanceSubsystem.h"
 #include "RaymarchVolume.generated.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogRaymarchVolume, Log, All);
@@ -35,7 +35,10 @@ protected:
 	UFUNCTION()
 	void UpdateVolume(const int CurrentTimeStep);
 
-public:	
+public:
+	UPROPERTY(VisibleAnywhere)
+	UVRSSGameInstanceSubsystem* GameInstanceSubsystem;
+	
 	/** MeshComponent that contains the raymarching cube. */
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* StaticMeshComponent;
@@ -78,4 +81,8 @@ protected:
 	/** The % of time that has passed until the next frame is reached. **/
 	UPROPERTY(VisibleAnywhere)
 	float TimePassedPercentage = 0;
+
+	/** Controls the time between two updates of RaymarchingVolume textures. **/
+	UPROPERTY()
+	float UpdateRate;
 };

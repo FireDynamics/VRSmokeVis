@@ -1,6 +1,5 @@
 ﻿#pragma once
 
-#include "CoreMinimal.h"
 #include "GameFramework/GameMode.h"
 #include "VRSSGameMode.generated.h"
 

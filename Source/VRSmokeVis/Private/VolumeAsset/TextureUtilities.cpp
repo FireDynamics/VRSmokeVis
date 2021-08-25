@@ -18,6 +18,9 @@ void FVolumeTextureToolkit::SetVolumeTextureDetails(UVolumeTexture*& OutTexture,
 	OutTexture->PlatformData->SizeY = Dimensions.Y;
 	OutTexture->PlatformData->SetNumSlices(Dimensions.Z);
 	OutTexture->PlatformData->PixelFormat = PF_G8;
+	OutTexture->LODGroup = TEXTUREGROUP_8BitData;
+	OutTexture->Filter = TF_Bilinear;
+	
 	// Set sRGB and streaming to false.
 	OutTexture->SRGB = false;
 	OutTexture->NeverStream = true;

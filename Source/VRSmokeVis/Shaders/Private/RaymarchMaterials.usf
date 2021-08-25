@@ -21,7 +21,6 @@ float PerformRaymarch(Texture3D DataVolumeT0, SamplerState DataVolumeSamplerT0,
 {
 	// StepSize in UVW is inverse to StepCount.
 	float StepSize = 1 / StepCount;
-	float3 CameraFwd = mul(float3(0.00000000, 0.00000000, 1.00000000), ResolvedView.ViewToTranslatedWorld);
 	// Actual number of steps to take to march through the full thickness of the cube at the ray position.
 	float FloatActualSteps = StepCount * Thickness;
 	// Number of full steps to take.
@@ -43,9 +42,6 @@ float PerformRaymarch(Texture3D DataVolumeT0, SamplerState DataVolumeSamplerT0,
 
 	for (int i = 0; i < MaxSteps; i++)
 	{
-		CurPos += LocalCamVec;
-		// Because we jitter only "against" the direction of LocalCamVec, start marching before first sample.
-
 		AccumulateRaymarchStep(LightEnergy, CurPos, TimePassedPercentage, DataVolumeT0, DataVolumeSamplerT0, DataVolumeT1, DataVolumeSamplerT1, StepSizeWorld);
 
 		// Exit early if light energy (opacity) is already very high (so future steps would have almost no impact on color).
@@ -53,12 +49,15 @@ float PerformRaymarch(Texture3D DataVolumeT0, SamplerState DataVolumeSamplerT0,
 		{
 			return 1.0f;
 		}
+
+		// Move next step
+		CurPos += LocalCamVec;
 	}
 
 	// Handle FinalStep (only if we went through all the previous steps and the final step size is above zero)
 	if (FinalStep > 0.0f)
 	{
-		CurPos += LocalCamVec * FinalStep;
+		CurPos += LocalCamVec * (FinalStep - 1);
 		AccumulateRaymarchStep(LightEnergy, CurPos, TimePassedPercentage, DataVolumeT0, DataVolumeSamplerT0, DataVolumeT1, DataVolumeSamplerT1, StepSizeWorld * FinalStep);
 	}
 

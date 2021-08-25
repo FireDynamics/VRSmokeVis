@@ -1,6 +1,4 @@
-﻿
-
-#include "VRSSGameInstanceSubsystem.h"
+﻿#include "VRSSGameInstanceSubsystem.h"
 #include "Engine/VolumeTexture.h"
 #include "TimerManager.h"
 #include "Misc/DefaultValueHelper.h"
@@ -8,15 +6,16 @@
 UVRSSGameInstanceSubsystem::UVRSSGameInstanceSubsystem(): UGameInstanceSubsystem()
 {
 	StreamableManager = new FStreamableManager();
-	CurrentTimeStep = MaxTimeStep = 0;	
+	CurrentTimeStep = MaxTimeStep = 0;
 }
 
 void UVRSSGameInstanceSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
-	
+
 	// Set timer to set next frame (update next volume) after some time
-	GetGameInstance()->GetTimerManager().SetTimer(UpdateTimerHandle, this, &UVRSSGameInstanceSubsystem::NextTimeStep, UPDATERATE, true, 1.f);
+	GetGameInstance()->GetTimerManager().SetTimer(UpdateTimerHandle, this, &UVRSSGameInstanceSubsystem::NextTimeStep,
+	                                              CVarUpdateRate.GetValueOnGameThread(), true, 1.f);
 }
 
 void UVRSSGameInstanceSubsystem::NextTimeStep()
@@ -34,13 +33,14 @@ void UVRSSGameInstanceSubsystem::NextTimeStep()
 		AssetsToLoad.Add((*AssetsData)[NextTextureIndex].ToSoftObjectPath());
 	}
 	UpdateVolumeEvent.Broadcast(CurrentTimeStep);
-	
+
 	StreamableManager->RequestAsyncLoad(AssetsToLoad);
 }
 
-FUpdateVolumeEvent& UVRSSGameInstanceSubsystem::RegisterTextureLoad(const FString& Directory, TArray<FAssetData>* TextureArray)
+FUpdateVolumeEvent& UVRSSGameInstanceSubsystem::RegisterTextureLoad(const FString& Directory,
+                                                                    TArray<FAssetData>* TextureArray)
 {
-	UObjectLibrary *ObjectLibrary = UObjectLibrary::CreateLibrary(UVolumeTexture::StaticClass(), false, GIsEditor);
+	UObjectLibrary* ObjectLibrary = UObjectLibrary::CreateLibrary(UVolumeTexture::StaticClass(), false, GIsEditor);
 	ObjectLibrary->AddToRoot();
 	ObjectLibrary->LoadAssetDataFromPath(Directory);
 
@@ -60,13 +60,13 @@ FUpdateVolumeEvent& UVRSSGameInstanceSubsystem::RegisterTextureLoad(const FStrin
 	});
 
 	VolumeTextureArrays.Add(TextureArray);
-	
+
 	// Load first n (max 10) textures synchronously so they will be available from the very beginning
 	const int TexturesToLoad = FMath::Min(TextureArray->Num(), 10);
 
 	// Make sure any Textures could be found
 	check(TexturesToLoad)
-	
+
 	for (int i = 0; i < TexturesToLoad; ++i)
 	{
 		StreamableManager->LoadSynchronous((*TextureArray)[i].ToSoftObjectPath());

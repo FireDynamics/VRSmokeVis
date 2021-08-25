@@ -79,8 +79,22 @@ float4 PerformRaymarchCubeSetup(FMaterialPixelParameters MaterialParameters)
 	return float4(EntryPos, BoxThickness);
 }
 
-// Jitter position by random temporal jitter (in the direction of the camera).
+// Jitter position by random temporal jitter (in a random direction perpendicular to the camera vector).
 void JitterEntryPos(inout float3 EntryPos, float3 LocalCamVec, float JitterRadius, FMaterialPixelParameters MaterialParameters)
+{
+	float2 pos = frac(MaterialParameters.SvPosition.xy / 128.0f) * 128.0f + float2(-64.340622f, -72.465622f);
+	float rand1 = frac(dot(pos.xyx * pos.xyy, float3(20.390625f, 60.703125f, 2.4281209f))) - 0.5f;
+	int3 RandomPos = int3(MaterialParameters.SvPosition.xy, View.StateFrameIndexMod8);
+	float rand2 = (float)(Rand3DPCG16(RandomPos).x) / 0xffff - 0.5f;
+
+	float3 Axis1;
+	float3 Axis2;
+	FindBestAxisVectors(LocalCamVec, Axis1, Axis2);
+	EntryPos += (Axis1 * rand1 + Axis2 * rand2) * JitterRadius;
+}
+
+// Jitter position by random temporal jitter (in the direction of the camera).
+void JitterEntryPosCamDir(inout float3 EntryPos, float3 LocalCamVec, float JitterRadius, FMaterialPixelParameters MaterialParameters)
 {
 	int3 RandomPos = int3(MaterialParameters.SvPosition.xy, View.StateFrameIndexMod8);
 	float rand = (float)(Rand3DPCG16(RandomPos).x) / 0xffff;
@@ -96,12 +110,19 @@ void AccumulateRaymarchStep(inout float AccumulatedLightEnergy, float3 CurPos, f
 	float VolumeSampleT1 = DataVolumeT1.SampleLevel(DataVolumeSamplerT1, saturate(CurPos), 0).r;
 	float VolumeSample = TimePassedPercentage * VolumeSampleT1 + (1 - TimePassedPercentage) * VolumeSampleT0;
 	
-	// Todo: Extinction coefficient
 	float Opacity = 1.0 - pow(1.0 - VolumeSample, StepSize);
 
-	// Accumulate current colored sample to the final values.
-	// Affect the color depending on how much opaque the current sample is and how strong the existing accumulated Light Energy is.
-	// LightEnergy.rgb = LightEnergy.rgb + CurrentSample.rgb * CurrentSample.a * (1.0 - LightEnergy.a);
-	// Affect the accumulated light energy strength.
 	AccumulatedLightEnergy = AccumulatedLightEnergy + Opacity * (1.0 - AccumulatedLightEnergy);
+}
+
+// Performs one raymarch step and accumulates the result to the existing Accumulated Light Energy.
+// Notice "Material.Clamp_WorldGroupSettings" used as a sampler. These are UE shared samplers.
+void AccumulateRaymarchStepNew(inout float AccumulatedLightEnergy, float3 CurPos, float TimePassedPercentage, Texture3D DataVolumeT0,
+	SamplerState DataVolumeSamplerT0, Texture3D DataVolumeT1, SamplerState DataVolumeSamplerT1, float StepSize)
+{
+	float VolumeSampleT0 = DataVolumeT0.SampleLevel(DataVolumeSamplerT0, saturate(CurPos), 0).r;
+	float VolumeSampleT1 = DataVolumeT1.SampleLevel(DataVolumeSamplerT1, saturate(CurPos), 0).r;
+	float VolumeSample = TimePassedPercentage * VolumeSampleT1 + (1 - TimePassedPercentage) * VolumeSampleT0;
+	
+	AccumulatedLightEnergy += VolumeSample;
 }

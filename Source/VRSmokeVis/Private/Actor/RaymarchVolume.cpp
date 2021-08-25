@@ -1,6 +1,5 @@
 #include "Actor/RaymarchVolume.h"
 
-#include "VRSSGameInstanceSubsystem.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
 #include "VolumeAsset/TextureUtilities.h"
@@ -86,10 +85,16 @@ void ARaymarchVolume::PostRegisterAllComponents()
 		StaticMeshComponent->SetMaterial(0, RaymarchMaterial);
 	}
 
+	UpdateRate = CVarUpdateRate.GetValueOnGameThread();
 	if (VolumeAsset)
 	{
 		// Unreal units = cm, FDS has sizes in m -> multiply by 10.
 		StaticMeshComponent->SetRelativeScale3D(VolumeAsset->VolumeInfo.WorldDimensions * 100);
+		
+		if (UpdateRate < 0){
+			UpdateRate = VolumeAsset->VolumeInfo.Spacing.W;
+			CVarUpdateRate->Set(UpdateRate);
+		}
 	}
 }
 
@@ -97,8 +102,9 @@ void ARaymarchVolume::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	UVRSSGameInstanceSubsystem* GameInstanceSubsystem = GetGameInstance()->GetSubsystem<UVRSSGameInstanceSubsystem>();
-
+	GameInstanceSubsystem = GetGameInstance()->GetSubsystem<UVRSSGameInstanceSubsystem>();
+	UpdateRate = CVarUpdateRate.GetValueOnGameThread();
+	
 	FUpdateVolumeEvent& UpdateVolumeEvent = GameInstanceSubsystem->RegisterTextureLoad(
 		VolumeAsset->VolumeInfo.VolumeTextureDir, &VolumeAsset->VolumeTextures);
 	UpdateVolumeEvent.AddUObject(this, &ARaymarchVolume::UpdateVolume);
@@ -147,7 +153,7 @@ void ARaymarchVolume::Tick(const float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	
-	TimePassedPercentage = FMath::Clamp<float>(TimePassedPercentage + DeltaTime / UPDATERATE, 0, 1);
+	TimePassedPercentage = FMath::Clamp<float>(TimePassedPercentage + DeltaTime / UpdateRate, 0, 1);
 	RaymarchMaterial->SetScalarParameterValue("TimePassedPercentage", TimePassedPercentage);
 }
 
@@ -155,9 +161,12 @@ void ARaymarchVolume::UseSimulationTransform()
 {
 	if (VolumeAsset)
 	{
-		// Unreal units = cm, FDS has sizes in m -> multiply by 10.
+		SetActorScale3D(FVector{1,1,1});
+		StaticMeshComponent->SetRelativeLocation(FVector{0, 0, 0});
+		
+		// Unreal units = cm, FDS has sizes in m -> multiply by 100.
 		StaticMeshComponent->SetRelativeScale3D(VolumeAsset->VolumeInfo.WorldDimensions * 100);
-		SetActorLocation(VolumeAsset->VolumeInfo.MeshPos);
+		SetActorLocation((VolumeAsset->VolumeInfo.MeshPos + VolumeAsset->VolumeInfo.WorldDimensions/2) * 100);
 	}
 }
 
