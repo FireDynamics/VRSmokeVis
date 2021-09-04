@@ -35,9 +35,9 @@ public:
 	 * after storing the data somewhere. */
 	static uint8* LoadDatFileIntoArray(const FString FileName, const int64 BytesToLoad);
 
+	/** Converts an array of densities to the resulting transmission. **/
+	static void DensityToTransmission(const FVolumeInfo& VolumeInfo, uint8* Array);
+
 	/** Converts an array to an array normalized to the full range of 0-255. */
 	static void NormalizeArray(const FVolumeInfo& VolumeInfo, uint8* Array);
-
-	/** Tells you which source format to use for a texture's source according to the Pixel format. */
-	static ETextureSourceFormat PixelFormatToSourceFormat(EPixelFormat PixelFormat);
 };

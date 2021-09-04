@@ -73,10 +73,6 @@ public:
 	UPROPERTY(EditAnywhere)
 	float RaymarchingSteps = 150;
 
-	/** The maximum radius of the Jitter that is applied for each ray that enters the volume. **/
-	UPROPERTY(EditAnywhere)
-	float JitterRadius = 1;
-
 protected:
 	/** The % of time that has passed until the next frame is reached. **/
 	UPROPERTY(VisibleAnywhere)

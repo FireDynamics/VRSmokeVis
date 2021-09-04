@@ -77,7 +77,7 @@ void ARaymarchVolume::PostRegisterAllComponents()
 			UMaterialInstanceDynamic::Create(RaymarchMaterialBase, this, "Intensity Raymarch Mat Dynamic Inst");
 
 		RaymarchMaterial->SetScalarParameterValue("Steps", RaymarchingSteps);
-		RaymarchMaterial->SetScalarParameterValue("JitterRadius", JitterRadius);
+		RaymarchMaterial->SetScalarParameterValue("JitterRadius", CVarJitterRadius.GetValueOnGameThread());
 	}
 
 	if (StaticMeshComponent)

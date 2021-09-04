@@ -101,28 +101,12 @@ void JitterEntryPosCamDir(inout float3 EntryPos, float3 LocalCamVec, float Jitte
 	EntryPos -= LocalCamVec * rand * JitterRadius;
 }
 
-// Performs one raymarch step and accumulates the result to the existing Accumulated Light Energy.
+// Samples the volume at next raymarch step.
 // Notice "Material.Clamp_WorldGroupSettings" used as a sampler. These are UE shared samplers.
-void AccumulateRaymarchStep(inout float AccumulatedLightEnergy, float3 CurPos, float TimePassedPercentage, Texture3D DataVolumeT0,
-	SamplerState DataVolumeSamplerT0, Texture3D DataVolumeT1, SamplerState DataVolumeSamplerT1, float StepSize)
+float GetRaymarchStepSample(float3 CurPos, float TimePassedPercentage, Texture3D DataVolumeT0,
+	SamplerState DataVolumeSamplerT0, Texture3D DataVolumeT1, SamplerState DataVolumeSamplerT1)
 {
 	float VolumeSampleT0 = DataVolumeT0.SampleLevel(DataVolumeSamplerT0, saturate(CurPos), 0).r;
 	float VolumeSampleT1 = DataVolumeT1.SampleLevel(DataVolumeSamplerT1, saturate(CurPos), 0).r;
-	float VolumeSample = TimePassedPercentage * VolumeSampleT1 + (1 - TimePassedPercentage) * VolumeSampleT0;
-	
-	float Opacity = 1.0 - pow(1.0 - VolumeSample, StepSize);
-
-	AccumulatedLightEnergy = AccumulatedLightEnergy + Opacity * (1.0 - AccumulatedLightEnergy);
-}
-
-// Performs one raymarch step and accumulates the result to the existing Accumulated Light Energy.
-// Notice "Material.Clamp_WorldGroupSettings" used as a sampler. These are UE shared samplers.
-void AccumulateRaymarchStepNew(inout float AccumulatedLightEnergy, float3 CurPos, float TimePassedPercentage, Texture3D DataVolumeT0,
-	SamplerState DataVolumeSamplerT0, Texture3D DataVolumeT1, SamplerState DataVolumeSamplerT1, float StepSize)
-{
-	float VolumeSampleT0 = DataVolumeT0.SampleLevel(DataVolumeSamplerT0, saturate(CurPos), 0).r;
-	float VolumeSampleT1 = DataVolumeT1.SampleLevel(DataVolumeSamplerT1, saturate(CurPos), 0).r;
-	float VolumeSample = TimePassedPercentage * VolumeSampleT1 + (1 - TimePassedPercentage) * VolumeSampleT0;
-	
-	AccumulatedLightEnergy += VolumeSample;
+	return TimePassedPercentage * VolumeSampleT1 + (1 - TimePassedPercentage) * VolumeSampleT0;
 }

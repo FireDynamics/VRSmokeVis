@@ -19,8 +19,21 @@ float PerformRaymarch(Texture3D DataVolumeT0, SamplerState DataVolumeSamplerT0,
                        float3 CurPos, float Thickness, float StepCount, float TimePassedPercentage, float JitterRadius,
                        FMaterialPixelParameters MaterialParameters) 
 {
+	// const float Scale = length(TransformLocalVectorToWorld(MaterialParameters, float3(1.00000000,1.00000000,1.00000000)).xyz);
 	// StepSize in UVW is inverse to StepCount.
-	float StepSize = 1 / StepCount;
+	float StepSize = 1 / StepCount;// * Scale;
+
+	// Get camera vector in local space and multiply it by step size.
+	float3 LocalCamVec = -normalize(mul(MaterialParameters.CameraVector,
+										GetPrimitiveData(MaterialParameters.PrimitiveId).WorldToLocal)) * StepSize;
+	
+	// Snap start positions to view aligned planes
+	float LocalSceneDepth = CalcSceneDepth(ScreenAlignedPosition(GetScreenPosition(MaterialParameters)));
+	float VolumeCenterDistance = length(ResolvedView.WorldCameraOrigin - GetPrimitiveData(MaterialParameters.PrimitiveId).ActorWorldPosition);
+	float3 PlaneOffset = mul((LocalSceneDepth - VolumeCenterDistance) % StepSize, LocalCamVec);  // VolumeCenterDistance
+	CurPos += PlaneOffset;
+	Thickness -= PlaneOffset;
+	
 	// Actual number of steps to take to march through the full thickness of the cube at the ray position.
 	float FloatActualSteps = StepCount * Thickness;
 	// Number of full steps to take.
@@ -28,38 +41,32 @@ float PerformRaymarch(Texture3D DataVolumeT0, SamplerState DataVolumeSamplerT0,
 	// Size of the last (not a full-sized) step.
 	float FinalStep = frac(FloatActualSteps);
 
-	// Get camera vector in local space and multiply it by step size.
-	float3 LocalCamVec = -normalize(mul(MaterialParameters.CameraVector,
-	                                    GetPrimitiveData(MaterialParameters.PrimitiveId).WorldToLocal)) * StepSize;
-
-	const float Scale = length(TransformLocalVectorToWorld(MaterialParameters, float3(1.00000000,0.00000000,0.00000000)).xyz);
-	// Get step size in local units to get consistent opacity at different volume scale and to be consistent with compute shaders' opacity calculations.
-	const float StepSizeWorld = Scale * StepSize;
-	// Initialize accumulated light energy.
-	float LightEnergy = 0;
 	// Jitter Entry position to avoid artifacts.
-	JitterEntryPos(CurPos, LocalCamVec, JitterRadius, MaterialParameters);
+	if (JitterRadius > 0){
+		JitterEntryPosCamDir(CurPos, LocalCamVec, JitterRadius, MaterialParameters);
+	}
 
-	for (int i = 0; i < MaxSteps; i++)
+	// Initialize accumulated light energy.
+	float LightEnergy = 1;
+	for (int i = 0; i < MaxSteps; ++i)
 	{
-		AccumulateRaymarchStep(LightEnergy, CurPos, TimePassedPercentage, DataVolumeT0, DataVolumeSamplerT0, DataVolumeT1, DataVolumeSamplerT1, StepSizeWorld);
+		LightEnergy *= GetRaymarchStepSample(CurPos, TimePassedPercentage, DataVolumeT0, DataVolumeSamplerT0, DataVolumeT1, DataVolumeSamplerT1);
 
-		// Exit early if light energy (opacity) is already very high (so future steps would have almost no impact on color).
-		if (LightEnergy > 0.95f)
+		// Exit early if light energy is already very low (so future steps would have almost no impact on color).
+		if (LightEnergy < 0.001f)
 		{
-			return 1.0f;
+			return 1;
 		}
 
 		// Move next step
 		CurPos += LocalCamVec;
 	}
 
-	// Handle FinalStep (only if we went through all the previous steps and the final step size is above zero)
-	if (FinalStep > 0.0f)
-	{
-		CurPos += LocalCamVec * (FinalStep - 1);
-		AccumulateRaymarchStep(LightEnergy, CurPos, TimePassedPercentage, DataVolumeT0, DataVolumeSamplerT0, DataVolumeT1, DataVolumeSamplerT1, StepSizeWorld * FinalStep);
-	}
-
-	return LightEnergy;
+	// Handle FinalStep
+	CurPos += LocalCamVec * (FinalStep - 1);  // -1 to subtract the last LocalCamVec we added to CurPos in the loop
+	// Multiply last sample by final step size to account for non-uniform step size here (although mathematically
+	// this is not 100% correct)
+	LightEnergy *= 1 - FinalStep * (1 - GetRaymarchStepSample(CurPos, TimePassedPercentage, DataVolumeT0, DataVolumeSamplerT0, DataVolumeT1, DataVolumeSamplerT1));
+	
+	return 1 - LightEnergy;
 }

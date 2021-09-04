@@ -40,7 +40,11 @@ struct VRSMOKEVIS_API FVolumeInfo
 	// Highest value possible for this type of data.
 	UPROPERTY(VisibleAnywhere)
 	float MaxValue;
-
+	
+	// The mass specific extinction coefficient.
+	UPROPERTY(EditAnywhere)
+	float ExtinctionCoefficient = 1;
+	
 	// Returns the number of bytes needed to store this Volume.
 	int64 GetByteSize() const;
 

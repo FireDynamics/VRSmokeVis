@@ -15,6 +15,12 @@ static TAutoConsoleVariable<float> CVarUpdateRate(
 	TEXT("Defaults to the rate specified by the input from FDS.")
 );
 
+static TAutoConsoleVariable<float> CVarJitterRadius(
+	TEXT("JitterRadius"),
+	0,
+	TEXT("Controls the maximum radius of Jitter that is applied (works as a factor). Defaults to 0 (no Jitter).")
+);
+
 UCLASS()
 class VRSMOKEVIS_API UVRSSGameInstanceSubsystem : public UGameInstanceSubsystem 
 {

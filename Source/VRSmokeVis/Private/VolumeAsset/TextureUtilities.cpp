@@ -123,6 +123,22 @@ uint8* FVolumeTextureToolkit::LoadDatFileIntoArray(const FString FileName, const
 	return LoadedArray;
 }
 
+void FVolumeTextureToolkit::DensityToTransmission(const FVolumeInfo& VolumeInfo, uint8* Array)
+{
+	// Uses the Beer-Lambert law to convert densities to the corresponding transmission using the extinction coefficient
+	// Adding 0.5 before assigning the float value to the uint8 array causes it to round correctly without having to
+	// round manually, as the implicit conversion to an integer simply cuts off the fraction.
+	float StepSize = 0.001;  // VolumeInfo.Spacing.Size3();
+	
+	// Multiply StepSize and extinction coefficient only once before looping over the array
+	StepSize *= VolumeInfo.ExtinctionCoefficient * -1;
+	
+	ParallelFor(VolumeInfo.GetByteSize(), [&](const int Idx)
+	{
+		Array[Idx] = FMath::Exp(StepSize * Array[Idx]) * 255.f + .5f;
+	});
+}
+
 void FVolumeTextureToolkit::NormalizeArray(const FVolumeInfo& VolumeInfo, uint8* Array)
 {
 	const float ValueRange = 255.f / (VolumeInfo.MaxValue - VolumeInfo.MinValue);

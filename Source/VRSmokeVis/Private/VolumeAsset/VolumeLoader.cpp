@@ -54,7 +54,10 @@ uint8* UVolumeLoader::LoadAndConvertData(const FString& FilePath, const FVolumeI
 {
 	// Load data
 	uint8* LoadedArray = FVolumeTextureToolkit::LoadDatFileIntoArray(FilePath, VolumeInfo.GetByteSize());
-	if (LoadedArray) FVolumeTextureToolkit::NormalizeArray(VolumeInfo, LoadedArray);
+	if (LoadedArray)
+	{
+		FVolumeTextureToolkit::DensityToTransmission(VolumeInfo, LoadedArray);
+	}
 	return LoadedArray;
 }
 
