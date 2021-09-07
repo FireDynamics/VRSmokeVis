@@ -16,13 +16,13 @@ ARaymarchVolume::ARaymarchVolume() : AActor()
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = true;
 
-	SetActorEnableCollision(true);
+	SetActorEnableCollision(false);
 
 	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("Default Scene Root"));
 	RootComponent->SetWorldScale3D(FVector(1.0f));
 
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> UnitCubeInsideOut(
-		TEXT("StaticMesh'/Game/Meshes/Unit_Cube_Inside_Out.Unit_Cube_Inside_Out'"));
+		TEXT("StaticMesh'/Game/Meshes/SM_Unit_Cube_Inside_Out.SM_Unit_Cube_Inside_Out'"));
 
 	StaticMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Raymarch Cube Static Mesh"));
 	// Set basic unit cube properties.
@@ -38,11 +38,10 @@ ARaymarchVolume::ARaymarchVolume() : AActor()
 	// Create CubeBorderMeshComponent and find and assign cube border mesh (that's a cube with only edges visible).
 	CubeBorderMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Raymarch Volume Cube Border"));
 	CubeBorderMeshComponent->SetupAttachment(StaticMeshComponent);
-	CubeBorderMeshComponent->SetRelativeScale3D(FVector(1.01));
 	CubeBorderMeshComponent->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
 
 	if (static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeBorder(
-		TEXT("StaticMesh'/Game/Meshes/Unit_Cube.Unit_Cube'")); CubeBorder.Succeeded())
+		TEXT("StaticMesh'/Game/Meshes/SM_Unit_Cube.SM_Unit_Cube'")); CubeBorder.Succeeded())
 	{
 		// Find and assign cube material.
 		CubeBorderMeshComponent->SetStaticMesh(CubeBorder.Object);
@@ -51,6 +50,7 @@ ARaymarchVolume::ARaymarchVolume() : AActor()
 		{
 			CubeBorderMeshComponent->SetMaterial(0, BorderMaterial.Object);
 		}
+		CubeBorderMeshComponent->SetHiddenInGame(true);
 	}
 
 	if (static ConstructorHelpers::FObjectFinder<UMaterial> IntensityMaterial(
@@ -60,24 +60,20 @@ ARaymarchVolume::ARaymarchVolume() : AActor()
 	}
 }
 
-// Called after registering all components. This is the last action performed before editor window is spawned and before BeginPlay.
-void ARaymarchVolume::PostRegisterAllComponents()
+void ARaymarchVolume::BeginPlay()
 {
-	Super::PostRegisterAllComponents();
+	Super::BeginPlay();
 
-	if (HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject))
-	{
-		// Do not perform this on default class objects or archetype objects
-		return;
-	}
-
+	UGameInstance* GIRaw = GetGameInstance();
+	GI = Cast<UVRSSGameInstance>(GIRaw);
+	
 	if (RaymarchMaterialBase)
 	{
 		RaymarchMaterial =
 			UMaterialInstanceDynamic::Create(RaymarchMaterialBase, this, "Intensity Raymarch Mat Dynamic Inst");
 
 		RaymarchMaterial->SetScalarParameterValue("Steps", RaymarchingSteps);
-		RaymarchMaterial->SetScalarParameterValue("JitterRadius", CVarJitterRadius.GetValueOnGameThread());
+		RaymarchMaterial->SetScalarParameterValue("JitterRadius", GI->JitterRadius);
 	}
 
 	if (StaticMeshComponent)
@@ -85,27 +81,17 @@ void ARaymarchVolume::PostRegisterAllComponents()
 		StaticMeshComponent->SetMaterial(0, RaymarchMaterial);
 	}
 
-	UpdateRate = CVarUpdateRate.GetValueOnGameThread();
 	if (VolumeAsset)
 	{
 		// Unreal units = cm, FDS has sizes in m -> multiply by 10.
 		StaticMeshComponent->SetRelativeScale3D(VolumeAsset->VolumeInfo.WorldDimensions * 100);
 		
-		if (UpdateRate < 0){
-			UpdateRate = VolumeAsset->VolumeInfo.Spacing.W;
-			CVarUpdateRate->Set(UpdateRate);
+		if (GI->UpdateRate == 0){
+			GI->SetUpdateRate(VolumeAsset->VolumeInfo.Spacing.W);
 		}
 	}
-}
-
-void ARaymarchVolume::BeginPlay()
-{
-	Super::BeginPlay();
 	
-	GameInstanceSubsystem = GetGameInstance()->GetSubsystem<UVRSSGameInstanceSubsystem>();
-	UpdateRate = CVarUpdateRate.GetValueOnGameThread();
-	
-	FUpdateVolumeEvent& UpdateVolumeEvent = GameInstanceSubsystem->RegisterTextureLoad(
+	FUpdateVolumeEvent& UpdateVolumeEvent = GI->RegisterTextureLoad(
 		VolumeAsset->VolumeInfo.VolumeTextureDir, &VolumeAsset->VolumeTextures);
 	UpdateVolumeEvent.AddUObject(this, &ARaymarchVolume::UpdateVolume);
 
@@ -153,7 +139,7 @@ void ARaymarchVolume::Tick(const float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	
-	TimePassedPercentage = FMath::Clamp<float>(TimePassedPercentage + DeltaTime / UpdateRate, 0, 1);
+	TimePassedPercentage = FMath::Clamp<float>(TimePassedPercentage + DeltaTime / GI->UpdateRate, 0, 1);
 	RaymarchMaterial->SetScalarParameterValue("TimePassedPercentage", TimePassedPercentage);
 }
 

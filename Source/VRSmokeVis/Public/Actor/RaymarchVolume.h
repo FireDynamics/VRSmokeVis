@@ -4,7 +4,7 @@
 
 #include "VR/Grabbable.h"
 #include "VolumeAsset/VolumeAsset.h"
-#include "VRSSGameInstanceSubsystem.h"
+#include "VRSSGameInstance.h"
 #include "RaymarchVolume.generated.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogRaymarchVolume, Log, All);
@@ -17,10 +17,6 @@ class VRSMOKEVIS_API ARaymarchVolume : public AActor, public IGrabbable
 public:
 	/** Sets default values for this actor's properties*/
 	ARaymarchVolume();
-
-	/** Called after the actor is loaded from disk in editor or when spawned in game.
-		This is the last action that is performed before BeginPlay.*/
-	virtual void PostRegisterAllComponents() override;
 	
 	/** Called every frame. **/
 	virtual void Tick(float DeltaTime) override;
@@ -37,7 +33,7 @@ protected:
 
 public:
 	UPROPERTY(VisibleAnywhere)
-	UVRSSGameInstanceSubsystem* GameInstanceSubsystem;
+	UVRSSGameInstance* GI;
 	
 	/** MeshComponent that contains the raymarching cube. */
 	UPROPERTY(VisibleAnywhere)
@@ -77,8 +73,4 @@ protected:
 	/** The % of time that has passed until the next frame is reached. **/
 	UPROPERTY(VisibleAnywhere)
 	float TimePassedPercentage = 0;
-
-	/** Controls the time between two updates of RaymarchingVolume textures. **/
-	UPROPERTY()
-	float UpdateRate;
 };

@@ -3,11 +3,11 @@
 #pragma once
 
 #include "Camera/CameraComponent.h"
-#include "VRMotionController.h"
+#include "VRSSController.h"
 
 #include "VRPawn.generated.h"
 
-class AVRMotionController;
+class AVRSSController;
 
 UENUM()
 enum class EVRPlatform
@@ -24,11 +24,11 @@ struct FControllerPlatformClasses
 	GENERATED_BODY()
 	// Class of AVRMotionController to spawn for left hand.
 	UPROPERTY(EditAnywhere)
-	TSubclassOf<AVRMotionController> LeftControllerClass;
+	TSubclassOf<AVRSSController> LeftControllerClass;
 
 	// Class of AVRMotionController to spawn for right hand.
 	UPROPERTY(EditAnywhere)
-	TSubclassOf<AVRMotionController> RightControllerClass;
+	TSubclassOf<AVRSSController> RightControllerClass;
 };
 
 /**
@@ -55,15 +55,12 @@ public:
 
 	// Controller spawned for the left hand.
 	UPROPERTY(VisibleAnywhere)
-	AVRMotionController* LeftController;
+	AVRSSController* LeftController;
 
 	// Controller spawned for the right hand.
 	UPROPERTY(VisibleAnywhere)
-	AVRMotionController* RightController;
+	AVRSSController* RightController;
 
 	// Called when the game starts or when spawned.
 	virtual void BeginPlay() override;
-
-	// Called every frame.
-	virtual void Tick(float DeltaTime) override;
 };

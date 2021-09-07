@@ -53,7 +53,7 @@ float PerformRaymarch(Texture3D DataVolumeT0, SamplerState DataVolumeSamplerT0,
 		LightEnergy *= GetRaymarchStepSample(CurPos, TimePassedPercentage, DataVolumeT0, DataVolumeSamplerT0, DataVolumeT1, DataVolumeSamplerT1);
 
 		// Exit early if light energy is already very low (so future steps would have almost no impact on color).
-		if (LightEnergy < 0.001f)
+		if (LightEnergy < 0.01f)
 		{
 			return 1;
 		}

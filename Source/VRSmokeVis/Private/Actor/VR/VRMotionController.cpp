@@ -1,15 +1,15 @@
 
 
-#include "Actor/VR/VRMotionController.h"
-
+#include "Actor/VR/VRSSController.h"
 #include "Actor/VR/Grabbable.h"
 #include "Components/WidgetInteractionComponent.h"
 #include "XRMotionControllerBase.h"
 
-AVRMotionController::AVRMotionController()
+
+AVRSSController::AVRSSController()
 {
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent"));
 
 	MotionControllerComponent = CreateDefaultSubobject<UMotionControllerComponent>(TEXT("MotionController"));
@@ -23,7 +23,7 @@ AVRMotionController::AVRMotionController()
 
 	WidgetInteractor = CreateDefaultSubobject<UWidgetInteractionComponent>(TEXT("WidgetInteractor"));
 	WidgetInteractor->SetupAttachment(ControllerStaticMeshComponent);
-	WidgetInteractor->OnHoveredWidgetChanged.AddDynamic(this, &AVRMotionController::OnWidgetInteractorHoverChanged);
+	WidgetInteractor->OnHoveredWidgetChanged.AddDynamic(this, &AVRSSController::OnWidgetInteractorHoverChanged);
 
 	WidgetInteractorVisualizer = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WidgetInteractorVisualizer"));
 	WidgetInteractorVisualizer->SetupAttachment(ControllerStaticMeshComponent);
@@ -34,49 +34,27 @@ AVRMotionController::AVRMotionController()
 	CollisionComponent->SetupAttachment(ControllerStaticMeshComponent);
 	CollisionComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	CollisionComponent->SetCollisionProfileName("WorldDynamic");
-	CollisionComponent->OnComponentBeginOverlap.AddDynamic(this, &AVRMotionController::OnOverlapBegin);
-	CollisionComponent->OnComponentEndOverlap.AddDynamic(this, &AVRMotionController::OnOverlapEnd);
+	CollisionComponent->OnComponentBeginOverlap.AddDynamic(this, &AVRSSController::OnOverlapBegin);
+	CollisionComponent->OnComponentEndOverlap.AddDynamic(this, &AVRSSController::OnOverlapEnd);
 }
 
-void AVRMotionController::Tick(float DeltaTime)
+void AVRSSController::SetupInput(UInputComponent* InInputComponent)
 {
+	const FString Hand = bIsInRightHand ? "Right" : "Left";
+	const FName HandSourceId = bIsInRightHand ? FXRMotionControllerBase::RightHandSourceId : FXRMotionControllerBase::LeftHandSourceId;
+
+	MotionControllerComponent->SetTrackingMotionSource(HandSourceId);
+	
+	InInputComponent->BindAction(FName(Hand + "_Grip"), IE_Pressed, this, &AVRSSController::OnGripPressed);
+	InInputComponent->BindAction(FName(Hand + "_Grip"), IE_Released, this, &AVRSSController::OnGripReleased);
+	InInputComponent->BindAction(FName(Hand + "_Trigger"), IE_Pressed, this, &AVRSSController::OnTriggerPressed);
+	InInputComponent->BindAction(FName(Hand + "_Trigger"), IE_Released, this, &AVRSSController::OnTriggerReleased);
+	InInputComponent->BindAxis(FName(Hand + "_Grip_Axis"), this, &AVRSSController::OnGripAxis);
+	InInputComponent->BindAxis(FName(Hand + "_Trigger_Axis"), this, &AVRSSController::OnTriggerAxis);
+	InInputComponent->BindAxis(FName(Hand + "_Joystick_Y"), this, &AVRSSController::OnJoystickYAxis);
 }
 
-void AVRMotionController::SetupInput(UInputComponent* InInputComponent)
-{
-	if (bIsInRightHand)
-	{
-		MotionControllerComponent->SetTrackingMotionSource(FXRMotionControllerBase::RightHandSourceId);
-
-		InInputComponent->BindAction("Right_Grip", IE_Pressed, this, &AVRMotionController::OnGripPressed);
-		InInputComponent->BindAction("Right_Grip", IE_Released, this, &AVRMotionController::OnGripReleased);
-		InInputComponent->BindAction("Right_Trigger", IE_Pressed, this, &AVRMotionController::OnTriggerPressed);
-		InInputComponent->BindAction("Right_Trigger", IE_Released, this, &AVRMotionController::OnTriggerReleased);
-
-		InInputComponent->BindAxis("Right_Grip_Axis", this, &AVRMotionController::OnGripAxis);
-		InInputComponent->BindAxis("Right_Trigger_Axis", this, &AVRMotionController::OnTriggerAxis);
-
-		InInputComponent->BindAxis("Right_Joystick_Y", this, &AVRMotionController::OnJoystickYAxis);
-
-
-
-	}
-	else
-	{
-		MotionControllerComponent->SetTrackingMotionSource(FXRMotionControllerBase::LeftHandSourceId);
-
-		InInputComponent->BindAction("Left_Grip", IE_Pressed, this, &AVRMotionController::OnGripPressed);
-		InInputComponent->BindAction("Left_Grip", IE_Released, this, &AVRMotionController::OnGripReleased);
-		InInputComponent->BindAction("Left_Trigger", IE_Pressed, this, &AVRMotionController::OnTriggerPressed);
-		InInputComponent->BindAction("Left_Trigger", IE_Released, this, &AVRMotionController::OnTriggerReleased);
-
-		InInputComponent->BindAxis("Left_Grip_Axis", this, &AVRMotionController::OnGripAxis);
-		InInputComponent->BindAxis("Left_Trigger_Axis", this, &AVRMotionController::OnTriggerAxis);
-		InInputComponent->BindAxis("Left_Joystick_Y", this, &AVRMotionController::OnJoystickYAxis);
-	}
-}
-
-void AVRMotionController::OnGripPressed()
+void AVRSSController::OnGripPressed()
 {
 	if (HoveredActor)
 	{
@@ -86,7 +64,7 @@ void AVRMotionController::OnGripPressed()
 	}
 }
 
-void AVRMotionController::OnGripReleased()
+void AVRSSController::OnGripReleased()
 {
 	if (GrabbedActor)
 	{
@@ -96,12 +74,12 @@ void AVRMotionController::OnGripReleased()
 	}
 }
 
-void AVRMotionController::OnTriggerAxis(float Axis)
+void AVRSSController::OnTriggerAxis(float Axis)
 {
 	// Update animation
 }
 
-void AVRMotionController::OnJoystickYAxis(float Axis)
+void AVRSSController::OnJoystickYAxis(float Axis)
 {
 	if (WidgetInteractor)
 	{
@@ -109,7 +87,7 @@ void AVRMotionController::OnJoystickYAxis(float Axis)
 	}
 }
 
-void AVRMotionController::OnTriggerPressed()
+void AVRSSController::OnTriggerPressed()
 {
 	if (WidgetInteractor)
 	{
@@ -117,7 +95,7 @@ void AVRMotionController::OnTriggerPressed()
 	}
 }
 
-void AVRMotionController::OnTriggerReleased()
+void AVRSSController::OnTriggerReleased()
 {
 	if (WidgetInteractor)
 	{
@@ -125,12 +103,12 @@ void AVRMotionController::OnTriggerReleased()
 	}
 }
 
-void AVRMotionController::OnGripAxis(float Axis)
+void AVRSSController::OnGripAxis(float Axis)
 {
 	// Update animation.
 }
 
-void AVRMotionController::OnOverlapBegin(class UPrimitiveComponent* OverlappedComponent, class AActor* OtherActor,
+void AVRSSController::OnOverlapBegin(class UPrimitiveComponent* OverlappedComponent, class AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	if (Cast<IGrabbable>(OtherActor))
@@ -139,7 +117,7 @@ void AVRMotionController::OnOverlapBegin(class UPrimitiveComponent* OverlappedCo
 	}
 }
 
-void AVRMotionController::OnOverlapEnd(
+void AVRSSController::OnOverlapEnd(
 	class UPrimitiveComponent* OverlappedComponent, class AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
 	if (HoveredActor == Cast<IGrabbable>(OtherActor))
@@ -148,7 +126,7 @@ void AVRMotionController::OnOverlapEnd(
 	}
 }
 
-void AVRMotionController::OnWidgetInteractorHoverChanged(UWidgetComponent* Old, UWidgetComponent* New)
+void AVRSSController::OnWidgetInteractorHoverChanged(UWidgetComponent* Old, UWidgetComponent* New)
 {
 	// Hide the WidgetInteractorVisualizer when not pointing at a menu.
 	if (New)
