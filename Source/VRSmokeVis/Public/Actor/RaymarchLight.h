@@ -10,12 +10,13 @@ class VRSMOKEVIS_API ARaymarchLight : public AActor
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this actor's properties
 	ARaymarchLight();
 
 protected:
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+
+	UFUNCTION()
+	void UpdateLight(const float NewValue);
 
 public:
 	UPROPERTY(EditAnywhere)
@@ -27,4 +28,5 @@ public:
 protected:
 	UPROPERTY(VisibleAnywhere)
 	class UPointLightComponent *PointLightComponent;
+
 };

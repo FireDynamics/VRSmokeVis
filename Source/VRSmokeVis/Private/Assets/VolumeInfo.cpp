@@ -1,6 +1,6 @@
 
 
-#include "VolumeAsset/VolumeInfo.h"
+#include "Assets/VolumeInfo.h"
 
 int64 FVolumeInfo::GetByteSize() const
 {
@@ -14,7 +14,7 @@ int64 FVolumeInfo::GetTotalVoxels() const
 
 FString FVolumeInfo::ToString() const
 {
-	FString text = "File name " + DataFileName + " details:" + "\nDimensions = " + Dimensions.ToString() +
+	FString Text = "File name " + DataFileName + " details:" + "\nDimensions = " + Dimensions.ToString() +
 		"\nSpacing : " + Spacing.ToString() + "\nWorld Size MM : " + Dimensions.ToString();
-	return text;
+	return Text;
 }

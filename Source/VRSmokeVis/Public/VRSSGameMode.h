@@ -4,7 +4,7 @@
 #include "VRSSGameMode.generated.h"
 
 UCLASS()
-class VRSMOKEVIS_API AVRSSGameMode : public AGameMode
+class VRSMOKEVIS_API AVRSSGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
 	

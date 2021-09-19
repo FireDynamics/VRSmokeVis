@@ -4,7 +4,6 @@
 
 #include "Engine/StreamableManager.h"
 #include "Engine/ObjectLibrary.h"
-#include "Actor/RaymarchLight.h"
 #include "VRSSGameInstance.generated.h"
 
 DECLARE_EVENT_OneParam(UVRSSGameInstance, FUpdateVolumeEvent, int)
@@ -15,7 +14,6 @@ class VRSMOKEVIS_API UVRSSGameInstance : public UGameInstance
 	GENERATED_BODY()
 
 public:
-	// Sets default values
 	UVRSSGameInstance();
 
 	virtual void Init() override;
@@ -23,10 +21,13 @@ public:
 	FUpdateVolumeEvent& RegisterTextureLoad(const FString& Directory, TArray<FAssetData>* TextureArray);
 
 	UFUNCTION()
-	FORCEINLINE void FastForwardSimulation(const float Amount) { CurrentTimeStep += Amount-1; NextTimeStep(); }
+	void InitUpdateRate(float UpdateRateSuggestion);
 	
 	UFUNCTION()
-	FORCEINLINE void RewindSimulation(const float Amount) { CurrentTimeStep += Amount-1; NextTimeStep(); }
+	void FastForwardSimulation(const float Amount);
+
+	UFUNCTION()
+	void RewindSimulation(const float Amount);
 
 	UFUNCTION()
 	void TogglePauseSimulation();
@@ -38,17 +39,11 @@ protected:
 	UFUNCTION()
 	void NextTimeStep();
 
-	bool IsPaused = false;
+	bool bIsPaused = false;
 	
-public:	
-	UPROPERTY(EditAnywhere)
-	int CurrentTimeStep;
-
-	UPROPERTY(VisibleAnywhere)
-	int MaxTimeStep;
-
+public:
 	/** The class of the raymarch lights that are dimmed over time. */
-	TSubclassOf<ARaymarchLight> RaymarchLightClass;
+	TSubclassOf<class ARaymarchLight> RaymarchLightClass;
 
 	/** Controls the maximum radius of Jitter that is applied (works as a factor). Defaults to 0 (no Jitter). */
 	UPROPERTY(EditAnywhere)
@@ -58,7 +53,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintSetter=SetUpdateRate)
 	float UpdateRate = 0;
 	
-private:
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<class UTimeUserWidget> TimeUserWidgetClass;
+
+	UPROPERTY(BlueprintReadOnly)
+	class UTimeUserWidget *TimeUserWidget;
+	
+protected:
 	/** Used to asynchronously load assets at runtime. */
 	FStreamableManager* StreamableManager;
 	
@@ -69,4 +70,13 @@ private:
 	TArray<TArray<FAssetData>*> VolumeTextureArrays;
 
 	FUpdateVolumeEvent UpdateVolumeEvent;
+
+	UPROPERTY(BlueprintReadOnly)
+	int CurrentTimeStep = 0;
+
+	UPROPERTY(BlueprintReadOnly)
+	int MaxTimeStep = 0;
+
+	UPROPERTY(BlueprintReadOnly)
+	float SimTimeStepLength = -1;
 };

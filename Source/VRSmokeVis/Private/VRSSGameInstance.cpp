@@ -2,12 +2,14 @@
 #include "Engine/VolumeTexture.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/DefaultValueHelper.h"
+#include "Kismet/KismetTextLibrary.h"
+#include "Actor/RaymarchLight.h"
+#include "UI/TimeUserWidget.h"
 #include "Components/TimelineComponent.h"
 
 UVRSSGameInstance::UVRSSGameInstance(): UGameInstance()
 {
 	StreamableManager = new FStreamableManager();
-	CurrentTimeStep = MaxTimeStep = 0;
 }
 
 void UVRSSGameInstance::Init()
@@ -24,25 +26,67 @@ void UVRSSGameInstance::Init()
 	{
 		Cast<ARaymarchLight>(Light)->LightIntensityTimelineComponent->SetTimelineLength(MaxTimeStep);
 	}
+
+	// Setup time UI
+	TimeUserWidget = CreateWidget<UTimeUserWidget>(GetWorld(), TimeUserWidgetClass);
+	// TimeUserWidget->AddToViewport();
+}
+
+void UVRSSGameInstance::InitUpdateRate(const float UpdateRateSuggestion)
+{
+	if (UpdateRate == 0) UpdateRate = UpdateRateSuggestion;
+	
+	SimTimeStepLength = UpdateRate;	
 }
 
 void UVRSSGameInstance::SetUpdateRate(const float NewUpdateRate)
-{
+{	
 	UpdateRate = NewUpdateRate;
 	GetTimerManager().ClearTimer(UpdateTimerHandle);
 	GetTimerManager().SetTimer(UpdateTimerHandle, this, &UVRSSGameInstance::NextTimeStep, UpdateRate, true, 1.f);
+
+	TimeUserWidget->SimTimeScale = SimTimeStepLength / NewUpdateRate;
 }
 
+void UVRSSGameInstance::FastForwardSimulation(const float Amount)
+{
+	CurrentTimeStep += Amount - 1;
+	NextTimeStep();
+
+	// Update the UI
+	TimeUserWidget->CurrentSimTime = CurrentTimeStep * SimTimeStepLength;
+	TimeUserWidget->TextBlockValueTimestep->SetText(FText::AsNumber(CurrentTimeStep));
+	TimeUserWidget->UpdateTimeTextBlocks();
+}
+
+void UVRSSGameInstance::RewindSimulation(const float Amount)
+{
+	CurrentTimeStep -= FMath::Min<float>(Amount, CurrentTimeStep) + 1;
+	NextTimeStep();
+	
+	// Update the UI
+	TimeUserWidget->CurrentSimTime = CurrentTimeStep * SimTimeStepLength;
+	TimeUserWidget->TextBlockValueTimestep->SetText(FText::AsNumber(CurrentTimeStep));
+	TimeUserWidget->UpdateTimeTextBlocks();
+}
 
 void UVRSSGameInstance::TogglePauseSimulation()
 {
-	IsPaused = !IsPaused;
-	UGameplayStatics::SetGamePaused(GetWorld(), IsPaused);
+	bIsPaused = !bIsPaused;
+	UGameplayStatics::SetGamePaused(GetWorld(), bIsPaused);
+
+	// Inform UI
+	TimeUserWidget->bIsPaused = bIsPaused;
 }
 
 void UVRSSGameInstance::NextTimeStep()
 {
-	CurrentTimeStep = (CurrentTimeStep + 1) % MaxTimeStep;
+	CurrentTimeStep += 1;
+	if (CurrentTimeStep >= MaxTimeStep)
+	{
+		CurrentTimeStep = 0;
+		TimeUserWidget->CurrentSimTime = .0f;
+	}
 
 	// Unload the VolumeTexture of the second to last time step (not the last one as it might still be referenced
 	const int PreviousTextureIndex = (CurrentTimeStep + MaxTimeStep - 2) % MaxTimeStep;
@@ -57,6 +101,9 @@ void UVRSSGameInstance::NextTimeStep()
 	UpdateVolumeEvent.Broadcast(CurrentTimeStep);
 
 	StreamableManager->RequestAsyncLoad(AssetsToLoad);
+
+	// Update the UI
+	TimeUserWidget->TextBlockValueTimestep->SetText(FText::AsNumber(CurrentTimeStep));
 }
 
 FUpdateVolumeEvent& UVRSSGameInstance::RegisterTextureLoad(const FString& Directory,

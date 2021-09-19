@@ -1,9 +1,9 @@
 
 
 #include "Actor/VR/VRPawn.h"
-
-#include "Actor/VR/VRSSController.h"
+#include "Actor/VRSSPlayerController.h"
 #include "HeadMountedDisplayFunctionLibrary.h"
+#include "VRSSGameInstance.h"
 
 AVRPawn::AVRPawn()
 {
@@ -36,8 +36,8 @@ void AVRPawn::BeginPlay()
 
 	if (PlatformClasses.LeftControllerClass && PlatformClasses.RightControllerClass)
 	{
-		RightController = GetWorld()->SpawnActor<AVRSSController>(PlatformClasses.RightControllerClass, SpawnParams);
-		LeftController = GetWorld()->SpawnActor<AVRSSController>(PlatformClasses.LeftControllerClass, SpawnParams);
+		RightController = GetWorld()->SpawnActor<AVRSSPlayerController>(PlatformClasses.RightControllerClass, SpawnParams);
+		LeftController = GetWorld()->SpawnActor<AVRSSPlayerController>(PlatformClasses.LeftControllerClass, SpawnParams);
 
 		RightController->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
 		LeftController->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
@@ -45,4 +45,28 @@ void AVRPawn::BeginPlay()
 		RightController->SetupInput(InputComponent);
 		LeftController->SetupInput(InputComponent);
 	}
+	
+	// Time controls
+	InputComponent->BindAction("Pause", IE_Pressed, this, &AVRPawn::TogglePauseSimulation).bExecuteWhenPaused = true;
+	InputComponent->BindAction("FastForward", IE_Pressed, this, &AVRPawn::FastForwardSimulation).bExecuteWhenPaused = true;
+	InputComponent->BindAction("Rewind", IE_Pressed, this, &AVRPawn::RewindSimulation).bExecuteWhenPaused = true; 
+}
+
+void AVRPawn::TogglePauseSimulation()
+{
+	UE_LOG(LogVRSSPlayerController, Warning, TEXT("Paused simulation."))
+	UVRSSGameInstance *GI = Cast<UVRSSGameInstance>(GetGameInstance());
+	GI->TogglePauseSimulation();
+}
+
+void AVRPawn::FastForwardSimulation()
+{
+	UVRSSGameInstance *GI = Cast<UVRSSGameInstance>(GetGameInstance());
+	GI->FastForwardSimulation(25.0f);
+}
+
+void AVRPawn::RewindSimulation()
+{
+	UVRSSGameInstance *GI = Cast<UVRSSGameInstance>(GetGameInstance());
+	GI->RewindSimulation(25.0f);
 }

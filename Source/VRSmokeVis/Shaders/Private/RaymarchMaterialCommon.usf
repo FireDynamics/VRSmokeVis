@@ -108,5 +108,7 @@ float GetRaymarchStepSample(float3 CurPos, float TimePassedPercentage, Texture3D
 {
 	float VolumeSampleT0 = DataVolumeT0.SampleLevel(DataVolumeSamplerT0, saturate(CurPos), 0).r;
 	float VolumeSampleT1 = DataVolumeT1.SampleLevel(DataVolumeSamplerT1, saturate(CurPos), 0).r;
-	return TimePassedPercentage * VolumeSampleT1 + (1 - TimePassedPercentage) * VolumeSampleT0;
+	float TimeInterpSample = TimePassedPercentage * VolumeSampleT1 + (1 - TimePassedPercentage) * VolumeSampleT0;
+	// Todo: Correct the alpha value (sample) according to the direction the volume gets traced
+	return TimeInterpSample;
 }

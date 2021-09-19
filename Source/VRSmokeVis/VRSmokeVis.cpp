@@ -2,7 +2,7 @@
 
 #include "VRSmokeVis.h"
 
-#define LOCTEXT_NAMESPACE "FVolumeTextureToolkitModule"
+#define LOCTEXT_NAMESPACE "FTextureUtilsModule"
 
 void FVRSmokeVisModule::StartupModule()
 {
