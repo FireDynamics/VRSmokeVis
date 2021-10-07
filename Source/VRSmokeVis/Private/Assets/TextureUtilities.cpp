@@ -1,7 +1,6 @@
 #include "Assets/TextureUtilities.h"
 #include "Misc/FileHelper.h"
 #include "HAL/FileManagerGeneric.h"
-#include "AssetRegistryModule.h"
 #include "Misc/DefaultValueHelper.h"
 
 #include <Engine/TextureRenderTargetVolume.h>
@@ -49,27 +48,26 @@ void FTextureUtils::SplitPath(const FString& FullPath, FString& OutFilePath, FSt
 	OutPackageName.ReplaceCharInline('.', '_');
 }
 
-void FTextureUtils::SetTextureDetails(UVolumeTexture* OutTexture, const FVector4 Dimensions)
+void FTextureUtils::SetTextureDetails(UTexture* OutTexture, const FVector4 Dimensions)
 {
 	// Newly created Volume textures have this null'd
-	if (!OutTexture->PlatformData)
+	if (!OutTexture->GetRunningPlatformData()[0])
 	{
-		OutTexture->PlatformData = new FTexturePlatformData();
+		OutTexture->GetRunningPlatformData()[0] = new FTexturePlatformData();
 	}
 	// Set Dimensions and Pixel format.
-	OutTexture->PlatformData->SizeX = Dimensions.X;
-	OutTexture->PlatformData->SizeY = Dimensions.Y;
-	OutTexture->PlatformData->SetNumSlices(Dimensions.Z);
-	OutTexture->PlatformData->PixelFormat = PF_G8;
+	OutTexture->GetRunningPlatformData()[0]->SizeX = Dimensions.X;
+	OutTexture->GetRunningPlatformData()[0]->SizeY = Dimensions.Y;
+	OutTexture->GetRunningPlatformData()[0]->SetNumSlices(Dimensions.Z);
+	OutTexture->GetRunningPlatformData()[0]->PixelFormat = PF_G8;
 	OutTexture->LODGroup = TEXTUREGROUP_8BitData;
-	OutTexture->Filter = TF_Bilinear;
 
 	// Set sRGB and streaming to false.
 	OutTexture->SRGB = false;
 	OutTexture->NeverStream = true;
 }
 
-void FTextureUtils::CreateTextureMip(UVolumeTexture* OutTexture, const FVolumeInfo& VolumeInfo,
+void FTextureUtils::CreateTextureMip(UTexture* OutTexture, const FVolumeInfo& VolumeInfo,
                                            uint8* BulkData)
 {
 	const auto TotalSize = VolumeInfo.GetByteSize() / VolumeInfo.Dimensions.W;
@@ -88,43 +86,14 @@ void FTextureUtils::CreateTextureMip(UVolumeTexture* OutTexture, const FVolumeIn
 	FMemory::Memcpy(ByteArray, BulkData, TotalSize);
 
 	Mip->BulkData.Unlock();
-
+	
 	// Newly created Volume textures have this null'd
-	if (!OutTexture->PlatformData)
+	if (!OutTexture->GetRunningPlatformData()[0])
 	{
-		OutTexture->PlatformData = new FTexturePlatformData();
+		OutTexture->GetRunningPlatformData()[0] = new FTexturePlatformData();
 	}
 	// Add the new MIP to the list of mips.
-	OutTexture->PlatformData->Mips.Add(Mip);
-}
-
-template<typename T>
-bool FTextureUtils::CreateTextureAssets(T* OutTexture, const FString AssetName,
-                                              const FVolumeInfo& VolumeInfo, UObject* OutPackage, uint8*
-                                              BulkData)
-{
-	const FVector4 Dimensions = VolumeInfo.Dimensions;
-	if (Dimensions.X == 0 || Dimensions.Y == 0 || Dimensions.Z == 0 || Dimensions.W == 0)
-	{
-		return false;
-	}
-
-	T* VolumeTexture = NewObject<T>(OutPackage, FName(*AssetName), RF_Public | RF_Standalone | RF_MarkAsRootSet);
-
-	// Prevent garbage collection of the texture
-	VolumeTexture->AddToRoot();
-
-	SetTextureDetails(VolumeTexture, Dimensions);
-	CreateTextureMip(VolumeTexture, VolumeInfo, BulkData);
-	CreateTextureEditorData(VolumeTexture, Dimensions, BulkData);
-
-	// Update resource, mark that the folder needs to be rescanned and notify editor about asset creation.
-	VolumeTexture->UpdateResource();
-
-	FAssetRegistryModule::AssetCreated(VolumeTexture);
-	// Pass out the reference to our brand new texture.
-	OutTexture = VolumeTexture;
-	return true;
+	OutTexture->GetRunningPlatformData()[0]->Mips.Add(Mip);
 }
 
 bool FTextureUtils::CreateTextureEditorData(UTexture* Texture, const FVector4 Dimensions,
@@ -204,8 +173,8 @@ uint8* FTextureUtils::LoadAndConvertVolumeData(const FString& FilePath, const FV
 
 uint8* FTextureUtils::LoadSliceData(const FString& FilePath, const FVolumeInfo& VolumeInfo)
 {
-	// Load data
-	uint8* LoadedArray = LoadDatFileIntoArray(FilePath, VolumeInfo.GetByteSize());
+	uint8* LoadedArray =  LoadDatFileIntoArray(FilePath, VolumeInfo.GetByteSize());
+	NormalizeArray(VolumeInfo, LoadedArray);
 	return LoadedArray;
 }
 

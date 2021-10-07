@@ -79,6 +79,11 @@ void UVRSSGameInstance::TogglePauseSimulation()
 	TimeUserWidget->bIsPaused = bIsPaused;
 }
 
+void UVRSSGameInstance::ToggleHUDVisibility()
+{
+	TimeUserWidget->SetVisibility(TimeUserWidget->IsVisible() ? ESlateVisibility::Hidden : ESlateVisibility::Visible);
+}
+
 void UVRSSGameInstance::NextTimeStep()
 {
 	CurrentTimeStep += 1;
@@ -106,10 +111,9 @@ void UVRSSGameInstance::NextTimeStep()
 	TimeUserWidget->TextBlockValueTimestep->SetText(FText::AsNumber(CurrentTimeStep));
 }
 
-FUpdateVolumeEvent& UVRSSGameInstance::RegisterTextureLoad(const FString& Directory,
-                                                           TArray<FAssetData>* TextureArray)
+FUpdateVolumeEvent& UVRSSGameInstance::RegisterTextureLoad(const FString& Directory, TArray<FAssetData>* TextureArray)
 {
-	UObjectLibrary* ObjectLibrary = UObjectLibrary::CreateLibrary(UVolumeTexture::StaticClass(), false, GIsEditor);
+	UObjectLibrary* ObjectLibrary = UObjectLibrary::CreateLibrary(UTexture::StaticClass(), false, GIsEditor);
 	ObjectLibrary->AddToRoot();
 	ObjectLibrary->LoadAssetDataFromPath(Directory);
 
@@ -142,3 +146,4 @@ FUpdateVolumeEvent& UVRSSGameInstance::RegisterTextureLoad(const FString& Direct
 	}
 	return UpdateVolumeEvent;
 }
+

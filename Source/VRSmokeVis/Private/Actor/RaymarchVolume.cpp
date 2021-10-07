@@ -83,7 +83,7 @@ void ARaymarchVolume::BeginPlay()
 
 	if (VolumeAsset)
 	{
-		// Unreal units = cm, FDS has sizes in m -> multiply by 10.
+		// Unreal units = cm, FDS has sizes in m -> multiply by 100.
 		StaticMeshComponent->SetRelativeScale3D(VolumeAsset->VolumeInfo.WorldDimensions * 100);
 		
 		GI->InitUpdateRate(VolumeAsset->VolumeInfo.Spacing.W);

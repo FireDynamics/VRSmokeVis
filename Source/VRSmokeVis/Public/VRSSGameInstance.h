@@ -23,6 +23,9 @@ public:
 	UFUNCTION()
 	void InitUpdateRate(float UpdateRateSuggestion);
 	
+	UFUNCTION(BlueprintSetter)
+	void SetUpdateRate(const float NewUpdateRate);
+	
 	UFUNCTION()
 	void FastForwardSimulation(const float Amount);
 
@@ -32,14 +35,12 @@ public:
 	UFUNCTION()
 	void TogglePauseSimulation();
 
-	UFUNCTION(BlueprintSetter)
-	void SetUpdateRate(const float NewUpdateRate);
+	UFUNCTION()
+	void ToggleHUDVisibility();
 	
 protected:
 	UFUNCTION()
 	void NextTimeStep();
-
-	bool bIsPaused = false;
 	
 public:
 	/** The class of the raymarch lights that are dimmed over time. */
@@ -79,4 +80,8 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly)
 	float SimTimeStepLength = -1;
+	
+	bool bIsPaused = false;
+
+	bool bHUDHidden = false;
 };

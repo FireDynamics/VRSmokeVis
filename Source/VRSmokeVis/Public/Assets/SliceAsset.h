@@ -5,7 +5,7 @@
 #include "Engine/DataAsset.h"
 #include "VolumeInfo.h"
 
-#include "VolumeAsset.Generated.h"
+#include "SliceAsset.Generated.h"
 
 UCLASS()
 class VRSMOKEVIS_API USliceAsset : public UDataAsset

@@ -69,4 +69,6 @@ protected:
 	void TogglePauseSimulation();
 	void FastForwardSimulation();
 	void RewindSimulation();
+	
+	void ToggleHUDVisibility();
 };

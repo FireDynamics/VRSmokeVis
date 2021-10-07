@@ -19,17 +19,15 @@ class UVRSSAssetFactory : public UFactory
 {
 	GENERATED_UCLASS_BODY()
 
-public:
-
 	//~ UFactory Interface
 	virtual UObject* FactoryCreateFile(UClass* InClass, UObject* InParent, FName InName, EObjectFlags Flags, const FString& Filename, const TCHAR* Params, FFeedbackContext* Warn, bool& bOutOperationCanceled) override;
 
 protected:
 	UObject* CreateVolume(UObject* InParent, const FString& Filename);
-	UObject* CreateSlice(UObject* InParent, const FString& Filename);
 
 	class UVolumeAsset* CreateVolumeFromFile(FVolumeInfo& VolumeInfo, const FString& FileName, UObject* Package,
 												const FString& MeshName, TArray<UVolumeTexture*> OutVolumeTextures);
 	class USliceAsset* CreateSliceFromFile(FVolumeInfo& VolumeInfo, const FString& FileName, UObject* Package,
-												const FString& MeshName, TArray<UTexture*> OutTextures);
+												const FString& MeshName, TArray<UTexture2D*> OutTextures);
+	UObject* CreateSlice(UObject* InParent, const FString& Filename);
 };

@@ -11,7 +11,7 @@ DEFINE_LOG_CATEGORY(LogAssetFactory)
 
 UVRSSAssetFactory::UVRSSAssetFactory(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
-	Formats.Add(FString(TEXT("yaml")) + NSLOCTEXT("UYamlVolumeTextureFactory", "FormatYaml", ".yaml File").ToString());
+	Formats.Add(FString(TEXT("yaml;")) + NSLOCTEXT("UYamlVolumeTextureFactory", "FormatYaml", ".yaml File").ToString());
 
 	SupportedClass = UVolumeAsset::StaticClass();
 	bCreateNew = false;
@@ -25,11 +25,11 @@ UObject* UVRSSAssetFactory::FactoryCreateFile(UClass* InClass, UObject* InParent
                                               bool& bOutOperationCanceled)
 {
 	UObject* Out = nullptr;
-	if (Filename.Contains(TEXT("smoke")) || Filename.Contains(TEXT("slice3D")))
+	if (InName.ToString().Contains(TEXT("smoke")) || Filename.Contains(TEXT("slice3D")))
 	{
 		Out = CreateVolume(InParent, Filename);
 	}
-	else if (Filename.Contains(TEXT("slice2D")))
+	else if (InName.ToString().Contains(TEXT("slice2D")))
 	{
 		Out = CreateSlice(InParent, Filename);
 	}
@@ -68,13 +68,13 @@ UObject* UVRSSAssetFactory::CreateSlice(UObject* InParent, const FString& Filena
 	USliceAsset* OutSlice = nullptr;
 	for (auto It = VolumeInfos.CreateIterator(); It; ++It)
 	{
-		TArray<UTexture*> SliceTextures;
+		TArray<UTexture2D*> SliceTextures;
 		OutSlice = CreateSliceFromFile(It.Value(), Filename, InParent, It.Key(), SliceTextures);
 
 		OutSlice->SliceTextures.Reserve(It.Value().Dimensions.W);
 
 		// Add VolumeTextures to AdditionalImportedObjects so it also gets saved in-editor.
-		for (UTexture* SliceTexture : SliceTextures)
+		for (UTexture2D* SliceTexture : SliceTextures)
 		{
 			AdditionalImportedObjects.Add(SliceTexture);
 		}
@@ -113,7 +113,7 @@ UVolumeAsset* UVRSSAssetFactory::CreateVolumeFromFile(FVolumeInfo& VolumeInfo, c
 		UVolumeTexture* VolumeTexture;
 		FTextureUtils::CreateTextureAssets<UVolumeTexture>(VolumeTexture, VolumeTextureName, VolumeInfo,
 		                                                 SubPackage, LoadedArray + SingleTextureSize * t);
-
+		VolumeTexture->Filter = TF_Bilinear;
 
 		FString PackageFileName = FPackageName::LongPackageNameToFilename(
 			SubPackage->GetName(), FPackageName::GetAssetPackageExtension());
@@ -129,7 +129,7 @@ UVolumeAsset* UVRSSAssetFactory::CreateVolumeFromFile(FVolumeInfo& VolumeInfo, c
 }
 
 USliceAsset* UVRSSAssetFactory::CreateSliceFromFile(FVolumeInfo& VolumeInfo, const FString& FileName, UObject* Package,
-                                                  const FString& MeshName, TArray<UTexture*> OutTextures)
+                                                  const FString& MeshName, TArray<UTexture2D*> OutTextures)
 {
 	// Get valid package name and filepath.
 	FString Directory, SliceName, PackagePath;
@@ -148,9 +148,9 @@ USliceAsset* UVRSSAssetFactory::CreateSliceFromFile(FVolumeInfo& VolumeInfo, con
 	{
 		const long SingleTextureSize = static_cast<long>(VolumeInfo.Dimensions.X) * VolumeInfo.Dimensions.Y * VolumeInfo
 			.Dimensions.Z;
-		const FString VolumeTextureName = "VT_" + SliceName + "_Data_t" + FString::FromInt(t);
-		VolumeInfo.VolumeTextureDir = FPaths::Combine(PackagePath.RightChop(8), MeshName);
-		UPackage* SubPackage = CreatePackage(*FPaths::Combine(VolumeInfo.VolumeTextureDir, VolumeTextureName));
+		const FString SliceTextureName = "ST_" + SliceName + "_Data_t" + FString::FromInt(t);
+		VolumeInfo.VolumeTextureDir = FPaths::Combine(PackagePath.RightChop(8), SliceName + "_" + MeshName);
+		UPackage* SubPackage = CreatePackage(*FPaths::Combine(VolumeInfo.VolumeTextureDir, SliceTextureName));
 
 		// The following function call expects the first two dimensions to be the ones describing the texture
 		// dimensions, we therefore might have to swap them now
@@ -161,9 +161,11 @@ USliceAsset* UVRSSAssetFactory::CreateSliceFromFile(FVolumeInfo& VolumeInfo, con
 			VolumeInfo.Dimensions.Z = 1;
 		}
 		// Set pointer to current Volume position at timestep t
-		UTexture* SliceTexture;
-		FTextureUtils::CreateTextureAssets<UTexture>(SliceTexture, VolumeTextureName, VolumeInfo,
+		UTexture2D* SliceTexture;
+		FTextureUtils::CreateTextureAssets<UTexture2D>(SliceTexture, SliceTextureName, VolumeInfo,
 		                                                 SubPackage, LoadedArray + SingleTextureSize * t);
+		SliceTexture->Filter = TF_Default;
+
 		// Correct the dimensions again
 		if (bNeedsSwap)
 		{

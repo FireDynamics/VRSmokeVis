@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "VR/Grabbable.h"
 #include "Assets/VolumeAsset.h"
 #include "VRSSGameInstance.h"
 #include "RaymarchVolume.generated.h"
@@ -10,7 +9,7 @@
 DECLARE_LOG_CATEGORY_EXTERN(LogRaymarchVolume, Log, All);
 
 UCLASS()
-class VRSMOKEVIS_API ARaymarchVolume : public AActor, public IGrabbable
+class VRSMOKEVIS_API ARaymarchVolume : public AActor
 {
 	GENERATED_BODY()
 

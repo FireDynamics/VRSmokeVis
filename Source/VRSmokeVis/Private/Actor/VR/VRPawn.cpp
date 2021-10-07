@@ -49,7 +49,9 @@ void AVRPawn::BeginPlay()
 	// Time controls
 	InputComponent->BindAction("Pause", IE_Pressed, this, &AVRPawn::TogglePauseSimulation).bExecuteWhenPaused = true;
 	InputComponent->BindAction("FastForward", IE_Pressed, this, &AVRPawn::FastForwardSimulation).bExecuteWhenPaused = true;
-	InputComponent->BindAction("Rewind", IE_Pressed, this, &AVRPawn::RewindSimulation).bExecuteWhenPaused = true; 
+	InputComponent->BindAction("Rewind", IE_Pressed, this, &AVRPawn::RewindSimulation).bExecuteWhenPaused = true;
+	
+	InputComponent->BindAction("ToggleHUD", IE_Pressed, this, &AVRPawn::ToggleHUDVisibility).bExecuteWhenPaused = true; 
 }
 
 void AVRPawn::TogglePauseSimulation()
@@ -69,4 +71,10 @@ void AVRPawn::RewindSimulation()
 {
 	UVRSSGameInstance *GI = Cast<UVRSSGameInstance>(GetGameInstance());
 	GI->RewindSimulation(25.0f);
+}
+
+void AVRPawn::ToggleHUDVisibility()
+{
+	UVRSSGameInstance *GI = Cast<UVRSSGameInstance>(GetGameInstance());
+	GI->ToggleHUDVisibility();
 }

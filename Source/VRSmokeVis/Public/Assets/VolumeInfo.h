@@ -29,7 +29,7 @@ struct VRSMOKEVIS_API FVolumeInfo
 	UPROPERTY(VisibleAnywhere)
 	FVector MeshPos;
 
-	// Size of the whole volume in mm (equals VoxelDimensions * Spacing)
+	// Size of the whole volume in world units (equals Dimensions * Spacing)
 	UPROPERTY(VisibleAnywhere)
 	FVector WorldDimensions;
 
