@@ -16,7 +16,7 @@ protected:
 	virtual void BeginPlay() override;
 
 	UFUNCTION()
-	void UpdateLight(const float NewValue);
+	void UpdateLight(const float NewValue) const;
 
 public:
 	UPROPERTY(EditAnywhere)

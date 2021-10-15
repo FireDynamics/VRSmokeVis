@@ -33,7 +33,7 @@ void ARaymarchLight::BeginPlay()
 	}
 }
 
-void ARaymarchLight::UpdateLight(const float NewValue)
+void ARaymarchLight::UpdateLight(const float NewValue) const
 {
 	PointLightComponent->SetIntensity(NewValue);
 	PointLightComponent->SetAttenuationRadius(NewValue*100);

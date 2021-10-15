@@ -27,7 +27,7 @@ void UTimeUserWidget::NativeTick(const FGeometry& MyGeometry, const float DeltaT
 	}
 }
 
-void UTimeUserWidget::UpdateTimeTextBlocks()
+void UTimeUserWidget::UpdateTimeTextBlocks() const
 {
 	TextBlockValueGameTime->SetText(FText::AsNumber(CurrentGameTime));
 	TextBlockValueSimTime->SetText(FText::AsNumber(CurrentSimTime));

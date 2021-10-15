@@ -29,7 +29,7 @@ public:
 	static void SetTextureDetails(UTexture* OutTexture, const FVector4 Dimensions);
 
 	/** Creates the texture's 0th mip from the bulkdata provided.*/
-	static void CreateTextureMip(UTexture* OutTexture, const FVolumeInfo& VolumeInfo, uint8* BulkData);
+	static void CreateTextureMip(UTexture* OutTexture, const FDataInfo& VolumeInfo, uint8* BulkData);
 
 	/** Handles the saving of source data to persistent textures. Only works in-editor, as packaged builds no longer
 	 * have source data for textures.*/
@@ -40,24 +40,24 @@ public:
 	static uint8* LoadDatFileIntoArray(const FString FileName, const int64 BytesToLoad);
 
 	/** Converts an array of densities to the resulting transmission. **/
-	static void DensityToTransmission(const FVolumeInfo& VolumeInfo, uint8* Array);
+	static void DensityToTransmission(const FDataInfo& VolumeInfo, uint8* Array);
 
-	/** Converts an array to an array normalized to the full range of 0-255. */
-	static void NormalizeArray(const FVolumeInfo& VolumeInfo, uint8* Array);
+	/** Normalizes an array to the full range of 0-255 (1 Byte). */
+	static void NormalizeArray(const FDataInfo& VolumeInfo, uint8* Array);
 
 	// Loads the raw data specified in the VolumeInfo and converts it so that it's usable with our raymarching materials.
-	static uint8* LoadAndConvertVolumeData(const FString& FilePath, const FVolumeInfo& VolumeInfo);
+	static uint8* LoadAndConvertVolumeData(const FString& FilePath, const FDataInfo& VolumeInfo);
 
 	// Loads the raw data specified in the VolumeInfo.
-	static uint8* LoadSliceData(const FString& FilePath, const FVolumeInfo& VolumeInfo);
+	static uint8* LoadSliceData(const FString& FilePath, const FDataInfo& VolumeInfo);
 
 	// Getting info about volumes before loading them.
-	static TMap<FString, FVolumeInfo> ParseVolumeInfoFromHeader(const FString& FileName);
+	static TMap<FString, FDataInfo> ParseVolumeInfoFromHeader(const FString& FileName);
 
 	/** Creates a Texture asset with the given name, pixel format and dimensions and fills it with the bulk data
 	* provided. Returns a reference to the created texture in the CreatedTexture param. */
 	template <typename T>
-	static bool CreateTextureAssets(T*& OutTexture, const FString AssetName, const FVolumeInfo& VolumeInfo,
+	static bool CreateTextureAssets(T*& OutTexture, const FString AssetName, const FDataInfo& VolumeInfo,
 	                                UObject* OutPackage, uint8* BulkData)
 	{
 		const FVector4 Dimensions = VolumeInfo.Dimensions;

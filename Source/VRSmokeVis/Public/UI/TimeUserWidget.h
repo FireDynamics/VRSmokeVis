@@ -12,14 +12,12 @@ class UTimeUserWidget : public UUserWidget
 public:
 	UTimeUserWidget(const FObjectInitializer& ObjectInitializer);
 
-	// Optionally override the Blueprint "Event Construct" event
 	virtual void NativeConstruct() override;
 
-	// Optionally override the tick event
 	virtual void NativeTick(const FGeometry& MyGeometry, const float DeltaTime) override;
 
 	UFUNCTION()
-	void UpdateTimeTextBlocks();
+	void UpdateTimeTextBlocks() const;
 	
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 	UTextBlock *TextBlockValueGameTime;

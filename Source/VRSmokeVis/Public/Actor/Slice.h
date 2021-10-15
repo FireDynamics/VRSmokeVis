@@ -14,7 +14,7 @@ class VRSMOKEVIS_API ASlice : public AActor
 	GENERATED_BODY()
 
 public:
-	/** Sets default values for this actor's properties*/
+	/** Sets default values for this actor's properties. */
 	ASlice();
 	
 	/** Called every frame. **/
@@ -26,9 +26,13 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-	/** Delegate to update the texture after a given amount of time **/
+	/** Delegate to update the texture after a given amount of time. **/
 	UFUNCTION()
 	void UpdateTexture(const int CurrentTimeStep);
+
+	/** Delegate to update the ColorMap in case a slice with higher Max/lower Min has been added. **/
+	UFUNCTION()
+	void UpdateColorMapScale(const FString Quantity, const float NewMin, const float NewMax) const;
 
 public:
 	UPROPERTY(VisibleAnywhere)

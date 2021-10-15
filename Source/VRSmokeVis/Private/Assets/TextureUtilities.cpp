@@ -67,8 +67,8 @@ void FTextureUtils::SetTextureDetails(UTexture* OutTexture, const FVector4 Dimen
 	OutTexture->NeverStream = true;
 }
 
-void FTextureUtils::CreateTextureMip(UTexture* OutTexture, const FVolumeInfo& VolumeInfo,
-                                           uint8* BulkData)
+void FTextureUtils::CreateTextureMip(UTexture* OutTexture, const FDataInfo& VolumeInfo,
+                                     uint8* BulkData)
 {
 	const auto TotalSize = VolumeInfo.GetByteSize() / VolumeInfo.Dimensions.W;
 
@@ -86,7 +86,7 @@ void FTextureUtils::CreateTextureMip(UTexture* OutTexture, const FVolumeInfo& Vo
 	FMemory::Memcpy(ByteArray, BulkData, TotalSize);
 
 	Mip->BulkData.Unlock();
-	
+
 	// Newly created Volume textures have this null'd
 	if (!OutTexture->GetRunningPlatformData()[0])
 	{
@@ -97,7 +97,7 @@ void FTextureUtils::CreateTextureMip(UTexture* OutTexture, const FVolumeInfo& Vo
 }
 
 bool FTextureUtils::CreateTextureEditorData(UTexture* Texture, const FVector4 Dimensions,
-                                                  const uint8* BulkData)
+                                            const uint8* BulkData)
 {
 	Texture->MipGenSettings = TMGS_NoMipmaps;
 
@@ -135,7 +135,7 @@ uint8* FTextureUtils::LoadDatFileIntoArray(const FString FileName, const int64 B
 	return LoadedArray;
 }
 
-void FTextureUtils::DensityToTransmission(const FVolumeInfo& VolumeInfo, uint8* Array)
+void FTextureUtils::DensityToTransmission(const FDataInfo& VolumeInfo, uint8* Array)
 {
 	// Uses the Beer-Lambert law to convert densities to the corresponding transmission using the extinction coefficient
 	// Adding 0.5 before assigning the float value to the uint8 array causes it to round correctly without having to
@@ -151,7 +151,7 @@ void FTextureUtils::DensityToTransmission(const FVolumeInfo& VolumeInfo, uint8* 
 	});
 }
 
-void FTextureUtils::NormalizeArray(const FVolumeInfo& VolumeInfo, uint8* Array)
+void FTextureUtils::NormalizeArray(const FDataInfo& VolumeInfo, uint8* Array)
 {
 	const float ValueRange = 255.f / (VolumeInfo.MaxValue - VolumeInfo.MinValue);
 	ParallelFor(VolumeInfo.GetByteSize(), [&](const int Idx)
@@ -160,7 +160,7 @@ void FTextureUtils::NormalizeArray(const FVolumeInfo& VolumeInfo, uint8* Array)
 	});
 }
 
-uint8* FTextureUtils::LoadAndConvertVolumeData(const FString& FilePath, const FVolumeInfo& VolumeInfo)
+uint8* FTextureUtils::LoadAndConvertVolumeData(const FString& FilePath, const FDataInfo& VolumeInfo)
 {
 	// Load data
 	uint8* LoadedArray = LoadDatFileIntoArray(FilePath, VolumeInfo.GetByteSize());
@@ -171,16 +171,14 @@ uint8* FTextureUtils::LoadAndConvertVolumeData(const FString& FilePath, const FV
 	return LoadedArray;
 }
 
-uint8* FTextureUtils::LoadSliceData(const FString& FilePath, const FVolumeInfo& VolumeInfo)
+uint8* FTextureUtils::LoadSliceData(const FString& FilePath, const FDataInfo& VolumeInfo)
 {
-	uint8* LoadedArray =  LoadDatFileIntoArray(FilePath, VolumeInfo.GetByteSize());
-	NormalizeArray(VolumeInfo, LoadedArray);
-	return LoadedArray;
+	return LoadDatFileIntoArray(FilePath, VolumeInfo.GetByteSize());
 }
 
-TMap<FString, FVolumeInfo> FTextureUtils::ParseVolumeInfoFromHeader(const FString& FileName)
+TMap<FString, FDataInfo> FTextureUtils::ParseVolumeInfoFromHeader(const FString& FileName)
 {
-	TMap<FString, FVolumeInfo> VolumeInfos;
+	TMap<FString, FDataInfo> DataInfos;
 
 	const FString FileString = ReadFileAsString(FileName);
 	TArray<FString> Lines;
@@ -203,13 +201,24 @@ TMap<FString, FVolumeInfo> FTextureUtils::ParseVolumeInfoFromHeader(const FStrin
 	int NMeshes;
 	FDefaultValueHelper::ParseInt(Right, NMeshes);
 
+	// Quantity
+	FString Quantity;
+	Lines[Lines.Num()-2].Split(TEXT(": "), &Left, &Quantity);
+	Quantity.TrimStartAndEndInline();
+	Quantity.ToLowerInline();
+
+	//ScaleFactor
+	Lines[Lines.Num()-1].Split(TEXT(": "), &Left, &Right);
+	float ScaleFactor;
+	FDefaultValueHelper::ParseFloat(Right, ScaleFactor);
+	
 	UE_LOG(LogTextureUtils, Log, TEXT("Loading volumes, nmeshes: %d"), NMeshes);
 	// Meshes
 	for (int m = 0; m < NMeshes; ++m)
 	{
-		FVolumeInfo VolumeInfo;
-		VolumeInfo.MaxValue = DataMax;
-		VolumeInfo.MinValue = DataMin;
+		FDataInfo DataInfo;
+		DataInfo.MaxValue = DataMax;
+		DataInfo.MinValue = DataMin;
 
 		for (int i = 0; i < 5; ++i)
 		{
@@ -217,10 +226,10 @@ TMap<FString, FVolumeInfo> FTextureUtils::ParseVolumeInfoFromHeader(const FStrin
 			if (Left.Contains(TEXT("MeshPos")))
 			{
 				Right.Split(TEXT(" "), &Left, &Right);
-				FDefaultValueHelper::ParseFloat(Left, VolumeInfo.MeshPos.X);
+				FDefaultValueHelper::ParseFloat(Left, DataInfo.MeshPos.X);
 				Right.Split(TEXT(" "), &Left, &Right);
-				FDefaultValueHelper::ParseFloat(Left, VolumeInfo.MeshPos.Y);
-				FDefaultValueHelper::ParseFloat(Right, VolumeInfo.MeshPos.Z);
+				FDefaultValueHelper::ParseFloat(Left, DataInfo.MeshPos.Y);
+				FDefaultValueHelper::ParseFloat(Right, DataInfo.MeshPos.Z);
 			}
 			else if (Left.Contains(TEXT("Mesh")))
 			{
@@ -231,36 +240,38 @@ TMap<FString, FVolumeInfo> FTextureUtils::ParseVolumeInfoFromHeader(const FStrin
 				int Val;
 				Right.Split(TEXT(" "), &Left, &Right);
 				FDefaultValueHelper::ParseInt(Left, Val);
-				VolumeInfo.Dimensions.W = Val;
+				DataInfo.Dimensions.W = Val;
 				Right.Split(TEXT(" "), &Left, &Right);
 				FDefaultValueHelper::ParseInt(Left, Val);
-				VolumeInfo.Dimensions.X = Val;
+				DataInfo.Dimensions.X = Val;
 				Right.Split(TEXT(" "), &Left, &Right);
 				FDefaultValueHelper::ParseInt(Left, Val);
-				VolumeInfo.Dimensions.Y = Val;
+				DataInfo.Dimensions.Y = Val;
 				FDefaultValueHelper::ParseInt(Right, Val);
-				VolumeInfo.Dimensions.Z = Val;
+				DataInfo.Dimensions.Z = Val;
 			}
 			else if (Left.Contains(TEXT("Spacing")))
 			{
 				Right.Split(TEXT(" "), &Left, &Right);
-				FDefaultValueHelper::ParseFloat(Left, VolumeInfo.Spacing.W);
+				FDefaultValueHelper::ParseFloat(Left, DataInfo.Spacing.W);
 				Right.Split(TEXT(" "), &Left, &Right);
-				FDefaultValueHelper::ParseFloat(Left, VolumeInfo.Spacing.X);
+				FDefaultValueHelper::ParseFloat(Left, DataInfo.Spacing.X);
 				Right.Split(TEXT(" "), &Left, &Right);
-				FDefaultValueHelper::ParseFloat(Left, VolumeInfo.Spacing.Y);
-				FDefaultValueHelper::ParseFloat(Right, VolumeInfo.Spacing.Z);
+				FDefaultValueHelper::ParseFloat(Left, DataInfo.Spacing.Y);
+				FDefaultValueHelper::ParseFloat(Right, DataInfo.Spacing.Z);
 			}
 			else if (Left.Contains(TEXT("DataFile")))
 			{
-				VolumeInfo.DataFileName = Right.TrimStartAndEnd();
-				UE_LOG(LogTextureUtils, Log, TEXT("Found datafile %s"), *VolumeInfo.DataFileName);
+				DataInfo.DataFileName = Right.TrimStartAndEnd();
+				UE_LOG(LogTextureUtils, Log, TEXT("Found datafile %s"), *DataInfo.DataFileName);
 			}
 		}
 
-		VolumeInfo.WorldDimensions = VolumeInfo.Spacing * FVector(VolumeInfo.Dimensions);
-		VolumeInfos.Add(MeshId, VolumeInfo);
+		DataInfo.WorldDimensions = DataInfo.Spacing * FVector(DataInfo.Dimensions);
+		DataInfo.ScaleFactor = ScaleFactor;
+		DataInfo.Quantity = Quantity;
+		DataInfos.Add(MeshId, DataInfo);
 	}
-
-	return VolumeInfos;
+	
+	return DataInfos;
 }

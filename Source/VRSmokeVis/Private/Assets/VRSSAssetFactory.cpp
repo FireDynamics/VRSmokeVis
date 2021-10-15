@@ -41,7 +41,7 @@ UObject* UVRSSAssetFactory::FactoryCreateFile(UClass* InClass, UObject* InParent
 
 UObject* UVRSSAssetFactory::CreateVolume(UObject* InParent, const FString& Filename)
 {
-	TMap<FString, FVolumeInfo> VolumeInfos = FTextureUtils::ParseVolumeInfoFromHeader(Filename);
+	TMap<FString, FDataInfo> VolumeInfos = FTextureUtils::ParseVolumeInfoFromHeader(Filename);
 	UVolumeAsset* OutVolume = nullptr;
 	for (auto It = VolumeInfos.CreateIterator(); It; ++It)
 	{
@@ -64,7 +64,7 @@ UObject* UVRSSAssetFactory::CreateVolume(UObject* InParent, const FString& Filen
 
 UObject* UVRSSAssetFactory::CreateSlice(UObject* InParent, const FString& Filename)
 {
-	TMap<FString, FVolumeInfo> VolumeInfos = FTextureUtils::ParseVolumeInfoFromHeader(Filename);
+	TMap<FString, FDataInfo> VolumeInfos = FTextureUtils::ParseVolumeInfoFromHeader(Filename);
 	USliceAsset* OutSlice = nullptr;
 	for (auto It = VolumeInfos.CreateIterator(); It; ++It)
 	{
@@ -85,8 +85,8 @@ UObject* UVRSSAssetFactory::CreateSlice(UObject* InParent, const FString& Filena
 	return OutSlice;
 }
 
-UVolumeAsset* UVRSSAssetFactory::CreateVolumeFromFile(FVolumeInfo& VolumeInfo, const FString& FileName, UObject* Package,
-                                                  const FString& MeshName, TArray<UVolumeTexture*> OutVolumeTextures)
+UVolumeAsset* UVRSSAssetFactory::CreateVolumeFromFile(FDataInfo& VolumeInfo, const FString& FileName, UObject* Package,
+                                                  const FString& MeshName, TArray<UVolumeTexture*> OutVolumeTextures) const
 {
 	// Get valid package name and filepath.
 	FString Directory, VolumeName, PackagePath;
@@ -128,8 +128,8 @@ UVolumeAsset* UVRSSAssetFactory::CreateVolumeFromFile(FVolumeInfo& VolumeInfo, c
 	return VolumeAsset;
 }
 
-USliceAsset* UVRSSAssetFactory::CreateSliceFromFile(FVolumeInfo& VolumeInfo, const FString& FileName, UObject* Package,
-                                                  const FString& MeshName, TArray<UTexture2D*> OutTextures)
+USliceAsset* UVRSSAssetFactory::CreateSliceFromFile(FDataInfo& VolumeInfo, const FString& FileName, UObject* Package,
+                                                  const FString& MeshName, TArray<UTexture2D*> OutTextures) const
 {
 	// Get valid package name and filepath.
 	FString Directory, SliceName, PackagePath;
@@ -154,23 +154,41 @@ USliceAsset* UVRSSAssetFactory::CreateSliceFromFile(FVolumeInfo& VolumeInfo, con
 
 		// The following function call expects the first two dimensions to be the ones describing the texture
 		// dimensions, we therefore might have to swap them now
-		const bool bNeedsSwap = VolumeInfo.Dimensions.Y == 1;
-		if (bNeedsSwap)
+		const bool SwapX = VolumeInfo.Dimensions.X == 1;
+		const bool SwapY = VolumeInfo.Dimensions.Y == 1;
+		if (SwapX)
 		{
+			const float Tmp = VolumeInfo.Dimensions.X;
+			VolumeInfo.Dimensions.X = VolumeInfo.Dimensions.Y;
 			VolumeInfo.Dimensions.Y = VolumeInfo.Dimensions.Z;
-			VolumeInfo.Dimensions.Z = 1;
+			VolumeInfo.Dimensions.Z = Tmp;
 		}
+		if (SwapY)
+		{
+			const float Tmp = VolumeInfo.Dimensions.Y;
+			VolumeInfo.Dimensions.Y = VolumeInfo.Dimensions.Z;
+			VolumeInfo.Dimensions.Z = Tmp;
+		}
+		
 		// Set pointer to current Volume position at timestep t
 		UTexture2D* SliceTexture;
 		FTextureUtils::CreateTextureAssets<UTexture2D>(SliceTexture, SliceTextureName, VolumeInfo,
-		                                                 SubPackage, LoadedArray + SingleTextureSize * t);
+														SubPackage, LoadedArray + SingleTextureSize * t);
 		SliceTexture->Filter = TF_Default;
-
+		
 		// Correct the dimensions again
-		if (bNeedsSwap)
+		if (SwapX)
 		{
+			const float Tmp = VolumeInfo.Dimensions.X;
+			VolumeInfo.Dimensions.X = VolumeInfo.Dimensions.Z;
 			VolumeInfo.Dimensions.Z = VolumeInfo.Dimensions.Y;
-			VolumeInfo.Dimensions.Y = 1;
+			VolumeInfo.Dimensions.Y = Tmp;
+		}
+		if (SwapY)
+		{
+			const float Tmp = VolumeInfo.Dimensions.Z;
+			VolumeInfo.Dimensions.Z = VolumeInfo.Dimensions.Y;
+			VolumeInfo.Dimensions.Y = Tmp;
 		}
 		
 
@@ -180,7 +198,7 @@ USliceAsset* UVRSSAssetFactory::CreateSliceFromFile(FVolumeInfo& VolumeInfo, con
 
 		OutTextures.Add(SliceTexture);
 	}
-	SliceAsset->VolumeInfo = VolumeInfo;
+	SliceAsset->SliceInfo = VolumeInfo;
 
 	delete[] LoadedArray;
 

@@ -3,9 +3,6 @@
 
 #include "VRSSGameMode.h"
 
-#include "VRSSGameInstance.h"
-#include "UI/TimeUserWidget.h"
-
 
 // Sets default values
 AVRSSGameMode::AVRSSGameMode()
@@ -17,7 +14,4 @@ AVRSSGameMode::AVRSSGameMode()
 void AVRSSGameMode::BeginPlay()
 {
 	Super::BeginPlay();
-
-	// Init UI
-	Cast<UVRSSGameInstance>(GetGameInstance())->TimeUserWidget->AddToViewport();
 }

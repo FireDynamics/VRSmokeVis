@@ -2,17 +2,21 @@
 
 #pragma once
 
-#include "VolumeInfo.generated.h"
+#include "DataInfo.generated.h"
 
-// Contains information about the volume loaded from the Various volumetric data file formats supported.
+// Contains information about the data loaded from the binary data and yaml header file.
 USTRUCT(BlueprintType)
-struct VRSMOKEVIS_API FVolumeInfo
+struct VRSMOKEVIS_API FDataInfo
 {
 	GENERATED_BODY()
 
 	// Name of the volume file that was loaded, including extension.
 	FString DataFileName;
 
+	// Name of the quantity for which data has been loaded
+	UPROPERTY(VisibleAnywhere)
+	FString Quantity;
+	
 	// Path to VolumeTextures
 	UPROPERTY(VisibleAnywhere)
 	FString VolumeTextureDir;
@@ -40,6 +44,11 @@ struct VRSMOKEVIS_API FVolumeInfo
 	// Highest value possible for this type of data.
 	UPROPERTY(VisibleAnywhere)
 	float MaxValue;
+
+	// The factor with which the input values have been scaled. A factor of 2 means a read value of 100 corresponds to
+	// an original value of 200.
+	UPROPERTY(VisibleAnywhere)
+	float ScaleFactor;
 	
 	// The mass specific extinction coefficient.
 	UPROPERTY(EditAnywhere)

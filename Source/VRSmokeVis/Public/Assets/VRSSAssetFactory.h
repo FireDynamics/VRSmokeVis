@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "VolumeInfo.h"
+#include "DataInfo.h"
 #include "Factories/Factory.h"
 #include "UObject/ObjectMacros.h"
 
@@ -25,9 +25,9 @@ class UVRSSAssetFactory : public UFactory
 protected:
 	UObject* CreateVolume(UObject* InParent, const FString& Filename);
 
-	class UVolumeAsset* CreateVolumeFromFile(FVolumeInfo& VolumeInfo, const FString& FileName, UObject* Package,
-												const FString& MeshName, TArray<UVolumeTexture*> OutVolumeTextures);
-	class USliceAsset* CreateSliceFromFile(FVolumeInfo& VolumeInfo, const FString& FileName, UObject* Package,
-												const FString& MeshName, TArray<UTexture2D*> OutTextures);
+	class UVolumeAsset* CreateVolumeFromFile(FDataInfo& VolumeInfo, const FString& FileName, UObject* Package,
+												const FString& MeshName, TArray<UVolumeTexture*> OutVolumeTextures) const;
+	class USliceAsset* CreateSliceFromFile(FDataInfo& VolumeInfo, const FString& FileName, UObject* Package,
+												const FString& MeshName, TArray<UTexture2D*> OutTextures) const;
 	UObject* CreateSlice(UObject* InParent, const FString& Filename);
 };

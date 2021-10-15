@@ -3,7 +3,7 @@
 #pragma once
 
 #include "Engine/DataAsset.h"
-#include "VolumeInfo.h"
+#include "DataInfo.h"
 
 #include "VolumeAsset.Generated.h"
 
@@ -17,5 +17,5 @@ public:
 	
 	// Holds the general info about the Yaml Volume read from disk.
 	UPROPERTY(EditAnywhere)
-	FVolumeInfo VolumeInfo;
+	FDataInfo VolumeInfo;
 };
