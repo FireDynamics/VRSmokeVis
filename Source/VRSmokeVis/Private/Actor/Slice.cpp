@@ -29,7 +29,6 @@ ASlice::ASlice() : AActor()
 		StaticMeshComponent->SetStaticMesh(PlaneMesh.Object);
 		StaticMeshComponent->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
 		StaticMeshComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
-		// StaticMeshComponent->SetRelativeScale3D(FVector(100.f, 100.f, 0.f));
 		StaticMeshComponent->SetupAttachment(RootComponent);
 	}
 
@@ -46,15 +45,17 @@ void ASlice::BeginPlay()
 
 	GI = Cast<UVRSSGameInstance>(GetGameInstance());
 
+	check(SliceAsset)
+
 	if (SliceMaterialBase)
 	{
 		SliceMaterial = UMaterialInstanceDynamic::Create(SliceMaterialBase, this, "Slice Mat Dynamic Inst");
 
-		const float CutOffValue = (GI->Config->CutOffValues[SliceAsset->SliceInfo.Quantity] - SliceAsset->SliceInfo.
+		const float CutOffValue = (GI->Config->SliceCutOffValues[SliceAsset->SliceInfo.Quantity] - SliceAsset->SliceInfo.
 			MinValue) * SliceAsset->SliceInfo.ScaleFactor / 255.f;
 		SliceMaterial->SetScalarParameterValue("CutOffValue", CutOffValue);
 
-		SliceMaterial->SetTextureParameterValue("ColorMap", GI->Config->ColorMaps[SliceAsset->SliceInfo.Quantity]);
+		SliceMaterial->SetTextureParameterValue("ColorMap", GI->Config->SliceColorMaps[SliceAsset->SliceInfo.Quantity]);
 
 		SliceMaterial->SetScalarParameterValue("ColorMapMin", 0.f);
 		SliceMaterial->SetScalarParameterValue("ColorMapRange", 1.f);
@@ -70,9 +71,9 @@ void ASlice::BeginPlay()
 		GI->InitUpdateRate(SliceAsset->SliceInfo.Spacing.W);
 	}
 
-	FUpdateVolumeEvent& UpdateVolumeEvent = GI->RegisterTextureLoad(
-		SliceAsset->SliceInfo.VolumeTextureDir, &SliceAsset->SliceTextures);
-	UpdateVolumeEvent.AddUObject(this, &ASlice::UpdateTexture);
+	FUpdateDataEvent& UpdateDataEvent = GI->RegisterTextureLoad(
+		SliceAsset->SliceInfo.TextureDir, &SliceAsset->SliceTextures);
+	UpdateDataEvent.AddUObject(this, &ASlice::UpdateTexture);
 
 	// Initialize resources for timestep t=-1 and t=0 (for time interpolation)
 	UpdateTexture(-1);
@@ -82,7 +83,7 @@ void ASlice::BeginPlay()
 	GI->AddSlice(this);
 
 	// Bind to Event that gets called whenever a new slice is shown (this might affect our ColorMap scale)
-	Cast<UVRSSGameInstance>(GetGameInstance())->SliceUpdateEvent.AddUObject(this, &ASlice::UpdateColorMapScale);
+	Cast<UVRSSGameInstance>(GetGameInstance())->ColorMapUpdateEvent.AddUObject(this, &ASlice::UpdateColorMapScale);
 }
 
 void ASlice::UpdateTexture(const int CurrentTimeStep)
@@ -171,7 +172,7 @@ void ASlice::UseSimulationTransform()
 		// Rotations for corresponding plane: XY=0,0,0 - XZ=90,0,0 - YZ=0,90,0
 		if (SwapX) // YZ
 		{
-			StaticMeshComponent->SetRelativeRotation(FQuat{0, 0.7071068f, 0, 0.7071068f});
+			StaticMeshComponent->SetRelativeRotation(FQuat{0.5f, 0.5f, 0.5f, 0.5f});
 		}
 		else if (SwapY) // XZ
 		{

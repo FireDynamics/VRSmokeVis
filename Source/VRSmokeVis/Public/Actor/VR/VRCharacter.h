@@ -4,8 +4,9 @@
 
 #include "Camera/CameraComponent.h"
 #include "Actor/VRSSPlayerController.h"
+#include "GameFramework/Character.h"
 
-#include "VRPawn.generated.h"
+#include "VRCharacter.generated.h"
 
 class AVRSSPlayerController;
 
@@ -34,12 +35,12 @@ struct FControllerPlatformClasses
 /**
  * VR pawn for handling volumetric volumes.
  */
-UCLASS() class AVRPawn : public APawn
+UCLASS() class AVRCharacter : public ACharacter
 {
 	GENERATED_BODY()
 public:
 	// Default constructor.
-	AVRPawn();
+	AVRCharacter();
 
 	// Root component to attach everything to.
 	UPROPERTY(VisibleAnywhere)
@@ -71,4 +72,22 @@ protected:
 	void RewindSimulation();
 	
 	void ToggleHUDVisibility();
+	
+	/** Handles moving forward/backward */
+	void MoveForward(float Val);
+
+	/** Handles stafing movement, left and right */
+	void MoveRight(float Val);
+
+	/**
+	 * Called via input to turn at a given rate.
+	 * @param Rate	This is a normalized rate, i.e. 1.0 means 100% of desired turn rate
+	 */
+	void TurnAtRate(float Rate);
+
+	/**
+	 * Called via input to turn look up/down at a given rate.
+	 * @param Rate	This is a normalized rate, i.e. 1.0 means 100% of desired turn rate
+	 */
+	void LookUpAtRate(float Rate);
 };

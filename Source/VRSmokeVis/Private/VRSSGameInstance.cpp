@@ -1,14 +1,15 @@
 ﻿#include "VRSSGameInstance.h"
 #include "Engine/VolumeTexture.h"
 #include "Kismet/GameplayStatics.h"
-#include "Misc/DefaultValueHelper.h"
 #include "Kismet/KismetTextLibrary.h"
+#include "Misc/DefaultValueHelper.h"
 #include "Actor/RaymarchLight.h"
 #include "UI/UserInterfaceUserWidget.h"
 #include "UI/TimeUserWidget.h"
 #include "UI/VRSSHUD.h"
 #include "Components/TimelineComponent.h"
 #include "Actor/Slice.h"
+#include "Actor/Obst.h"
 
 UVRSSGameInstance::UVRSSGameInstance(): UGameInstance()
 {
@@ -104,12 +105,13 @@ void UVRSSGameInstance::NextTimeStep()
 	const int NextTextureIndex = (CurrentTimeStep + 9) % MaxTimeStep;
 	TArray<FSoftObjectPath> AssetsToLoad;
 
-	for (TArray<FAssetData>* AssetsData : VolumeTextureArrays)
+	// Todo: Check for different time resolutions for different data types (e.g. slices might have more time steps than obstructions)
+	for (TArray<FAssetData>* AssetsData : TextureArrays)
 	{
 		StreamableManager->Unload((*AssetsData)[PreviousTextureIndex].ToSoftObjectPath());
 		AssetsToLoad.Add((*AssetsData)[NextTextureIndex].ToSoftObjectPath());
 	}
-	UpdateVolumeEvent.Broadcast(CurrentTimeStep);
+	UpdateDataEvent.Broadcast(CurrentTimeStep);
 
 	StreamableManager->RequestAsyncLoad(AssetsToLoad);
 
@@ -123,8 +125,7 @@ TArray<FString> UVRSSGameInstance::GetActiveSliceQuantities() const
 	for (const ASlice* Slice : ActiveSlices)
 	{
 		if (!Quantities.Contains(Slice->SliceAsset->SliceInfo.Quantity))
-			Quantities.Add(
-				Slice->SliceAsset->SliceInfo.Quantity);
+			Quantities.Add(Slice->SliceAsset->SliceInfo.Quantity);
 	}
 	return Quantities;
 }
@@ -149,8 +150,8 @@ void UVRSSGameInstance::AddSlice(ASlice* Slice)
 
 	float Min, Max;
 	const FString Quantity = Slice->SliceAsset->SliceInfo.Quantity;
-	GetActiveSlicesMaxMinForQuantity(Quantity, Min, Max);
-	SliceUpdateEvent.Broadcast(Quantity, Min, Max);
+	GetActiveMaxMinForQuantity(Quantity, Min, Max);
+	ColorMapUpdateEvent.Broadcast(Quantity, Min, Max);
 }
 
 void UVRSSGameInstance::RemoveSlice(ASlice* Slice)
@@ -161,8 +162,8 @@ void UVRSSGameInstance::RemoveSlice(ASlice* Slice)
 
 	float Min, Max;
 	const FString Quantity = Slice->SliceAsset->SliceInfo.Quantity;
-	GetActiveSlicesMaxMinForQuantity(Quantity, Min, Max);
-	SliceUpdateEvent.Broadcast(Quantity, Min, Max);
+	GetActiveMaxMinForQuantity(Quantity, Min, Max);
+	ColorMapUpdateEvent.Broadcast(Quantity, Min, Max);
 
 	if (QuantitiesBefore.Num() != QuantitiesAfter.Num())
 	{
@@ -170,7 +171,68 @@ void UVRSSGameInstance::RemoveSlice(ASlice* Slice)
 	}
 }
 
-FUpdateVolumeEvent& UVRSSGameInstance::RegisterTextureLoad(const FString& Directory, TArray<FAssetData>* TextureArray)
+TArray<FString> UVRSSGameInstance::GetActiveObstQuantities() const
+{
+	TArray<FString> Quantities = TArray<FString>();
+	for (const AObst* Obst : ActiveObstructions)
+	{
+		if (!Quantities.Contains(Obst->ActiveQuantity))
+			Quantities.Add(Obst->ActiveQuantity);
+	}
+	return Quantities;
+}
+
+void UVRSSGameInstance::GetActiveObstructionsMaxMinForQuantity(const FString Quantity, float& MinOut, float& MaxOut) const
+{
+	MinOut = TNumericLimits<float>::Max();
+	MaxOut = TNumericLimits<float>::Min();
+	for (const AObst* Obst : ActiveObstructions)
+	{
+		if (Obst->ActiveQuantity.Equals(Quantity))
+		{
+			MinOut = FMath::Min(Obst->ObstAsset->ObstInfo.MinValues[Obst->ActiveQuantity], MinOut);
+			MaxOut = FMath::Max(Obst->ObstAsset->ObstInfo.MaxValues[Obst->ActiveQuantity], MaxOut);
+		}
+	}
+}
+
+void UVRSSGameInstance::AddObst(AObst* Obst)
+{
+	ActiveObstructions.Add(Obst);
+
+	float Min, Max;
+	const FString Quantity = Obst->ActiveQuantity;
+	GetActiveMaxMinForQuantity(Quantity, Min, Max);
+	ColorMapUpdateEvent.Broadcast(Quantity, Min, Max);
+}
+
+void UVRSSGameInstance::RemoveObst(AObst* Obst)
+{
+	const TArray<FString> QuantitiesBefore = GetActiveObstQuantities();
+	ActiveObstructions.Remove(Obst);
+	const TArray<FString> QuantitiesAfter = GetActiveObstQuantities();
+
+	float Min, Max;
+	const FString Quantity = Obst->ActiveQuantity;
+	GetActiveMaxMinForQuantity(Quantity, Min, Max);
+	ColorMapUpdateEvent.Broadcast(Quantity, Min, Max);
+
+	if (QuantitiesBefore.Num() != QuantitiesAfter.Num())
+	{
+		Cast<AVRSSHUD>(GetPrimaryPlayerController()->GetHUD())->UserInterfaceUserWidget->UpdateColorMaps();
+	}
+}
+
+void UVRSSGameInstance::GetActiveMaxMinForQuantity(const FString Quantity, float& MinOut, float& MaxOut) const
+{
+	float SMin, SMax, OMin, OMax;
+	GetActiveSlicesMaxMinForQuantity(Quantity, SMin, SMax);
+	GetActiveObstructionsMaxMinForQuantity(Quantity, OMin, OMax);
+	MinOut = FMath::Min(SMin, OMin);
+	MaxOut = FMath::Max(SMax, OMax);
+}
+
+FUpdateDataEvent& UVRSSGameInstance::RegisterTextureLoad(const FString& Directory, TArray<FAssetData>* TextureArray)
 {
 	UObjectLibrary* ObjectLibrary = UObjectLibrary::CreateLibrary(UTexture::StaticClass(), false, GIsEditor);
 	ObjectLibrary->AddToRoot();
@@ -191,7 +253,7 @@ FUpdateVolumeEvent& UVRSSGameInstance::RegisterTextureLoad(const FString& Direct
 		return LeftNum < RightNum;
 	});
 
-	VolumeTextureArrays.Add(TextureArray);
+	TextureArrays.Add(TextureArray);
 
 	// Load first n (max 10) textures synchronously so they will be available from the very beginning
 	const int TexturesToLoad = FMath::Min(TextureArray->Num(), 10);
@@ -203,5 +265,5 @@ FUpdateVolumeEvent& UVRSSGameInstance::RegisterTextureLoad(const FString& Direct
 	{
 		StreamableManager->LoadSynchronous((*TextureArray)[i].ToSoftObjectPath());
 	}
-	return UpdateVolumeEvent;
+	return UpdateDataEvent;
 }

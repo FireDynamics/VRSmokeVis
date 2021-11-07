@@ -2,7 +2,8 @@
 
 #pragma once
 
-#include "DataInfo.h"
+#include "VolumeDataInfo.h"
+#include "BoundaryDataInfo.h"
 #include "Factories/Factory.h"
 #include "UObject/ObjectMacros.h"
 
@@ -25,9 +26,12 @@ class UVRSSAssetFactory : public UFactory
 protected:
 	UObject* CreateVolume(UObject* InParent, const FString& Filename);
 
-	class UVolumeAsset* CreateVolumeFromFile(FDataInfo& VolumeInfo, const FString& FileName, UObject* Package,
-												const FString& MeshName, TArray<UVolumeTexture*> OutVolumeTextures) const;
-	class USliceAsset* CreateSliceFromFile(FDataInfo& VolumeInfo, const FString& FileName, UObject* Package,
-												const FString& MeshName, TArray<UTexture2D*> OutTextures) const;
+	class UVolumeAsset* CreateVolumeFromFile(FVolumeDataInfo& DataInfo, const FString& FileName, UObject* Package,
+												const FString& MeshName, TArray<UVolumeTexture*>& OutVolumeTextures) const;
 	UObject* CreateSlice(UObject* InParent, const FString& Filename);
+	class USliceAsset* CreateSliceFromFile(FVolumeDataInfo& DataInfo, const FString& FileName, UObject* Package,
+												const FString& MeshName, TArray<UTexture2D*>& OutTextures) const;
+	UObject* CreateObstruction(UObject* InParent, const FString& Filename);
+	class UObstAsset* CreateObstructionFromFile(FBoundaryDataInfo& DataInfo, const FString& FileName, UObject* Package,
+												TMap<FString, TMap<int, TArray<UTexture2D*>>>& OutTextures) const;	
 };

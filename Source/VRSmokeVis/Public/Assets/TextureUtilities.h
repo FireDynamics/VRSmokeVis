@@ -4,6 +4,7 @@
 #pragma once
 
 #include "Assets/VolumeAsset.h"
+#include "Assets/ObstAsset.h"
 #include "Engine/VolumeTexture.h"
 #include "AssetRegistryModule.h"
 
@@ -29,7 +30,7 @@ public:
 	static void SetTextureDetails(UTexture* OutTexture, const FVector4 Dimensions);
 
 	/** Creates the texture's 0th mip from the bulkdata provided.*/
-	static void CreateTextureMip(UTexture* OutTexture, const FDataInfo& VolumeInfo, uint8* BulkData);
+	static void CreateTextureMip(UTexture* OutTexture, const FVector4 Dimensions, uint8* BulkData, const int DataSize);
 
 	/** Handles the saving of source data to persistent textures. Only works in-editor, as packaged builds no longer
 	 * have source data for textures.*/
@@ -40,27 +41,32 @@ public:
 	static uint8* LoadDatFileIntoArray(const FString FileName, const int64 BytesToLoad);
 
 	/** Converts an array of densities to the resulting transmission. **/
-	static void DensityToTransmission(const FDataInfo& VolumeInfo, uint8* Array);
+	static void DensityToTransmission(const float ExtinctionCoefficient, const FVolumeDataInfo& DataInfo, uint8* Array);
 
 	/** Normalizes an array to the full range of 0-255 (1 Byte). */
-	static void NormalizeArray(const FDataInfo& VolumeInfo, uint8* Array);
+	static void NormalizeArray(const FVolumeDataInfo& DataInfo, uint8* Array);
 
-	// Loads the raw data specified in the VolumeInfo and converts it so that it's usable with our raymarching materials.
-	static uint8* LoadAndConvertVolumeData(const FString& FilePath, const FDataInfo& VolumeInfo);
+	/** Loads the raw data specified in the DataInfo and converts it so that it is usable with our raymarching materials. */
+	static uint8* LoadAndConvertVolumeData(const float ExtinctionCoefficient, const FString& FilePath, const FVolumeDataInfo& DataInfo);
 
-	// Loads the raw data specified in the VolumeInfo.
-	static uint8* LoadSliceData(const FString& FilePath, const FDataInfo& VolumeInfo);
+	/** Loads the raw data specified in the DataInfo. */
+	static uint8* LoadSliceData(const FString& FilePath, const FVolumeDataInfo& DataInfo);
+	
+	/** Loads the raw data specified in the DataInfo. */
+	static uint8* LoadObstData(const FString& FilePath, const FBoundaryDataInfo& DataInfo);
+	
+	/** Getting info about slices or volumes before loading them. */
+	static TMap<FString, FVolumeDataInfo> ParseSliceVolumeDataInfoFromHeader(const FString& FileName);
 
-	// Getting info about volumes before loading them.
-	static TMap<FString, FDataInfo> ParseVolumeInfoFromHeader(const FString& FileName);
+	/** Getting info about obstructions before loading them. */
+	static FBoundaryDataInfo ParseObstDataInfoFromHeader(const FString& FileName, TArray<float> &BoundingBoxOut);
 
 	/** Creates a Texture asset with the given name, pixel format and dimensions and fills it with the bulk data
 	* provided. Returns a reference to the created texture in the CreatedTexture param. */
 	template <typename T>
-	static bool CreateTextureAssets(T*& OutTexture, const FString AssetName, const FDataInfo& VolumeInfo,
-	                                UObject* OutPackage, uint8* BulkData)
+	static bool CreateTextureAssets(T*& OutTexture, const FString AssetName, const FVector4 Dimensions,
+	                                UObject* OutPackage, uint8* BulkData, const int DataSize)
 	{
-		const FVector4 Dimensions = VolumeInfo.Dimensions;
 		if (Dimensions.X == 0 || Dimensions.Y == 0 || Dimensions.Z == 0 || Dimensions.W == 0)
 		{
 			return false;
@@ -72,7 +78,7 @@ public:
 		Texture->AddToRoot();
 
 		SetTextureDetails(Texture, Dimensions);
-		CreateTextureMip(Texture, VolumeInfo, BulkData);
+		CreateTextureMip(Texture, Dimensions, BulkData, DataSize);
 		CreateTextureEditorData(Texture, Dimensions, BulkData);
 
 		// Update resource, mark that the folder needs to be rescanned and notify editor about asset creation.

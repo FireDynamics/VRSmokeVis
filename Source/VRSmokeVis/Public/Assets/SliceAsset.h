@@ -3,7 +3,7 @@
 #pragma once
 
 #include "Engine/DataAsset.h"
-#include "DataInfo.h"
+#include "VolumeDataInfo.h"
 
 #include "SliceAsset.Generated.h"
 
@@ -15,7 +15,7 @@ class VRSMOKEVIS_API USliceAsset : public UDataAsset
 public:
 	TArray<FAssetData> SliceTextures;
 	
-	// Holds the general info about the Yaml Volume read from disk.
+	// Holds the general info about the Yaml Data read from disk.
 	UPROPERTY(EditAnywhere)
-	FDataInfo SliceInfo;
+	FVolumeDataInfo SliceInfo;
 };

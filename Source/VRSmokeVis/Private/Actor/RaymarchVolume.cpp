@@ -64,9 +64,11 @@ void ARaymarchVolume::BeginPlay()
 {
 	Super::BeginPlay();
 
+	check(VolumeAsset)
+
 	UGameInstance* GIRaw = GetGameInstance();
 	GI = Cast<UVRSSGameInstance>(GIRaw);
-	
+
 	if (RaymarchMaterialBase)
 	{
 		RaymarchMaterial =
@@ -81,17 +83,14 @@ void ARaymarchVolume::BeginPlay()
 		StaticMeshComponent->SetMaterial(0, RaymarchMaterial);
 	}
 
-	if (VolumeAsset)
-	{
-		// Unreal units = cm, FDS has sizes in m -> multiply by 100.
-		StaticMeshComponent->SetRelativeScale3D(VolumeAsset->VolumeInfo.WorldDimensions * 100);
-		
-		GI->InitUpdateRate(VolumeAsset->VolumeInfo.Spacing.W);
-	}
-	
-	FUpdateVolumeEvent& UpdateVolumeEvent = GI->RegisterTextureLoad(
-		VolumeAsset->VolumeInfo.VolumeTextureDir, &VolumeAsset->VolumeTextures);
-	UpdateVolumeEvent.AddUObject(this, &ARaymarchVolume::UpdateVolume);
+	// Unreal units = cm, FDS has sizes in m -> multiply by 100.
+	StaticMeshComponent->SetRelativeScale3D(VolumeAsset->DataInfo.WorldDimensions * 100);
+
+	GI->InitUpdateRate(VolumeAsset->DataInfo.Spacing.W);
+
+	FUpdateDataEvent& UpdateDataEvent = GI->RegisterTextureLoad(
+		VolumeAsset->DataInfo.TextureDir, &VolumeAsset->VolumeTextures);
+	UpdateDataEvent.AddUObject(this, &ARaymarchVolume::UpdateVolume);
 
 	// Initialize resources for timestep t=-1 and t=0 (for time interpolation)
 	UpdateVolume(-1);
@@ -101,7 +100,8 @@ void ARaymarchVolume::BeginPlay()
 void ARaymarchVolume::UpdateVolume(const int CurrentTimeStep)
 {
 	// Load the texture for the next time step to interpolate between the next and current one
-	UVolumeTexture* NextTexture = Cast<UVolumeTexture>(VolumeAsset->VolumeTextures[(CurrentTimeStep + 1) % VolumeAsset->VolumeTextures.Num()].GetAsset());
+	UVolumeTexture* NextTexture = Cast<UVolumeTexture>(
+		VolumeAsset->VolumeTextures[(CurrentTimeStep + 1) % VolumeAsset->VolumeTextures.Num()].GetAsset());
 
 	if (!NextTexture)
 	{
@@ -136,7 +136,7 @@ void ARaymarchVolume::UpdateVolume(const int CurrentTimeStep)
 void ARaymarchVolume::Tick(const float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	
+
 	TimePassedPercentage = FMath::Clamp<float>(TimePassedPercentage + DeltaTime / GI->UpdateRate, 0, 1);
 	RaymarchMaterial->SetScalarParameterValue("TimePassedPercentage", TimePassedPercentage);
 }
@@ -145,12 +145,12 @@ void ARaymarchVolume::UseSimulationTransform()
 {
 	if (VolumeAsset)
 	{
-		SetActorScale3D(FVector{1,1,1});
+		SetActorScale3D(FVector{1, 1, 1});
 		StaticMeshComponent->SetRelativeLocation(FVector{0, 0, 0});
-		
+
 		// Unreal units = cm, FDS has sizes in m -> multiply by 100.
-		StaticMeshComponent->SetRelativeScale3D(VolumeAsset->VolumeInfo.WorldDimensions * 100);
-		SetActorLocation((VolumeAsset->VolumeInfo.MeshPos + VolumeAsset->VolumeInfo.WorldDimensions/2) * 100);
+		StaticMeshComponent->SetRelativeScale3D(VolumeAsset->DataInfo.WorldDimensions * 100);
+		SetActorLocation((VolumeAsset->DataInfo.MeshPos + VolumeAsset->DataInfo.WorldDimensions / 2) * 100);
 	}
 }
 

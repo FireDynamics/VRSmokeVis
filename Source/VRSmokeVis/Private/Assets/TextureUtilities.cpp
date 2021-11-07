@@ -3,8 +3,6 @@
 #include "HAL/FileManagerGeneric.h"
 #include "Misc/DefaultValueHelper.h"
 
-#include <Engine/TextureRenderTargetVolume.h>
-
 DEFINE_LOG_CATEGORY(LogTextureUtils);
 
 FString FTextureUtils::ReadFileAsString(const FString& FileName)
@@ -67,23 +65,21 @@ void FTextureUtils::SetTextureDetails(UTexture* OutTexture, const FVector4 Dimen
 	OutTexture->NeverStream = true;
 }
 
-void FTextureUtils::CreateTextureMip(UTexture* OutTexture, const FDataInfo& VolumeInfo,
-                                     uint8* BulkData)
+void FTextureUtils::CreateTextureMip(UTexture* OutTexture, const FVector4 Dimensions,
+                                     uint8* BulkData, const int DataSize)
 {
-	const auto TotalSize = VolumeInfo.GetByteSize() / VolumeInfo.Dimensions.W;
-
 	// Create the one and only mip in this texture.
 	FTexture2DMipMap* Mip = new FTexture2DMipMap();
-	Mip->SizeX = VolumeInfo.Dimensions.X;
-	Mip->SizeY = VolumeInfo.Dimensions.Y;
-	Mip->SizeZ = VolumeInfo.Dimensions.Z;
+	Mip->SizeX = Dimensions.X;
+	Mip->SizeY = Dimensions.Y;
+	Mip->SizeZ = Dimensions.Z;
 
 	Mip->BulkData.Lock(LOCK_READ_WRITE);
 	// Allocate memory in the mip and copy the actual texture data inside
-	uint8* ByteArray = static_cast<uint8*>(Mip->BulkData.Realloc(TotalSize));
+	uint8* ByteArray = static_cast<uint8*>(Mip->BulkData.Realloc(DataSize));
 
 	check(BulkData != nullptr)
-	FMemory::Memcpy(ByteArray, BulkData, TotalSize);
+	FMemory::Memcpy(ByteArray, BulkData, DataSize);
 
 	Mip->BulkData.Unlock();
 
@@ -135,50 +131,62 @@ uint8* FTextureUtils::LoadDatFileIntoArray(const FString FileName, const int64 B
 	return LoadedArray;
 }
 
-void FTextureUtils::DensityToTransmission(const FDataInfo& VolumeInfo, uint8* Array)
+void FTextureUtils::DensityToTransmission(const float ExtinctionCoefficient, const FVolumeDataInfo& DataInfo, uint8* Array)
 {
 	// Uses the Beer-Lambert law to convert densities to the corresponding transmission using the extinction coefficient
 	// Adding 0.5 before assigning the float value to the uint8 array causes it to round correctly without having to
 	// round manually, as the implicit conversion to an integer simply cuts off the fraction.
-	float StepSize = 0.001; // VolumeInfo.Spacing.Size3();
+	float StepSize = 0.001; // DataInfo.Spacing.Size3();
 
 	// Multiply StepSize and extinction coefficient only once before looping over the array
-	StepSize *= VolumeInfo.ExtinctionCoefficient * -1;
+	StepSize *= ExtinctionCoefficient * -1;
 
-	ParallelFor(VolumeInfo.GetByteSize(), [&](const int Idx)
+	ParallelFor(DataInfo.GetByteSize(), [&](const int Idx)
 	{
 		Array[Idx] = FMath::Exp(StepSize * Array[Idx]) * 255.f + .5f;
 	});
 }
 
-void FTextureUtils::NormalizeArray(const FDataInfo& VolumeInfo, uint8* Array)
+void FTextureUtils::NormalizeArray(const FVolumeDataInfo& DataInfo, uint8* Array)
 {
-	const float ValueRange = 255.f / (VolumeInfo.MaxValue - VolumeInfo.MinValue);
-	ParallelFor(VolumeInfo.GetByteSize(), [&](const int Idx)
+	const float ValueRange = 255.f / (DataInfo.MaxValue - DataInfo.MinValue);
+	ParallelFor(DataInfo.GetByteSize(), [&](const int Idx)
 	{
-		Array[Idx] = (Array[Idx] - VolumeInfo.MinValue) * ValueRange;
+		Array[Idx] = (Array[Idx] - DataInfo.MinValue) * ValueRange;
 	});
 }
 
-uint8* FTextureUtils::LoadAndConvertVolumeData(const FString& FilePath, const FDataInfo& VolumeInfo)
+uint8* FTextureUtils::LoadAndConvertVolumeData(const float ExtinctionCoefficient, const FString& FilePath, const FVolumeDataInfo& DataInfo)
 {
 	// Load data
-	uint8* LoadedArray = LoadDatFileIntoArray(FilePath, VolumeInfo.GetByteSize());
+	uint8* LoadedArray = LoadDatFileIntoArray(FilePath, DataInfo.GetByteSize());
 	if (LoadedArray)
 	{
-		DensityToTransmission(VolumeInfo, LoadedArray);
+		DensityToTransmission(ExtinctionCoefficient, DataInfo, LoadedArray);
 	}
 	return LoadedArray;
 }
 
-uint8* FTextureUtils::LoadSliceData(const FString& FilePath, const FDataInfo& VolumeInfo)
+uint8* FTextureUtils::LoadSliceData(const FString& FilePath, const FVolumeDataInfo& DataInfo)
 {
-	return LoadDatFileIntoArray(FilePath, VolumeInfo.GetByteSize());
+	return LoadDatFileIntoArray(FilePath, DataInfo.GetByteSize());
 }
 
-TMap<FString, FDataInfo> FTextureUtils::ParseVolumeInfoFromHeader(const FString& FileName)
+uint8* FTextureUtils::LoadObstData(const FString& FilePath, const FBoundaryDataInfo& DataInfo)
 {
-	TMap<FString, FDataInfo> DataInfos;
+	int TotalByteSize = 0;
+	TArray<int> Orientations;
+	DataInfo.Dimensions.GetKeys(Orientations);
+	for (const int Orientation : Orientations)
+	{
+		TotalByteSize += DataInfo.GetByteSize(Orientation);
+	}
+	return LoadDatFileIntoArray(FilePath, TotalByteSize);
+}
+
+TMap<FString, FVolumeDataInfo> FTextureUtils::ParseSliceVolumeDataInfoFromHeader(const FString& FileName)
+{
+	TMap<FString, FVolumeDataInfo> DataInfos;
 
 	const FString FileString = ReadFileAsString(FileName);
 	TArray<FString> Lines;
@@ -216,7 +224,7 @@ TMap<FString, FDataInfo> FTextureUtils::ParseVolumeInfoFromHeader(const FString&
 	// Meshes
 	for (int m = 0; m < NMeshes; ++m)
 	{
-		FDataInfo DataInfo;
+		FVolumeDataInfo DataInfo;
 		DataInfo.MaxValue = DataMax;
 		DataInfo.MinValue = DataMin;
 
@@ -274,4 +282,109 @@ TMap<FString, FDataInfo> FTextureUtils::ParseVolumeInfoFromHeader(const FString&
 	}
 	
 	return DataInfos;
+}
+
+FBoundaryDataInfo FTextureUtils::ParseObstDataInfoFromHeader(const FString& FileName, TArray<float>& BoundingBoxOut)
+{
+	FBoundaryDataInfo DataInfo;
+
+	const FString FileString = ReadFileAsString(FileName);
+	TArray<FString> Lines;
+	FileString.ParseIntoArray(Lines, _T("\n"));
+
+	FString Left, Right;
+
+	// BoundingBox
+	float Value;
+	Lines[0].Split(TEXT(": "), &Left, &Right);
+	Right.Split(TEXT(" "), &Left, &Right);
+	FDefaultValueHelper::ParseFloat(Left, Value);
+	BoundingBoxOut.Add(Value);
+	Right.Split(TEXT(" "), &Left, &Right);
+	FDefaultValueHelper::ParseFloat(Left, Value);
+	BoundingBoxOut.Add(Value);
+	Right.Split(TEXT(" "), &Left, &Right);
+	FDefaultValueHelper::ParseFloat(Left, Value);
+	BoundingBoxOut.Add(Value);
+	Right.Split(TEXT(" "), &Left, &Right);
+	FDefaultValueHelper::ParseFloat(Left, Value);
+	BoundingBoxOut.Add(Value);
+	Right.Split(TEXT(" "), &Left, &Right);
+	FDefaultValueHelper::ParseFloat(Left, Value);
+	BoundingBoxOut.Add(Value);
+	FDefaultValueHelper::ParseFloat(Right, Value);
+	BoundingBoxOut.Add(Value);
+
+	// NumOrientations
+	Lines[1].Split(TEXT(": "), &Left, &Right);
+	int NumOrientations;
+	FDefaultValueHelper::ParseInt(Right, NumOrientations);
+	
+	// NumQuantities
+	Lines[2].Split(TEXT(": "), &Left, &Right);
+	int NumQuantities;
+	FDefaultValueHelper::ParseInt(Right, NumQuantities);
+
+	DataInfo.TextureDirs.Reserve(NumQuantities);
+	DataInfo.DataFileNames.Reserve(NumQuantities);
+	DataInfo.Dimensions.Reserve(NumOrientations);
+	DataInfo.Spacings.Reserve(NumOrientations);
+	DataInfo.MeshPos.Reserve(NumOrientations);
+	DataInfo.WorldDimensions.Reserve(NumOrientations);
+	DataInfo.MinValues.Reserve(NumQuantities);
+	DataInfo.MaxValues.Reserve(NumQuantities);
+	DataInfo.ScaleFactors.Reserve(NumQuantities);
+
+	// Orientations
+	for (int o = 0; o < NumOrientations; ++o)
+	{
+		// BoundaryOrientation
+		int Orientation;
+		Lines[4 + o * 3].Split(TEXT(": "), &Left, &Right);
+		FDefaultValueHelper::ParseInt(Right, Orientation);
+		
+		// DimSize
+		int DimX, DimY;
+		Lines[4 + o * 3 + 1].Split(TEXT(": "), &Left, &Right);
+		Right.Split(TEXT(" "), &Left, &Right);
+		FDefaultValueHelper::ParseInt(Left, DimX);
+		FDefaultValueHelper::ParseInt(Right, DimY);
+		DataInfo.Dimensions.Add(Orientation, FVector(DimX, DimY, 0));
+		
+		// Spacing
+		float X, Y, W;
+		Lines[4 + o * 3 + 2].Split(TEXT(": "), &Left, &Right);
+		Right.Split(TEXT(" "), &Left, &Right);
+		FDefaultValueHelper::ParseFloat(Left, W);
+		Right.Split(TEXT(" "), &Left, &Right);
+		FDefaultValueHelper::ParseFloat(Left, X);
+		FDefaultValueHelper::ParseFloat(Right, Y);
+		DataInfo.Spacings.Add(Orientation, FVector4(X, Y, 0, W));
+		
+		DataInfo.WorldDimensions.Add(Orientation, DataInfo.Spacings[Orientation] * FVector(DataInfo.Dimensions[Orientation]));
+	}
+
+	const int QuantityOffset = 5 + NumOrientations * 3;
+		
+	UE_LOG(LogTextureUtils, Log, TEXT("Loading obstruction, quantities: %d"), NumQuantities);
+	// Quantities
+	for (int m = 0; m < NumQuantities; ++m)
+	{
+		float Val;
+		Lines[QuantityOffset + m * 5].Split(TEXT(": "), &Left, &Right);
+		FString Quantity = Right.TrimStartAndEnd().ToLower();
+		Lines[QuantityOffset + m * 5 + 1].Split(TEXT(": "), &Left, &Right);	
+		DataInfo.DataFileNames.Add(Quantity, Right.TrimStartAndEnd());
+		Lines[QuantityOffset + m * 5 + 2].Split(TEXT(": "), &Left, &Right);
+		FDefaultValueHelper::ParseFloat(Right, Val);
+		DataInfo.MaxValues.Add(Quantity, Val);
+		Lines[QuantityOffset + m * 5 + 3].Split(TEXT(": "), &Left, &Right);
+		FDefaultValueHelper::ParseFloat(Right, Val);
+		DataInfo.MinValues.Add(Quantity, Val);
+		Lines[QuantityOffset + m * 5 + 4].Split(TEXT(": "), &Left, &Right);
+		FDefaultValueHelper::ParseFloat(Right, Val);
+		DataInfo.ScaleFactors.Add(Quantity, Val);
+	}
+	
+	return DataInfo;
 }

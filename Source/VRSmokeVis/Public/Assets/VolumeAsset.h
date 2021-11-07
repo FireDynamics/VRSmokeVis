@@ -3,7 +3,7 @@
 #pragma once
 
 #include "Engine/DataAsset.h"
-#include "DataInfo.h"
+#include "VolumeDataInfo.h"
 
 #include "VolumeAsset.Generated.h"
 
@@ -15,7 +15,11 @@ class VRSMOKEVIS_API UVolumeAsset : public UDataAsset
 public:
 	TArray<FAssetData> VolumeTextures;
 	
-	// Holds the general info about the Yaml Volume read from disk.
+	// The mass specific extinction coefficient
 	UPROPERTY(EditAnywhere)
-	FDataInfo VolumeInfo;
+	float ExtinctionCoefficient = 1;
+	
+	// Holds the general info about the Yaml Data read from disk.
+	UPROPERTY(EditAnywhere)
+	FVolumeDataInfo DataInfo;
 };

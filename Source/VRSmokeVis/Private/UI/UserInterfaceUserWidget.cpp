@@ -25,15 +25,15 @@ void UUserInterfaceUserWidget::NativeConstruct()
 	UpdateColorMaps();
 	
 	UVRSSGameInstance* GI = Cast<UVRSSGameInstance>(GetGameInstance());
-	GI->SliceUpdateEvent.AddUObject(this, &UUserInterfaceUserWidget::UpdateColorMapRange);
+	GI->ColorMapUpdateEvent.AddUObject(this, &UUserInterfaceUserWidget::UpdateColorMapRange);
 
-	// Update the ColorMap ranges manually once, in case the HUD's BeginPlay runs after the Slice's BeginPlay
+	// Update the ColorMap ranges manually once, in case the HUD's BeginPlay runs after the slice's/obst's BeginPlay
 	float Min, Max;
 	TArray<FString> Keys;
 	ColorMapUserWidgets.GetKeys(Keys);
 	for (const FString& Quantity : Keys)
 	{
-		GI->GetActiveSlicesMaxMinForQuantity(Quantity, Min, Max);
+		GI->GetActiveMaxMinForQuantity(Quantity, Min, Max);
 		UpdateColorMapRange(Quantity, Min, Max);
 	}	
 }
