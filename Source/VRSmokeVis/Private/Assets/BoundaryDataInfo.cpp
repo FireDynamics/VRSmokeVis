@@ -4,5 +4,5 @@
 
 int64 FBoundaryDataInfo::GetByteSize(const int Face) const
 {
-	return Dimensions[Face].X * Dimensions[Face].Y * Dimensions[Face].Z * Dimensions[Face].W;
+	return Dimensions[Face].X * Dimensions[Face].Y * Dimensions[Face].W;
 }

@@ -23,6 +23,10 @@ public:
 	UFUNCTION(CallInEditor, Category="Obst")
 	void UseSimulationTransform();
 	
+	/** Delegate to update the ColorMap in case a obst with higher Max/lower Min has been added. **/
+	UFUNCTION()
+	void UpdateColorMapScale(const FString Quantity, const float NewMin, const float NewMax) const;
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -30,43 +34,42 @@ protected:
 	UFUNCTION()
 	void UpdateTexture(const int CurrentTimeStep, const int Orientation);
 
-	/** Delegate to update the ColorMap in case a obst with higher Max/lower Min has been added. **/
-	UFUNCTION()
-	void UpdateColorMapScale(const FString Quantity, const float NewMin, const float NewMax) const;
-
+	UFUNCTION(BlueprintSetter)
+	void SetActiveQuantity(FString NewQuantity);
+	
 public:
 	UPROPERTY(VisibleAnywhere)
 	UVRSSGameInstance* GI;
-	
-	/** MeshComponent that contains the raymarching cube. */
-	UPROPERTY(VisibleAnywhere)
-	UStaticMeshComponent* StaticMeshComponent;
 
 	/** The base material for obst rendering. **/
 	UPROPERTY(BlueprintReadOnly, EditAnywhere)
 	UMaterial* ObstMaterialBase;
-
-	/** Dynamic material instance for obst rendering. **/
-	UPROPERTY(BlueprintReadOnly, Transient)
-	TMap<int, UMaterialInstanceDynamic*> ObstMaterials;
 	
 	/** The loaded obst asset belonging to this obst. **/
 	UPROPERTY(BlueprintReadOnly, EditAnywhere)
 	UObstAsset* ObstAsset;
 
-	/** Current data texture. **/
-	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Transient)
-	TMap<int, UTexture2D*> DataTexturesT0;
-	
-	/** Next data texture. **/
-	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Transient)
-	TMap<int, UTexture2D*> DataTexturesT1;
-
-	UPROPERTY(BlueprintReadOnly, EditAnywhere)
+	UPROPERTY(BlueprintSetter=SetActiveQuantity, VisibleAnywhere, Transient)
 	FString ActiveQuantity;
-
+	
 protected:
 	/** The % of time that has passed until the next frame is reached. **/
 	UPROPERTY(VisibleAnywhere)
 	float TimePassedPercentage = 0;
+	
+	/** Current data texture. **/
+	UPROPERTY(BlueprintReadOnly, Transient)
+	TMap<int, UTexture2D*> DataTexturesT0;
+	
+	/** Next data texture. **/
+	UPROPERTY(BlueprintReadOnly, Transient)
+	TMap<int, UTexture2D*> DataTexturesT1;
+	
+	/** Dynamic material instance for obst rendering. **/
+	UPROPERTY(BlueprintReadOnly, Transient)
+	TMap<int, UMaterialInstanceDynamic*> ObstMaterials;
+	
+	/** MeshComponent that contains the cube mesh. */
+	UPROPERTY(BlueprintReadOnly)
+	UStaticMeshComponent* StaticMeshComponent;
 };

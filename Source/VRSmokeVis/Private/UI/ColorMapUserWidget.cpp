@@ -16,7 +16,7 @@ void UColorMapUserWidget::NativeConstruct()
 
 	TextBlockColorMapQuantity->SetText(FText::FromString(ColorMapQuantity));
 	const UVRSSGameInstance *GI = Cast<UVRSSGameInstance>(GetGameInstance());
-	ImageColorMap->SetBrushFromTexture(GI->Config->SliceColorMaps[ColorMapQuantity]);
+	ImageColorMap->SetBrushFromTexture(GI->Config->ColorMaps[ColorMapQuantity]);
 }
 
 void UColorMapUserWidget::NativeTick(const FGeometry& MyGeometry, const float DeltaTime)

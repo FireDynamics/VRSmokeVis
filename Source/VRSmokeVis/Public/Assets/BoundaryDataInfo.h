@@ -2,6 +2,20 @@
 
 #include "BoundaryDataInfo.generated.h"
 
+USTRUCT()
+struct VRSMOKEVIS_API FQuantityDir
+{
+	GENERATED_BODY()
+
+	UPROPERTY(VisibleAnywhere)
+	TMap<int, FString> FaceDirs;
+
+	FQuantityDir()
+	{
+		FaceDirs = TMap<int, FString>();
+	}
+};
+
 // Contains information about the data loaded from the binary data and yaml header file
 USTRUCT(BlueprintType)
 struct VRSMOKEVIS_API FBoundaryDataInfo
@@ -12,19 +26,19 @@ struct VRSMOKEVIS_API FBoundaryDataInfo
 	UPROPERTY(VisibleAnywhere)
 	TMap<FString, FString> DataFileNames;
 
-	// Path to Textures for each quantity for which data has been loaded
+	// Path to Textures for each quantity for each face for which data has been loaded
 	UPROPERTY(VisibleAnywhere)
-	TMap<FString, FString> TextureDirs;
+	TMap<FString, FQuantityDir> TextureDirs;
 
-	// Size of each face in cells (w equals time in seconds) 
+	// Size of each face in cells (w equals time in seconds)  - z empty
 	UPROPERTY(VisibleAnywhere)
 	TMap<int, FVector4> Dimensions;
 
-	// Size of a cell in mm (w equals time in seconds)
+	// Size of a cell in mm (w equals time in seconds) - z empty
 	UPROPERTY(VisibleAnywhere)
 	TMap<int, FVector4> Spacings;
 
-	// Size of the each face in world units (equals Dimensions * Spacing)
+	// Size of the each face in world units (equals Dimensions * Spacing) - z empty
 	UPROPERTY(VisibleAnywhere)
 	TMap<int, FVector> WorldDimensions;
 

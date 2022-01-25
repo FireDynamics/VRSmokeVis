@@ -72,7 +72,7 @@ void FTextureUtils::CreateTextureMip(UTexture* OutTexture, const FVector4 Dimens
 	FTexture2DMipMap* Mip = new FTexture2DMipMap();
 	Mip->SizeX = Dimensions.X;
 	Mip->SizeY = Dimensions.Y;
-	Mip->SizeZ = Dimensions.Z;
+	Mip->SizeZ = Dimensions.Z == 0 ? 1 : Dimensions.Z;
 
 	Mip->BulkData.Lock(LOCK_READ_WRITE);
 	// Allocate memory in the mip and copy the actual texture data inside
@@ -82,14 +82,15 @@ void FTextureUtils::CreateTextureMip(UTexture* OutTexture, const FVector4 Dimens
 	FMemory::Memcpy(ByteArray, BulkData, DataSize);
 
 	Mip->BulkData.Unlock();
-
-	// Newly created Volume textures have this null'd
-	if (!OutTexture->GetRunningPlatformData()[0])
+	
+	FTexturePlatformData** PlatformData = OutTexture->GetRunningPlatformData();
+	// Newly created textures have this null'd
+	if (!PlatformData[0])
 	{
-		OutTexture->GetRunningPlatformData()[0] = new FTexturePlatformData();
+		PlatformData[0] = new FTexturePlatformData();
 	}
 	// Add the new MIP to the list of mips.
-	OutTexture->GetRunningPlatformData()[0]->Mips.Add(Mip);
+	PlatformData[0]->Mips.Add(Mip);
 }
 
 bool FTextureUtils::CreateTextureEditorData(UTexture* Texture, const FVector4 Dimensions,
@@ -101,7 +102,7 @@ bool FTextureUtils::CreateTextureEditorData(UTexture* Texture, const FVector4 Di
 	Texture->CompressionNone = true;
 
 	// Otherwise initialize the source struct with our size and bulk data.
-	Texture->Source.Init(Dimensions.X, Dimensions.Y, Dimensions.Z, 1, TSF_G8, BulkData);
+	Texture->Source.Init(Dimensions.X, Dimensions.Y, Dimensions.Z == 0 ? 1 : Dimensions.Z, 1, TSF_G8, BulkData);
 
 	return true;
 }
@@ -131,7 +132,8 @@ uint8* FTextureUtils::LoadDatFileIntoArray(const FString FileName, const int64 B
 	return LoadedArray;
 }
 
-void FTextureUtils::DensityToTransmission(const float ExtinctionCoefficient, const FVolumeDataInfo& DataInfo, uint8* Array)
+void FTextureUtils::DensityToTransmission(const float ExtinctionCoefficient, const FVolumeDataInfo& DataInfo,
+                                          uint8* Array)
 {
 	// Uses the Beer-Lambert law to convert densities to the corresponding transmission using the extinction coefficient
 	// Adding 0.5 before assigning the float value to the uint8 array causes it to round correctly without having to
@@ -156,7 +158,8 @@ void FTextureUtils::NormalizeArray(const FVolumeDataInfo& DataInfo, uint8* Array
 	});
 }
 
-uint8* FTextureUtils::LoadAndConvertVolumeData(const float ExtinctionCoefficient, const FString& FilePath, const FVolumeDataInfo& DataInfo)
+uint8* FTextureUtils::LoadAndConvertVolumeData(const float ExtinctionCoefficient, const FString& FilePath,
+                                               const FVolumeDataInfo& DataInfo)
 {
 	// Load data
 	uint8* LoadedArray = LoadDatFileIntoArray(FilePath, DataInfo.GetByteSize());
@@ -211,15 +214,15 @@ TMap<FString, FVolumeDataInfo> FTextureUtils::ParseSliceVolumeDataInfoFromHeader
 
 	// Quantity
 	FString Quantity;
-	Lines[Lines.Num()-2].Split(TEXT(": "), &Left, &Quantity);
+	Lines[Lines.Num() - 2].Split(TEXT(": "), &Left, &Quantity);
 	Quantity.TrimStartAndEndInline();
 	Quantity.ToLowerInline();
 
 	//ScaleFactor
-	Lines[Lines.Num()-1].Split(TEXT(": "), &Left, &Right);
+	Lines[Lines.Num() - 1].Split(TEXT(": "), &Left, &Right);
 	float ScaleFactor;
 	FDefaultValueHelper::ParseFloat(Right, ScaleFactor);
-	
+
 	UE_LOG(LogTextureUtils, Log, TEXT("Loading volumes, nmeshes: %d"), NMeshes);
 	// Meshes
 	for (int m = 0; m < NMeshes; ++m)
@@ -280,7 +283,7 @@ TMap<FString, FVolumeDataInfo> FTextureUtils::ParseSliceVolumeDataInfoFromHeader
 		DataInfo.Quantity = Quantity;
 		DataInfos.Add(MeshId, DataInfo);
 	}
-	
+
 	return DataInfos;
 }
 
@@ -293,6 +296,11 @@ FBoundaryDataInfo FTextureUtils::ParseObstDataInfoFromHeader(const FString& File
 	FileString.ParseIntoArray(Lines, _T("\n"));
 
 	FString Left, Right;
+
+	// TimeSteps
+	int TimeSteps;
+	Lines[Lines.Num() - 1].Split(TEXT(": "), &Left, &Right);
+	FDefaultValueHelper::ParseInt(Right, TimeSteps);
 
 	// BoundingBox
 	float Value;
@@ -319,7 +327,7 @@ FBoundaryDataInfo FTextureUtils::ParseObstDataInfoFromHeader(const FString& File
 	Lines[1].Split(TEXT(": "), &Left, &Right);
 	int NumOrientations;
 	FDefaultValueHelper::ParseInt(Right, NumOrientations);
-	
+
 	// NumQuantities
 	Lines[2].Split(TEXT(": "), &Left, &Right);
 	int NumQuantities;
@@ -329,7 +337,6 @@ FBoundaryDataInfo FTextureUtils::ParseObstDataInfoFromHeader(const FString& File
 	DataInfo.DataFileNames.Reserve(NumQuantities);
 	DataInfo.Dimensions.Reserve(NumOrientations);
 	DataInfo.Spacings.Reserve(NumOrientations);
-	DataInfo.MeshPos.Reserve(NumOrientations);
 	DataInfo.WorldDimensions.Reserve(NumOrientations);
 	DataInfo.MinValues.Reserve(NumQuantities);
 	DataInfo.MaxValues.Reserve(NumQuantities);
@@ -342,15 +349,15 @@ FBoundaryDataInfo FTextureUtils::ParseObstDataInfoFromHeader(const FString& File
 		int Orientation;
 		Lines[4 + o * 3].Split(TEXT(": "), &Left, &Right);
 		FDefaultValueHelper::ParseInt(Right, Orientation);
-		
+
 		// DimSize
 		int DimX, DimY;
 		Lines[4 + o * 3 + 1].Split(TEXT(": "), &Left, &Right);
 		Right.Split(TEXT(" "), &Left, &Right);
 		FDefaultValueHelper::ParseInt(Left, DimX);
 		FDefaultValueHelper::ParseInt(Right, DimY);
-		DataInfo.Dimensions.Add(Orientation, FVector(DimX, DimY, 0));
-		
+		DataInfo.Dimensions.Add(Orientation, FVector4(DimX, DimY, 0, TimeSteps));
+
 		// Spacing
 		float X, Y, W;
 		Lines[4 + o * 3 + 2].Split(TEXT(": "), &Left, &Right);
@@ -360,12 +367,13 @@ FBoundaryDataInfo FTextureUtils::ParseObstDataInfoFromHeader(const FString& File
 		FDefaultValueHelper::ParseFloat(Left, X);
 		FDefaultValueHelper::ParseFloat(Right, Y);
 		DataInfo.Spacings.Add(Orientation, FVector4(X, Y, 0, W));
-		
-		DataInfo.WorldDimensions.Add(Orientation, DataInfo.Spacings[Orientation] * FVector(DataInfo.Dimensions[Orientation]));
+
+		DataInfo.WorldDimensions.Add(Orientation,
+		                             DataInfo.Spacings[Orientation] * FVector(DataInfo.Dimensions[Orientation]));
 	}
 
 	const int QuantityOffset = 5 + NumOrientations * 3;
-		
+
 	UE_LOG(LogTextureUtils, Log, TEXT("Loading obstruction, quantities: %d"), NumQuantities);
 	// Quantities
 	for (int m = 0; m < NumQuantities; ++m)
@@ -373,7 +381,7 @@ FBoundaryDataInfo FTextureUtils::ParseObstDataInfoFromHeader(const FString& File
 		float Val;
 		Lines[QuantityOffset + m * 5].Split(TEXT(": "), &Left, &Right);
 		FString Quantity = Right.TrimStartAndEnd().ToLower();
-		Lines[QuantityOffset + m * 5 + 1].Split(TEXT(": "), &Left, &Right);	
+		Lines[QuantityOffset + m * 5 + 1].Split(TEXT(": "), &Left, &Right);
 		DataInfo.DataFileNames.Add(Quantity, Right.TrimStartAndEnd());
 		Lines[QuantityOffset + m * 5 + 2].Split(TEXT(": "), &Left, &Right);
 		FDefaultValueHelper::ParseFloat(Right, Val);
@@ -385,6 +393,75 @@ FBoundaryDataInfo FTextureUtils::ParseObstDataInfoFromHeader(const FString& File
 		FDefaultValueHelper::ParseFloat(Right, Val);
 		DataInfo.ScaleFactors.Add(Quantity, Val);
 	}
-	
+
 	return DataInfo;
+}
+
+UTexture2D* FTextureUtils::CreateTextureAsset(const FString AssetName, const FVector4 Dimensions, UObject* OutPackage,
+                                              uint8* BulkData, const int DataSize)
+{
+	UTexture2D* Texture = NewObject<UTexture2D>(OutPackage, FName(*AssetName),
+	                                            RF_Public | RF_Standalone | RF_MarkAsRootSet);
+
+	// Prevent garbage collection of the texture
+	Texture->AddToRoot();
+
+	SetTextureDetails(Texture, Dimensions);
+	CreateTextureMip(Texture, Dimensions, BulkData, DataSize);
+	CreateTextureEditorData(Texture, Dimensions, BulkData);
+	Texture->Filter = TF_Default;
+
+	// Update resource, mark that the folder needs to be rescanned and notify editor about asset creation.
+	Texture->UpdateResource();
+	FAssetRegistryModule::AssetCreated(Texture);
+
+	return Texture;
+}
+
+UTexture2D* FTextureUtils::CreateSliceTextureAsset(const FString AssetName, FVector4 Dimensions, UObject* OutPackage,
+                                                   uint8* BulkData, const int DataSize)
+{
+	// The following function call expects the first two dimensions to be the ones describing the texture
+	// dimensions, we therefore might have to swap them now
+	const bool SwapX = Dimensions.X == 1;
+	const bool SwapY = Dimensions.Y == 1;
+	if (SwapX)
+	{
+		const float Tmp = Dimensions.X;
+		Dimensions.X = Dimensions.Y;
+		Dimensions.Y = Dimensions.Z;
+		Dimensions.Z = Tmp;
+	}
+	if (SwapY)
+	{
+		const float Tmp = Dimensions.Y;
+		Dimensions.Y = Dimensions.Z;
+		Dimensions.Z = Tmp;
+	}
+
+	UTexture2D* SliceTexture = CreateTextureAsset(AssetName, Dimensions, OutPackage, BulkData, DataSize);
+
+	return SliceTexture;
+}
+
+UVolumeTexture* FTextureUtils::CreateVolumeAsset(const FString AssetName, const FVector4 Dimensions,
+                                                 UObject* OutPackage,
+                                                 uint8* BulkData, const int DataSize)
+{
+	UVolumeTexture* Texture = NewObject<UVolumeTexture>(OutPackage, FName(*AssetName),
+	                                                    RF_Public | RF_Standalone | RF_MarkAsRootSet);
+
+	// Prevent garbage collection of the texture
+	Texture->AddToRoot();
+
+	SetTextureDetails(Texture, Dimensions);
+	CreateTextureMip(Texture, Dimensions, BulkData, DataSize);
+	CreateTextureEditorData(Texture, Dimensions, BulkData);
+
+
+	// Update resource, mark that the folder needs to be rescanned and notify editor about asset creation.
+	Texture->UpdateResource();
+	FAssetRegistryModule::AssetCreated(Texture);
+
+	return Texture;
 }

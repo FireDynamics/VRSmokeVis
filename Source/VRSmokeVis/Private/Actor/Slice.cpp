@@ -55,10 +55,7 @@ void ASlice::BeginPlay()
 			MinValue) * SliceAsset->SliceInfo.ScaleFactor / 255.f;
 		SliceMaterial->SetScalarParameterValue("CutOffValue", CutOffValue);
 
-		SliceMaterial->SetTextureParameterValue("ColorMap", GI->Config->SliceColorMaps[SliceAsset->SliceInfo.Quantity]);
-
-		SliceMaterial->SetScalarParameterValue("ColorMapMin", 0.f);
-		SliceMaterial->SetScalarParameterValue("ColorMapRange", 1.f);
+		SliceMaterial->SetTextureParameterValue("ColorMap", GI->Config->ColorMaps[SliceAsset->SliceInfo.Quantity]);
 	}
 
 	if (StaticMeshComponent)
@@ -68,22 +65,19 @@ void ASlice::BeginPlay()
 
 	if (SliceAsset)
 	{
-		GI->InitUpdateRate(SliceAsset->SliceInfo.Spacing.W);
+		GI->InitUpdateRate("Slice", SliceAsset->SliceInfo.Spacing.W);
 	}
 
-	FUpdateDataEvent& UpdateDataEvent = GI->RegisterTextureLoad(
+	FUpdateDataEvent& UpdateDataEvent = GI->RegisterTextureLoad("Slice",
 		SliceAsset->SliceInfo.TextureDir, &SliceAsset->SliceTextures);
 	UpdateDataEvent.AddUObject(this, &ASlice::UpdateTexture);
 
-	// Initialize resources for timestep t=-1 and t=0 (for time interpolation)
-	UpdateTexture(-1);
-	UpdateTexture(0);
-
+	// Initialize resources for first timesteps (for time interpolation)
+	UpdateTexture(GI->CurrentTimeSteps["Slice"] - 1);
+	UpdateTexture(GI->CurrentTimeSteps["Slice"]);
+	
 	// Let the GameInstance know when we spawn a slice
 	GI->AddSlice(this);
-
-	// Bind to Event that gets called whenever a new slice is shown (this might affect our ColorMap scale)
-	Cast<UVRSSGameInstance>(GetGameInstance())->ColorMapUpdateEvent.AddUObject(this, &ASlice::UpdateColorMapScale);
 }
 
 void ASlice::UpdateTexture(const int CurrentTimeStep)
@@ -139,7 +133,7 @@ void ASlice::Tick(const float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	TimePassedPercentage = FMath::Clamp<float>(TimePassedPercentage + DeltaTime / GI->UpdateRate, 0, 1);
+	TimePassedPercentage = FMath::Clamp<float>(TimePassedPercentage + DeltaTime / GI->UpdateRates["Slice"], 0, 1);
 }
 
 void ASlice::UseSimulationTransform()

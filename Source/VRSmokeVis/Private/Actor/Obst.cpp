@@ -49,61 +49,34 @@ void AObst::BeginPlay()
 	TArray<int> Orientations;
 	ObstAsset->ObstInfo.Dimensions.GetKeys(Orientations);
 
-	if (ObstMaterialBase)
-	{
-		for (const int Orientation : Orientations)
-		{
-			ObstMaterials[Orientation] = UMaterialInstanceDynamic::Create(
-				ObstMaterialBase, this, *("Obst Mat Dynamic Inst" + FString::FromInt(Orientation)));
-
-			// const float CutOffValue = (GI->Config->CutOffValues[ObstAsset->ObstInfo.Quantity] - ObstAsset->ObstInfo.
-			// 	MinValue) * ObstAsset->ObstInfo.ScaleFactor / 255.f;
-			// Todo: Material Layers
-			// ObstMaterial->SetScalarParameterValue("CutOffValue", CutOffValue);
-
-			ObstMaterials[Orientation]->
-				SetTextureParameterValue("ColorMap", GI->Config->SliceColorMaps[ActiveQuantity]);
-
-			ObstMaterials[Orientation]->SetScalarParameterValue("ColorMapMin", 0.f);
-			ObstMaterials[Orientation]->SetScalarParameterValue("ColorMapRange", 1.f);
-		}
-	}
-
-	if (StaticMeshComponent)
-	{
-		for (const int Orientation : Orientations)
-		{
-			StaticMeshComponent->SetMaterialByName(*FString::FromInt(Orientation), ObstMaterials[Orientation]);
-		}
-	}
-
-	GI->InitUpdateRate(ObstAsset->ObstInfo.Spacings[Orientations[0]].W);
-
 	for (const int Orientation : Orientations)
 	{
-		FUpdateDataEvent& UpdateDataEvent = GI->RegisterTextureLoad(ObstAsset->ObstInfo.TextureDirs[ActiveQuantity],
-		                                                            &ObstAsset->ObstTextures[ActiveQuantity][
-			                                                            Orientation]);
-		UpdateDataEvent.AddUObject(this, &AObst::UpdateTexture, Orientation);
-
-		// Initialize resources for timestep t=-1 and t=0 (for time interpolation)
-		UpdateTexture(-1, Orientation);
-		UpdateTexture(0, Orientation);
+		DataTexturesT0.Add(Orientation, nullptr);
+		DataTexturesT1.Add(Orientation, nullptr);
 	}
 
+	GI->InitUpdateRate("Obst", ObstAsset->ObstInfo.Spacings[Orientations[0]].W);
+
+	// Set some default quantity as active
+	TArray<FString> Quantities;
+	ObstAsset->ObstInfo.TextureDirs.GetKeys(Quantities);
+	if (Quantities.Contains("wall_temperature")) SetActiveQuantity("wall_temperature");
+	else SetActiveQuantity(Quantities[0]);
+
+	for (const int Orientation : Orientations)
+		if (StaticMeshComponent) StaticMeshComponent->SetMaterialByName(*FString::FromInt(Orientation),
+		                                                                ObstMaterials[Orientation]);
 
 	// Let the GameInstance know when we spawn a obst
 	GI->AddObst(this);
-
-	// Bind to Event that gets called whenever a new obst displays boundary data (this might affect our ColorMap scale)
-	Cast<UVRSSGameInstance>(GetGameInstance())->ColorMapUpdateEvent.AddUObject(this, &AObst::UpdateColorMapScale);
 }
 
 void AObst::UpdateTexture(const int CurrentTimeStep, const int Orientation)
 {
 	// Load the texture for the next time step to interpolate between the next and current one
 	UTexture2D* NextTexture = Cast<UTexture2D>(
-		ObstAsset->ObstTextures[ActiveQuantity][Orientation][(CurrentTimeStep + 1) % ObstAsset->ObstTextures.Num()].
+		ObstAsset->ObstTextures[ActiveQuantity][Orientation][(CurrentTimeStep + 1) % ObstAsset->ObstTextures[
+			ActiveQuantity][Orientation].Num()].
 		GetAsset());
 
 	if (!NextTexture)
@@ -156,11 +129,53 @@ void AObst::UpdateColorMapScale(const FString Quantity, const float NewMin, cons
 	}
 }
 
+void AObst::SetActiveQuantity(FString NewQuantity)
+{
+	ActiveQuantity = NewQuantity;
+
+	ObstAsset->ObstTextures.Add(NewQuantity, TMap<int, TArray<FAssetData>>());
+
+	TArray<int> Orientations;
+	ObstAsset->ObstInfo.Dimensions.GetKeys(Orientations);
+
+	const float CutOffValue = (GI->Config->ObstCutOffValues[ActiveQuantity] - ObstAsset->ObstInfo.
+		MinValues[ActiveQuantity]) * ObstAsset->ObstInfo.ScaleFactors[ActiveQuantity] / 255.f;
+	for (const int Orientation : Orientations)
+	{
+		ObstAsset->ObstTextures[NewQuantity].Add(Orientation, TArray<FAssetData>());
+
+		FUpdateDataEvent& UpdateDataEvent = GI->RegisterTextureLoad("Obst",
+		                                                            ObstAsset->ObstInfo.TextureDirs[ActiveQuantity].
+		                                                            FaceDirs[Orientation],
+		                                                            &ObstAsset->ObstTextures[ActiveQuantity][
+			                                                            Orientation]);
+		UpdateDataEvent.AddUObject(this, &AObst::UpdateTexture, Orientation);
+
+		if (ObstMaterialBase)
+		{
+			// Todo: Material Layers
+			UMaterialInstanceDynamic* ObstMaterial = UMaterialInstanceDynamic::Create(
+				ObstMaterialBase, this, *("Obst Mat Dynamic Inst" + FString::FromInt(Orientation)));
+			ObstMaterials.Add(Orientation, ObstMaterial);
+
+			ObstMaterial->SetScalarParameterValue("CutOffValue", CutOffValue);
+
+			ObstMaterial->SetTextureParameterValue("ColorMap", GI->Config->ColorMaps[ActiveQuantity]);
+
+			GI->ChangeObstQuantity(this);
+		}
+
+		// Initialize resources for timestep t=-1 and t=0 (for time interpolation)
+		UpdateTexture(GI->CurrentTimeSteps["Obst"] - 1, Orientation);
+		UpdateTexture(GI->CurrentTimeSteps["Obst"], Orientation);
+	}
+}
+
 void AObst::Tick(const float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	TimePassedPercentage = FMath::Clamp<float>(TimePassedPercentage + DeltaTime / GI->UpdateRate, 0, 1);
+	TimePassedPercentage = FMath::Clamp<float>(TimePassedPercentage + DeltaTime / GI->UpdateRates["Obst"], 0, 1);
 }
 
 void AObst::UseSimulationTransform()

@@ -252,4 +252,4 @@ $RECYCLE.BIN/
 !/fds_data/*.fds
 /Content/SmokeData/*
 /Content/Slices/*
-/Content/Boundaries/*
+/Content/Obstructions/*

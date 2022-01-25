@@ -23,6 +23,10 @@ public:
 	UFUNCTION(CallInEditor, Category="Slice")
 	void UseSimulationTransform();
 	
+	/** Delegate to update the ColorMap in case a slice with higher Max/lower Min has been added. **/
+	UFUNCTION()
+	void UpdateColorMapScale(const FString Quantity, const float NewMin, const float NewMax) const;
+	
 protected:
 	virtual void BeginPlay() override;
 
@@ -30,40 +34,36 @@ protected:
 	UFUNCTION()
 	void UpdateTexture(const int CurrentTimeStep);
 
-	/** Delegate to update the ColorMap in case a slice with higher Max/lower Min has been added. **/
-	UFUNCTION()
-	void UpdateColorMapScale(const FString Quantity, const float NewMin, const float NewMax) const;
-
 public:
 	UPROPERTY(VisibleAnywhere)
 	UVRSSGameInstance* GI;
-	
-	/** MeshComponent that contains the raymarching cube. */
-	UPROPERTY(VisibleAnywhere)
-	UStaticMeshComponent* StaticMeshComponent;
 
 	/** The base material for slice rendering. **/
 	UPROPERTY(BlueprintReadOnly, EditAnywhere)
 	UMaterial* SliceMaterialBase;
-
-	/** Dynamic material instance for slice rendering. **/
-	UPROPERTY(BlueprintReadOnly, Transient)
-	UMaterialInstanceDynamic* SliceMaterial = nullptr;
 	
 	/** The loaded slice asset belonging to this slice. **/
 	UPROPERTY(BlueprintReadOnly, EditAnywhere)
 	USliceAsset* SliceAsset;
 
-	/** Current data texture. **/
-	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Transient)
-	UTexture2D* DataTextureT0;
-	
-	/** Next data texture. **/
-	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Transient)
-	UTexture2D* DataTextureT1;
-
 protected:
 	/** The % of time that has passed until the next frame is reached. **/
 	UPROPERTY(VisibleAnywhere)
 	float TimePassedPercentage = 0;
+	
+	/** Dynamic material instance for slice rendering. **/
+	UPROPERTY(BlueprintReadOnly, Transient)
+	UMaterialInstanceDynamic* SliceMaterial = nullptr;
+	
+	/** Current data texture. **/
+	UPROPERTY(BlueprintReadOnly, Transient)
+	UTexture2D* DataTextureT0;
+	
+	/** Next data texture. **/
+	UPROPERTY(BlueprintReadOnly, Transient)
+	UTexture2D* DataTextureT1;
+	
+	/** MeshComponent that contains the slice plane. */
+	UPROPERTY(BlueprintReadOnly)
+	UStaticMeshComponent* StaticMeshComponent;
 };

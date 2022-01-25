@@ -86,9 +86,9 @@ void ARaymarchVolume::BeginPlay()
 	// Unreal units = cm, FDS has sizes in m -> multiply by 100.
 	StaticMeshComponent->SetRelativeScale3D(VolumeAsset->DataInfo.WorldDimensions * 100);
 
-	GI->InitUpdateRate(VolumeAsset->DataInfo.Spacing.W);
+	GI->InitUpdateRate("Volume", VolumeAsset->DataInfo.Spacing.W);
 
-	FUpdateDataEvent& UpdateDataEvent = GI->RegisterTextureLoad(
+	FUpdateDataEvent& UpdateDataEvent = GI->RegisterTextureLoad("Volume",
 		VolumeAsset->DataInfo.TextureDir, &VolumeAsset->VolumeTextures);
 	UpdateDataEvent.AddUObject(this, &ARaymarchVolume::UpdateVolume);
 
@@ -137,7 +137,7 @@ void ARaymarchVolume::Tick(const float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	TimePassedPercentage = FMath::Clamp<float>(TimePassedPercentage + DeltaTime / GI->UpdateRate, 0, 1);
+	TimePassedPercentage = FMath::Clamp<float>(TimePassedPercentage + DeltaTime / GI->UpdateRates["Volume"], 0, 1);
 	RaymarchMaterial->SetScalarParameterValue("TimePassedPercentage", TimePassedPercentage);
 }
 

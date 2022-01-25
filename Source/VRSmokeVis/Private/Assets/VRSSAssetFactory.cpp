@@ -141,10 +141,10 @@ UVolumeAsset* UVRSSAssetFactory::CreateVolumeFromFile(FVolumeDataInfo& DataInfo,
 		UPackage* SubPackage = CreatePackage(*FPaths::Combine(DataInfo.TextureDir, VolumeTextureName));
 
 		// Set pointer to current Volume position at timestep t
-		UVolumeTexture* VolumeTexture;
-		FTextureUtils::CreateTextureAssets<UVolumeTexture>(VolumeTexture, VolumeTextureName, DataInfo.Dimensions,
-		                                                   SubPackage, LoadedArray + SingleTextureSize * t,
-		                                                   SingleTextureSize);
+		UVolumeTexture* VolumeTexture = FTextureUtils::CreateVolumeAsset(VolumeTextureName, DataInfo.Dimensions,
+		                                                                 SubPackage,
+		                                                                 LoadedArray + SingleTextureSize * t,
+		                                                                 SingleTextureSize);
 		VolumeTexture->Filter = TF_Bilinear;
 
 		FString PackageFileName = FPackageName::LongPackageNameToFilename(
@@ -185,46 +185,9 @@ USliceAsset* UVRSSAssetFactory::CreateSliceFromFile(FVolumeDataInfo& DataInfo, c
 		const FString SliceTextureName = "ST_" + SliceName + "_Data_t" + FString::FromInt(t);
 		UPackage* SubPackage = CreatePackage(*FPaths::Combine(DataInfo.TextureDir, SliceTextureName));
 
-		// The following function call expects the first two dimensions to be the ones describing the texture
-		// dimensions, we therefore might have to swap them now
-		const bool SwapX = DataInfo.Dimensions.X == 1;
-		const bool SwapY = DataInfo.Dimensions.Y == 1;
-		if (SwapX)
-		{
-			const float Tmp = DataInfo.Dimensions.X;
-			DataInfo.Dimensions.X = DataInfo.Dimensions.Y;
-			DataInfo.Dimensions.Y = DataInfo.Dimensions.Z;
-			DataInfo.Dimensions.Z = Tmp;
-		}
-		if (SwapY)
-		{
-			const float Tmp = DataInfo.Dimensions.Y;
-			DataInfo.Dimensions.Y = DataInfo.Dimensions.Z;
-			DataInfo.Dimensions.Z = Tmp;
-		}
-
 		// Set pointer to current slice position at timestep t
-		UTexture2D* SliceTexture;
-		FTextureUtils::CreateTextureAssets<UTexture2D>(SliceTexture, SliceTextureName, DataInfo.Dimensions,
-		                                               SubPackage, LoadedArray + SingleTextureSize * t,
-		                                               SingleTextureSize);
-		SliceTexture->Filter = TF_Default;
-
-		// Correct the dimensions again
-		if (SwapX)
-		{
-			const float Tmp = DataInfo.Dimensions.X;
-			DataInfo.Dimensions.X = DataInfo.Dimensions.Z;
-			DataInfo.Dimensions.Z = DataInfo.Dimensions.Y;
-			DataInfo.Dimensions.Y = Tmp;
-		}
-		if (SwapY)
-		{
-			const float Tmp = DataInfo.Dimensions.Z;
-			DataInfo.Dimensions.Z = DataInfo.Dimensions.Y;
-			DataInfo.Dimensions.Y = Tmp;
-		}
-
+		UTexture2D* SliceTexture = FTextureUtils::CreateSliceTextureAsset(
+			SliceTextureName, DataInfo.Dimensions, SubPackage, LoadedArray + SingleTextureSize * t, SingleTextureSize);
 
 		FString PackageFileName = FPackageName::LongPackageNameToFilename(
 			SubPackage->GetName(), FPackageName::GetAssetPackageExtension());
@@ -261,30 +224,32 @@ const
 	{
 		FString Quantity = DataFileName.Key;
 		OutTextures.Add(Quantity, TMap<int, TArray<UTexture2D*>>());
+		DataInfo.TextureDirs.Add(Quantity, FQuantityDir());
 		uint8* LoadedArray = FTextureUtils::LoadObstData(FPaths::Combine(Directory, DataFileName.Value), DataInfo);
-		// Create the persistent textures
-		DataInfo.TextureDirs.Add(Quantity, FPaths::Combine(PackagePath.RightChop(8), ObstName + "_" + Quantity));
+		int Offset = 0;
 
-		UTexture2D* ObstTexture;
-		// Set pointer to current Volume position at timestep t
+		// Set pointer to current data position at timestep t for each orientation
 		for (const int Ori : Orientations)
 		{
+			const FString DirName = ObstName + "_" + Quantity + "_Face" + FString::FromInt(Ori);
+			DataInfo.TextureDirs[Quantity].FaceDirs.Add(
+				Ori, FPaths::Combine<FString>(PackagePath.RightChop(8), DirName));
 			OutTextures[Quantity].Add(Ori, TArray<UTexture2D*>());
 			for (int t = 0; t < DataInfo.Dimensions[Ori].W; ++t)
 			{
-				const long SingleTextureSize = static_cast<long>(DataInfo.Dimensions[Ori].X) * DataInfo.Dimensions[Ori].
-					Y;
-				const FString FaceTextureName = "OT_" + ObstName + "_Data_t" + FString::FromInt(t) + "_Face" +
-					FString::FromInt(Ori);
-				UPackage* SubPackage = CreatePackage(*FPaths::Combine(DataInfo.TextureDirs[Quantity], FaceTextureName));
-				FTextureUtils::CreateTextureAssets<UTexture2D>(ObstTexture, FaceTextureName, DataInfo.Dimensions[Ori],
-				                                               SubPackage, LoadedArray + SingleTextureSize * t,
-				                                               SingleTextureSize);
+				const long SingleTextureSize = static_cast<long>(DataInfo.Dimensions[Ori].X) * DataInfo.Dimensions[Ori].Y;
+				const FString FaceTextureName = "OT_" + DirName + "_Data_t" + FString::FromInt(t);
+				UPackage* SubPackage = CreatePackage(*FPaths::Combine(DataInfo.TextureDirs[Quantity].FaceDirs[Ori], FaceTextureName));
+				UTexture2D* ObstTexture = FTextureUtils::CreateTextureAsset(FaceTextureName, DataInfo.Dimensions[Ori],
+				                                                            SubPackage, LoadedArray + Offset,
+				                                                            SingleTextureSize);
 				ObstTexture->Filter = TF_Default;
 				FString PackageFileName = FPackageName::LongPackageNameToFilename(
 					SubPackage->GetName(), FPackageName::GetAssetPackageExtension());
-				// UPackage::Save(SubPackage, ObstTexture, RF_Standalone | RF_Public, *PackageFileName);
+				UPackage::Save(SubPackage, ObstTexture, RF_Standalone | RF_Public, *PackageFileName);
 				OutTextures[Quantity][Ori].Add(ObstTexture);
+
+				Offset += SingleTextureSize;
 			}
 		}
 		delete[] LoadedArray;

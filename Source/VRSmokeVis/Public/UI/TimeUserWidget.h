@@ -18,15 +18,24 @@ public:
 
 	UFUNCTION()
 	void UpdateTimeTextBlocks() const;
-	
+
+	UFUNCTION()
+	UTextBlock* GetTextBlockValueTimesteps(const FString Type) const;
+
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
-	UTextBlock *TextBlockValueGameTime;
-	
+	UTextBlock* TextBlockValueGameTime;
+
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
-	UTextBlock *TextBlockValueSimTime;
-	
-	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
-	UTextBlock *TextBlockValueTimestep;
+	UTextBlock* TextBlockValueSimTime;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
+	UTextBlock* TextBlockValueTimestepObsts;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
+	UTextBlock* TextBlockValueTimestepSlices;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
+	UTextBlock* TextBlockValueTimestepVolumes;
 
 	UPROPERTY(VisibleAnywhere)
 	float CurrentSimTime = 0;

@@ -1,6 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
-
-#pragma once
+﻿#pragma once
 
 #include "VRSSConfig.h"
 #include "Engine/StreamableManager.h"
@@ -8,7 +6,9 @@
 #include "VRSSGameInstance.generated.h"
 
 DECLARE_EVENT_OneParam(UVRSSGameInstance, FUpdateDataEvent, int)
+
 DECLARE_EVENT_ThreeParams(UVRSSGameInstance, FColorMapUpdateEvent, FString, float, float)
+
 
 UCLASS()
 class VRSMOKEVIS_API UVRSSGameInstance : public UGameInstance
@@ -20,13 +20,14 @@ public:
 
 	virtual void Init() override;
 
-	FUpdateDataEvent& RegisterTextureLoad(const FString& Directory, TArray<FAssetData>* TextureArray);
+	FUpdateDataEvent& RegisterTextureLoad(const FString Type, const FString& Directory,
+	                                      TArray<FAssetData>* TextureArray);
 
 	UFUNCTION()
-	void InitUpdateRate(float UpdateRateSuggestion);
+	void InitUpdateRate(const FString Type, float UpdateRateSuggestion);
 
 	UFUNCTION(BlueprintSetter)
-	void SetUpdateRate(const float NewUpdateRate);
+	void SetUpdateRate(const FString Type, const float NewUpdateRate);
 
 	UFUNCTION()
 	void FastForwardSimulation(const float Amount);
@@ -39,7 +40,7 @@ public:
 
 	UFUNCTION()
 	void ToggleHUDVisibility() const;
-	
+
 	/** Returns the unique quantities of all active slices. */
 	UFUNCTION(BlueprintCallable)
 	TArray<FString> GetActiveSliceQuantities() const;
@@ -67,58 +68,58 @@ public:
 	void RemoveObst(class AObst* Obst);
 
 	UFUNCTION(BlueprintCallable)
+	void ChangeObstQuantity(class AObst* Obst);
+
+	UFUNCTION(BlueprintCallable)
 	void GetActiveMaxMinForQuantity(const FString Quantity, float& MinOut, float& MaxOut) const;
-	
+
 protected:
 	UFUNCTION()
-	void NextTimeStep();
-	
+	void NextTimeStep(const FString Type);
+
 public:
 	/** An instance of the configuration for the project which simply uses its default values set in the editor. */
 	UPROPERTY(EditAnywhere)
 	UVRSSConfig* Config;
 
 	/** The class of the raymarch lights that are dimmed over time. */
+	UPROPERTY(EditAnywhere)
 	TSubclassOf<class ARaymarchLight> RaymarchLightClass;
 
 	/** Controls the maximum radius of Jitter that is applied (works as a factor). Defaults to 0 (no Jitter). */
 	UPROPERTY(EditAnywhere)
 	float JitterRadius = 0;
 
+	UPROPERTY(BlueprintReadOnly)
+	TMap<FString, int> CurrentTimeSteps;
+
 	/** Controls the time between two updates of RaymarchingVolume textures. Defaults to the rate specified by the input from FDS if set to 0. */
-	UPROPERTY(EditAnywhere, BlueprintSetter=SetUpdateRate)
-	float UpdateRate = 0;
-	
+	UPROPERTY(VisibleAnywhere)
+	TMap<FString, float> UpdateRates;
+
 	FColorMapUpdateEvent ColorMapUpdateEvent;
-	
 protected:
 	/** Lists of currently active slices. */
 	UPROPERTY(VisibleAnywhere)
 	TArray<class ASlice*> ActiveSlices;
-	
+
 	/** Lists of currently active obstructions. */
 	UPROPERTY(VisibleAnywhere)
 	TArray<class AObst*> ActiveObstructions;
-	
+
 	/** Used to asynchronously load assets at runtime. */
 	FStreamableManager* StreamableManager;
 
-	/** Handle to manage the update timer. **/
-	FTimerHandle UpdateTimerHandle;
+	/** Handles to manage the update timer. **/
+	TMap<FString, FTimerHandle> UpdateTimerHandles;
+
+	TMap<FString, FUpdateDataEvent> UpdateDataEvents;
 
 	/** Contains all the arrays for which assets will be loaded. */
-	TArray<TArray<FAssetData>*> TextureArrays;
-
-	FUpdateDataEvent UpdateDataEvent;
+	TMap<FString, TArray<TArray<FAssetData>*>> TextureArrays;
 
 	UPROPERTY(BlueprintReadOnly)
-	int CurrentTimeStep = 0;
-
-	UPROPERTY(BlueprintReadOnly)
-	int MaxTimeStep = 0;
-
-	UPROPERTY(BlueprintReadOnly)
-	float SimTimeStepLength = -1;
+	TMap<FString, int> MaxTimeSteps;
 
 	bool bIsPaused = false;
 };

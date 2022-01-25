@@ -62,31 +62,14 @@ public:
 	static FBoundaryDataInfo ParseObstDataInfoFromHeader(const FString& FileName, TArray<float> &BoundingBoxOut);
 
 	/** Creates a Texture asset with the given name, pixel format and dimensions and fills it with the bulk data
-	* provided. Returns a reference to the created texture in the CreatedTexture param. */
-	template <typename T>
-	static bool CreateTextureAssets(T*& OutTexture, const FString AssetName, const FVector4 Dimensions,
-	                                UObject* OutPackage, uint8* BulkData, const int DataSize)
-	{
-		if (Dimensions.X == 0 || Dimensions.Y == 0 || Dimensions.Z == 0 || Dimensions.W == 0)
-		{
-			return false;
-		}
-
-		T* Texture = NewObject<T>(OutPackage, FName(*AssetName), RF_Public | RF_Standalone | RF_MarkAsRootSet);
-
-		// Prevent garbage collection of the texture
-		Texture->AddToRoot();
-
-		SetTextureDetails(Texture, Dimensions);
-		CreateTextureMip(Texture, Dimensions, BulkData, DataSize);
-		CreateTextureEditorData(Texture, Dimensions, BulkData);
-
-		// Update resource, mark that the folder needs to be rescanned and notify editor about asset creation.
-		Texture->UpdateResource();
-
-		FAssetRegistryModule::AssetCreated(Texture);
-		// Pass out the reference to our brand new texture.
-		OutTexture = Texture;
-		return true;
-	}
+	* provided */
+	static UTexture2D *CreateTextureAsset(const FString AssetName, const FVector4 Dimensions, UObject* OutPackage, uint8* BulkData, const int DataSize);
+	
+	/** Creates a Texture asset for a slice with the given name, pixel format and dimensions and fills it with the bulk
+	 * data provided */
+	static UTexture2D *CreateSliceTextureAsset(const FString AssetName, const FVector4 Dimensions, UObject* OutPackage, uint8* BulkData, const int DataSize);
+	
+	/** Creates a VolumeTexture asset with the given name, pixel format and dimensions and fills it with the bulk data
+	* provided */
+	static UVolumeTexture *CreateVolumeAsset(const FString AssetName, const FVector4 Dimensions, UObject* OutPackage, uint8* BulkData, const int DataSize);
 };

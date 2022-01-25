@@ -12,7 +12,6 @@ UTimeUserWidget::UTimeUserWidget(const FObjectInitializer& ObjectInitializer) : 
 void UTimeUserWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
-
 }
 
 
@@ -31,4 +30,12 @@ void UTimeUserWidget::UpdateTimeTextBlocks() const
 {
 	TextBlockValueGameTime->SetText(FText::AsNumber(CurrentGameTime));
 	TextBlockValueSimTime->SetText(FText::AsNumber(CurrentSimTime));
+}
+
+UTextBlock* UTimeUserWidget::GetTextBlockValueTimesteps(const FString Type) const
+{
+	if (Type == "Obst") return TextBlockValueTimestepObsts;
+	if (Type == "Slice") return TextBlockValueTimestepSlices;
+	if (Type == "Volume") return TextBlockValueTimestepVolumes;
+	return nullptr;
 }
