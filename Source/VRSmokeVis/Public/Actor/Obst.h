@@ -41,9 +41,9 @@ public:
 	UPROPERTY(VisibleAnywhere)
 	UVRSSGameInstance* GI;
 
-	/** The base material for obst rendering. **/
+	/** The base material for obst data. **/
 	UPROPERTY(BlueprintReadOnly, EditAnywhere)
-	UMaterial* ObstMaterialBase;
+	UMaterial* ObstDataMaterialBase;
 	
 	/** The loaded obst asset belonging to this obst. **/
 	UPROPERTY(BlueprintReadOnly, EditAnywhere)
@@ -65,9 +65,13 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Transient)
 	TMap<int, UTexture2D*> DataTexturesT1;
 	
-	/** Dynamic material instance for obst rendering. **/
+	/** Dynamic material instance for obst data. **/
 	UPROPERTY(BlueprintReadOnly, Transient)
-	TMap<int, UMaterialInstanceDynamic*> ObstMaterials;
+	TMap<int, UMaterialInstanceDynamic*> ObstDataMaterials;
+
+	/** Cube border mesh - this is just a cube with wireframe borders. **/
+	UPROPERTY(VisibleAnywhere)
+	UStaticMeshComponent* CubeBorderMeshComponent;
 	
 	/** MeshComponent that contains the cube mesh. */
 	UPROPERTY(BlueprintReadOnly)

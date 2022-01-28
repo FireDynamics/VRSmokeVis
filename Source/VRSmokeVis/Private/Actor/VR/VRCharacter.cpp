@@ -57,48 +57,6 @@ void AVRCharacter::BeginPlay()
 	              .bExecuteWhenPaused = true;
 	InputComponent->BindAction("ToggleHUD", IE_Pressed, this, &AVRCharacter::ToggleHUDVisibility)
 	              .bExecuteWhenPaused = true;
-
-	// Bind movement events
-	InputComponent->BindAxis("MoveForward", this, &AVRCharacter::MoveForward);
-	InputComponent->BindAxis("MoveRight", this, &AVRCharacter::MoveRight);
-
-	// We have 2 versions of the rotation bindings to handle different kinds of devices differently
-	// "turn" handles devices that provide an absolute delta, such as a mouse.
-	// "TurnRate" is for devices that we choose to treat as a rate of change, such as an analog joystick
-	InputComponent->BindAxis("Turn", this, &AVRCharacter::AddControllerYawInput);
-	InputComponent->BindAxis("TurnRate", this, &AVRCharacter::TurnAtRate);
-	InputComponent->BindAxis("LookUp", this, &AVRCharacter::AddControllerPitchInput);
-	InputComponent->BindAxis("LookUpRate", this, &AVRCharacter::LookUpAtRate);
-}
-
-void AVRCharacter::MoveForward(const float Value)
-{
-	if (Value != 0.0f)
-	{
-		// Add movement in that direction
-		AddMovementInput(GetActorForwardVector(), Value);
-	}
-}
-
-void AVRCharacter::MoveRight(const float Value)
-{
-	if (Value != 0.0f)
-	{
-		// Add movement in that direction
-		AddMovementInput(GetActorRightVector(), Value);
-	}
-}
-
-void AVRCharacter::TurnAtRate(const float Rate)
-{
-	// Calculate delta for this frame from the rate information
-	AddControllerYawInput(Rate * 45.f * GetWorld()->GetDeltaSeconds());
-}
-
-void AVRCharacter::LookUpAtRate(const float Rate)
-{
-	// Calculate delta for this frame from the rate information
-	AddControllerPitchInput(Rate * 45.f * GetWorld()->GetDeltaSeconds());
 }
 
 void AVRCharacter::TogglePauseSimulation()

@@ -61,11 +61,11 @@ protected:
 
 	/** Dynamic material instance for intensity rendering. **/
 	UPROPERTY(BlueprintReadOnly, Transient)
-	UMaterialInstanceDynamic* RaymarchMaterial = nullptr;
+	UMaterialInstanceDynamic* RaymarchMaterial;
 	
 	/** Cube border mesh - this is just a cube with wireframe borders. **/
 	UPROPERTY(VisibleAnywhere)
-	UStaticMeshComponent* CubeBorderMeshComponent = nullptr;
+	UStaticMeshComponent* CubeBorderMeshComponent;
 	
 	/** MeshComponent that contains the raymarching cube. */
 	UPROPERTY(BlueprintReadOnly)

@@ -21,7 +21,7 @@ AObst::AObst() : AActor()
 	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("Default Scene Root"));
 	RootComponent->SetWorldScale3D(FVector(1.0f));
 
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMesh(TEXT("StaticMesh'/Game/Meshes/SM_Cube.SM_Cube'"));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMesh(TEXT("StaticMesh'/Game/Meshes/SM_6SurfCube.SM_6SurfCube'"));
 	StaticMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Obst Static Mesh"));
 	// Set basic unit cube properties.
 	if (CubeMesh.Succeeded())
@@ -36,7 +36,27 @@ AObst::AObst() : AActor()
 	if (static ConstructorHelpers::FObjectFinder<UMaterial> Material(
 		TEXT("Material'/Game/Materials/M_Obst.M_Obst'")); Material.Succeeded())
 	{
-		ObstMaterialBase = Material.Object;
+		ObstDataMaterialBase = Material.Object;
+	}
+
+	
+	// Create CubeBorderMeshComponent and find and assign cube border mesh (that's a cube with only edges visible).
+	CubeBorderMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Obst Cube Border"));
+	CubeBorderMeshComponent->SetupAttachment(StaticMeshComponent);
+	CubeBorderMeshComponent->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
+	CubeBorderMeshComponent->SetHiddenInGame(true);
+	CubeBorderMeshComponent->SetRelativeScale3D(FVector(100.0f));
+
+	if (static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeBorder(
+		TEXT("StaticMesh'/Game/Meshes/SM_Unit_Cube.SM_Unit_Cube'")); CubeBorder.Succeeded())
+	{
+		// Find and assign cube material.
+		CubeBorderMeshComponent->SetStaticMesh(CubeBorder.Object);
+		if (static ConstructorHelpers::FObjectFinder<UMaterial> BorderMaterial(
+			TEXT("Material'/Game/Materials/M_CubeBorder.M_CubeBorder'")); BorderMaterial.Succeeded())
+		{
+			CubeBorderMeshComponent->SetMaterial(0, BorderMaterial.Object);
+		}
 	}
 }
 
@@ -65,7 +85,7 @@ void AObst::BeginPlay()
 
 	for (const int Orientation : Orientations)
 		if (StaticMeshComponent) StaticMeshComponent->SetMaterialByName(*FString::FromInt(Orientation),
-		                                                                ObstMaterials[Orientation]);
+		                                                                ObstDataMaterials[Orientation]);
 
 	// Let the GameInstance know when we spawn a obst
 	GI->AddObst(this);
@@ -102,9 +122,9 @@ void AObst::UpdateTexture(const int CurrentTimeStep, const int Orientation)
 	DataTexturesT1[Orientation] = NextTexture;
 
 	// Update dynamic material instance
-	ObstMaterials[Orientation]->SetTextureParameterValue("TextureT0", DataTexturesT0[Orientation]);
-	ObstMaterials[Orientation]->SetTextureParameterValue("TextureT1", DataTexturesT1[Orientation]);
-	ObstMaterials[Orientation]->SetScalarParameterValue("TimePassedPercentage", TimePassedPercentage);
+	ObstDataMaterials[Orientation]->SetTextureParameterValue("TextureT0", DataTexturesT0[Orientation]);
+	ObstDataMaterials[Orientation]->SetTextureParameterValue("TextureT1", DataTexturesT1[Orientation]);
+	ObstDataMaterials[Orientation]->SetScalarParameterValue("TimePassedPercentage", TimePassedPercentage);
 }
 
 void AObst::UpdateColorMapScale(const FString Quantity, const float NewMin, const float NewMax) const
@@ -123,8 +143,8 @@ void AObst::UpdateColorMapScale(const FString Quantity, const float NewMin, cons
 
 		for (const int Orientation : Orientations)
 		{
-			ObstMaterials[Orientation]->SetScalarParameterValue("ColorMapMin", NewMinScaled);
-			ObstMaterials[Orientation]->SetScalarParameterValue("ColorMapRange", ColorMapRange);
+			ObstDataMaterials[Orientation]->SetScalarParameterValue("ColorMapMin", NewMinScaled);
+			ObstDataMaterials[Orientation]->SetScalarParameterValue("ColorMapRange", ColorMapRange);
 		}
 	}
 }
@@ -151,12 +171,11 @@ void AObst::SetActiveQuantity(FString NewQuantity)
 			                                                            Orientation]);
 		UpdateDataEvent.AddUObject(this, &AObst::UpdateTexture, Orientation);
 
-		if (ObstMaterialBase)
+		if (ObstDataMaterialBase)
 		{
-			// Todo: Material Layers
 			UMaterialInstanceDynamic* ObstMaterial = UMaterialInstanceDynamic::Create(
-				ObstMaterialBase, this, *("Obst Mat Dynamic Inst" + FString::FromInt(Orientation)));
-			ObstMaterials.Add(Orientation, ObstMaterial);
+				ObstDataMaterialBase, this, *("Obst Mat Dynamic Inst" + FString::FromInt(Orientation)));
+			ObstDataMaterials.Add(Orientation, ObstMaterial);
 
 			ObstMaterial->SetScalarParameterValue("CutOffValue", CutOffValue);
 
@@ -189,11 +208,10 @@ void AObst::UseSimulationTransform()
 		const FVector ObstScale = FVector(ObstAsset->BoundingBox[1] - ObstAsset->BoundingBox[0],
 		                                  ObstAsset->BoundingBox[3] - ObstAsset->BoundingBox[2],
 		                                  ObstAsset->BoundingBox[5] - ObstAsset->BoundingBox[4]);
-		StaticMeshComponent->SetRelativeScale3D(ObstScale);
+		StaticMeshComponent->SetRelativeScale3D(ObstScale * 1.01);
 
-		// Todo: Check pivot point of cube mesh and set location accordingly
 		const FVector ObstLocation = FVector(ObstAsset->BoundingBox[0], ObstAsset->BoundingBox[2],
-		                                     ObstAsset->BoundingBox[4]);
+		                                     ObstAsset->BoundingBox[4]) + ObstScale / 2;
 		SetActorLocation(ObstLocation * 100);
 	}
 }

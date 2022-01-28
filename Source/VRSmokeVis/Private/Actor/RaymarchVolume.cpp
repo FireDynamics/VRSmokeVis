@@ -39,18 +39,19 @@ ARaymarchVolume::ARaymarchVolume() : AActor()
 	CubeBorderMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Raymarch Volume Cube Border"));
 	CubeBorderMeshComponent->SetupAttachment(StaticMeshComponent);
 	CubeBorderMeshComponent->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
+	CubeBorderMeshComponent->SetHiddenInGame(true);
 
 	if (static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeBorder(
 		TEXT("StaticMesh'/Game/Meshes/SM_Unit_Cube.SM_Unit_Cube'")); CubeBorder.Succeeded())
 	{
 		// Find and assign cube material.
 		CubeBorderMeshComponent->SetStaticMesh(CubeBorder.Object);
+		
 		if (static ConstructorHelpers::FObjectFinder<UMaterial> BorderMaterial(
 			TEXT("Material'/Game/Materials/M_CubeBorder.M_CubeBorder'")); BorderMaterial.Succeeded())
 		{
 			CubeBorderMeshComponent->SetMaterial(0, BorderMaterial.Object);
 		}
-		CubeBorderMeshComponent->SetHiddenInGame(true);
 	}
 
 	if (static ConstructorHelpers::FObjectFinder<UMaterial> IntensityMaterial(
