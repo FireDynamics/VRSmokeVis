@@ -2,8 +2,6 @@
 
 #pragma once
 
-#include "Assets/ObstAsset.h"
-#include "VRSSGameInstance.h"
 #include "Obst.generated.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogObst, Log, All);
@@ -17,20 +15,20 @@ public:
 	/** Sets default values for this actor's properties. */
 	AObst();
 	
-	/** Called every frame. **/
+	/** Called every frame. */
 	virtual void Tick(float DeltaTime) override;
 	
 	UFUNCTION(CallInEditor, Category="Obst")
 	void UseSimulationTransform();
 	
-	/** Delegate to update the ColorMap in case a obst with higher Max/lower Min has been added. **/
+	/** Delegate to update the ColorMap in case a obst with higher Max/lower Min has been added. */
 	UFUNCTION()
 	void UpdateColorMapScale(const FString Quantity, const float NewMin, const float NewMax) const;
 
 protected:
 	virtual void BeginPlay() override;
 
-	/** Delegate to update the texture after a given amount of time. **/
+	/** Delegate to update the texture after a given amount of time. */
 	UFUNCTION()
 	void UpdateTexture(const int CurrentTimeStep, const int Orientation);
 
@@ -39,37 +37,37 @@ protected:
 	
 public:
 	UPROPERTY(VisibleAnywhere)
-	UVRSSGameInstance* GI;
+	class ASimulation* Sim;
 
-	/** The base material for obst data. **/
+	/** The base material for obst data. */
 	UPROPERTY(BlueprintReadOnly, EditAnywhere)
 	UMaterial* ObstDataMaterialBase;
 	
-	/** The loaded obst asset belonging to this obst. **/
+	/** The loaded obst asset belonging to this obst. */
 	UPROPERTY(BlueprintReadOnly, EditAnywhere)
-	UObstAsset* ObstAsset;
+	class UObstAsset* ObstAsset;
 
 	UPROPERTY(BlueprintSetter=SetActiveQuantity, VisibleAnywhere, Transient)
 	FString ActiveQuantity;
 	
 protected:
-	/** The % of time that has passed until the next frame is reached. **/
+	/** The % of time that has passed until the next frame is reached. */
 	UPROPERTY(VisibleAnywhere)
 	float TimePassedPercentage = 0;
 	
-	/** Current data texture. **/
+	/** Current data texture. */
 	UPROPERTY(BlueprintReadOnly, Transient)
 	TMap<int, UTexture2D*> DataTexturesT0;
 	
-	/** Next data texture. **/
+	/** Next data texture. */
 	UPROPERTY(BlueprintReadOnly, Transient)
 	TMap<int, UTexture2D*> DataTexturesT1;
 	
-	/** Dynamic material instance for obst data. **/
+	/** Dynamic material instance for obst data. */
 	UPROPERTY(BlueprintReadOnly, Transient)
 	TMap<int, UMaterialInstanceDynamic*> ObstDataMaterials;
 
-	/** Cube border mesh - this is just a cube with wireframe borders. **/
+	/** Cube border mesh - this is just a cube with wireframe borders. */
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* CubeBorderMeshComponent;
 	

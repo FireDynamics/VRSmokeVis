@@ -33,8 +33,8 @@ public class VRSmokeVis : ModuleRules
                 "RHI",
                 "AssetRegistry",
 				"HeadMountedDisplay",
-				"InputCore"
-				// ... add other public dependencies that you statically link with here ...
+				"InputCore",
+				"PythonScriptPlugin"
 			}
             );
 			

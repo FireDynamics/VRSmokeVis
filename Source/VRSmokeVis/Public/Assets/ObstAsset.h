@@ -1,5 +1,3 @@
-
-
 #pragma once
 
 #include "Engine/DataAsset.h"
@@ -7,14 +5,6 @@
 
 #include "ObstAsset.Generated.h"
 
-/*USTRUCT()
-struct FBoundaryAssetData
-{
-	GENERATED_BODY()
-
-	UPROPERTY()
-	TArray<FAssetData> Faces;
-};*/
 
 UCLASS()
 class VRSMOKEVIS_API UObstAsset : public UDataAsset

@@ -21,5 +21,5 @@ public:
 	
 	// Holds the general info about the Yaml Data read from disk.
 	UPROPERTY(EditAnywhere)
-	FVolumeDataInfo DataInfo;
+	FVolumeDataInfo VolumeInfo;
 };

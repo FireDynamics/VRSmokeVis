@@ -3,7 +3,7 @@
 #include "VRSSConfig.h"
 #include "Engine/StreamableManager.h"
 #include "Engine/ObjectLibrary.h"
-#include "VRSSGameInstance.generated.h"
+#include "Simulation.generated.h"
 
 DECLARE_EVENT_OneParam(UVRSSGameInstance, FUpdateDataEvent, int)
 
@@ -11,17 +11,25 @@ DECLARE_EVENT_ThreeParams(UVRSSGameInstance, FColorMapUpdateEvent, FString, floa
 
 
 UCLASS()
-class VRSMOKEVIS_API UVRSSGameInstance : public UGameInstance
+class VRSMOKEVIS_API ASimulation : public AActor
 {
 	GENERATED_BODY()
 
 public:
-	UVRSSGameInstance();
+	ASimulation();
+	
+	UFUNCTION(BlueprintCallable)
+	void ToggleControllerUI();
 
-	virtual void Init() override;
+	UFUNCTION()
+	void CheckObstActivations();
+	UFUNCTION()
+	void CheckSliceActivations();
+	UFUNCTION()
+	void CheckVolumeActivations();
 
-	FUpdateDataEvent& RegisterTextureLoad(const FString Type, const FString& Directory,
-	                                      TArray<FAssetData>* TextureArray);
+	TOptional<FUpdateDataEvent*> RegisterTextureLoad(const FString Type, const FString& Directory,
+	                                                 TArray<FAssetData>* TextureArray, const int NumTextures);
 
 	UFUNCTION()
 	void InitUpdateRate(const FString Type, float UpdateRateSuggestion);
@@ -74,10 +82,24 @@ public:
 	void GetActiveMaxMinForQuantity(const FString Quantity, float& MinOut, float& MaxOut) const;
 
 protected:
+	virtual void BeginPlay() override;
+	
 	UFUNCTION()
 	void NextTimeStep(const FString Type);
 
+	/** Activate a specific RaymarchVolume if it is not activated yet. Spawn it if necessary. */
+	UFUNCTION()
+	void TryActivateVolume();
+
 public:
+	
+	/** The loaded slice asset belonging to this slice. */
+	UPROPERTY(BlueprintReadOnly, EditAnywhere)
+	class USimulationAsset* SimulationAsset;
+
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<class USimControllerUserWidget> SimControllerUserWidgetClass;
+	
 	/** An instance of the configuration for the project which simply uses its default values set in the editor. */
 	UPROPERTY(EditAnywhere)
 	UVRSSConfig* Config;
@@ -98,19 +120,34 @@ public:
 	TMap<FString, float> UpdateRates;
 
 	FColorMapUpdateEvent ColorMapUpdateEvent;
+	
 protected:
-	/** Lists of currently active slices. */
+	UPROPERTY(BlueprintReadOnly)
+	class USimControllerUserWidget* SimControllerUserWidget;
+	
+	/** Lists of currently inactive obstructions. */
 	UPROPERTY(VisibleAnywhere)
-	TArray<class ASlice*> ActiveSlices;
-
+	TArray<class AObst*> InactiveObstructions;
+	/** Lists of currently inactive slices. */
+	UPROPERTY(VisibleAnywhere)
+	TArray<class ASlice*> InactiveSlices;
+	/** Lists of currently inactive volumes. */
+	UPROPERTY(VisibleAnywhere)
+	TArray<class ARaymarchVolume*> InactiveVolumes;
 	/** Lists of currently active obstructions. */
 	UPROPERTY(VisibleAnywhere)
 	TArray<class AObst*> ActiveObstructions;
+	/** Lists of currently active slices. */
+	UPROPERTY(VisibleAnywhere)
+	TArray<class ASlice*> ActiveSlices;
+	/** Lists of currently active volumes. */
+	UPROPERTY(VisibleAnywhere)
+	TArray<class ARaymarchVolume*> ActiveVolumes;
 
 	/** Used to asynchronously load assets at runtime. */
 	FStreamableManager* StreamableManager;
 
-	/** Handles to manage the update timer. **/
+	/** Handles to manage the update timer. */
 	TMap<FString, FTimerHandle> UpdateTimerHandles;
 
 	TMap<FString, FUpdateDataEvent> UpdateDataEvents;

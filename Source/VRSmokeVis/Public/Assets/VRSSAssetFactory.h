@@ -1,5 +1,3 @@
-
-
 #pragma once
 
 #include "VolumeDataInfo.h"
@@ -18,20 +16,36 @@ DECLARE_LOG_CATEGORY_EXTERN(LogAssetFactory, Log, All);
 UCLASS(hidecategories = Object)
 class UVRSSAssetFactory : public UFactory
 {
-	GENERATED_UCLASS_BODY()
+	GENERATED_BODY()
 
-	//~ UFactory Interface
-	virtual UObject* FactoryCreateFile(UClass* InClass, UObject* InParent, FName InName, EObjectFlags Flags, const FString& Filename, const TCHAR* Params, FFeedbackContext* Warn, bool& bOutOperationCanceled) override;
+	UVRSSAssetFactory(const FObjectInitializer& ObjectInitializer);
+	
+	virtual UObject* FactoryCreateFile(UClass* InClass, UObject* InParent, FName InName, EObjectFlags Flags,
+	                                   const FString& FileName, const TCHAR* Params, FFeedbackContext* Warn,
+	                                   bool& bOutOperationCanceled) override;
 
 protected:
-	UObject* CreateVolume(UObject* InParent, const FString& Filename);
+	UObject* CreateSimulation(UObject* InParent, const FString& FileName);
 
+	UObject* CreateVolume(UObject* InParent, const FString& FileName, const bool LazyLoad);
 	class UVolumeAsset* CreateVolumeFromFile(FVolumeDataInfo& DataInfo, const FString& FileName, UObject* Package,
-												const FString& MeshName, TArray<UVolumeTexture*>& OutVolumeTextures) const;
-	UObject* CreateSlice(UObject* InParent, const FString& Filename);
+	                                         const FString& MeshName, const bool LazyLoad);
+	UObject* CreateSlice(UObject* InParent, const FString& FileName, const bool LazyLoad);
 	class USliceAsset* CreateSliceFromFile(FVolumeDataInfo& DataInfo, const FString& FileName, UObject* Package,
-												const FString& MeshName, TArray<UTexture2D*>& OutTextures) const;
-	UObject* CreateObstruction(UObject* InParent, const FString& Filename);
+	                                       const FString& MeshName, const bool LazyLoad);
+	UObject* CreateObstruction(UObject* InParent, const FString& FileName, const bool LazyLoad);
 	class UObstAsset* CreateObstructionFromFile(FBoundaryDataInfo& DataInfo, const FString& FileName, UObject* Package,
-												TMap<FString, TMap<int, TArray<UTexture2D*>>>& OutTextures) const;	
+	                                            const bool LazyLoad);
+
+	/** Loads all VolumeTextures for a specific volume */
+	void LoadVolumeTextures(FVolumeDataInfo& DataInfo, const FString& MeshName, const FString& VolumeName,
+	                        const FString& Directory, const FString& PackagePath);
+
+	/** Loads all Textures for a specific slice */
+	void LoadSliceTextures(FVolumeDataInfo& DataInfo, const FString& MeshName, const FString& SliceName,
+	                       const FString& Directory, const FString& PackagePath);
+
+	/** Loads all Textures for a specific obst */
+	void LoadObstTextures(FBoundaryDataInfo& DataInfo, const FString& ObstName, const FString& Directory,
+	                      const FString& PackagePath);
 };

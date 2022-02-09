@@ -36,6 +36,10 @@
 				"Mac",
 				"Linux"
 			]
+		},
+		{
+			"Name": "PythonScriptPlugin",
+			"Enabled": true
 		}
 	],
 	"TargetPlatforms": [

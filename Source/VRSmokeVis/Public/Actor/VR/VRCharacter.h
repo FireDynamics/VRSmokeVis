@@ -66,10 +66,14 @@ public:
 	virtual void BeginPlay() override;
 	
 protected:
-	/** Time controls **/
+	/** Time controls */
+	UFUNCTION()
 	void TogglePauseSimulation();
+	UFUNCTION()
 	void FastForwardSimulation();
+	UFUNCTION()
 	void RewindSimulation();
-	
+
+	UFUNCTION()
 	void ToggleHUDVisibility();
 };

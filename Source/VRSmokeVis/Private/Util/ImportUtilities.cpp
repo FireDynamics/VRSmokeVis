@@ -1,11 +1,16 @@
-#include "Assets/TextureUtilities.h"
-#include "Misc/FileHelper.h"
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "Util/ImportUtilities.h"
 #include "HAL/FileManagerGeneric.h"
 #include "Misc/DefaultValueHelper.h"
+#include "Misc/FileHelper.h"
 
-DEFINE_LOG_CATEGORY(LogTextureUtils);
 
-FString FTextureUtils::ReadFileAsString(const FString& FileName)
+DEFINE_LOG_CATEGORY(LogImportUtils);
+
+
+FString FImportUtils::ReadFileAsString(const FString& FileName)
 {
 	FString FileContent;
 	// First, try to read FileName as absolute path
@@ -21,11 +26,11 @@ FString FTextureUtils::ReadFileAsString(const FString& FileName)
 	{
 		return FileContent;
 	}
-	UE_LOG(LogTextureUtils, Error, TEXT("Cannot read file path %s either as absolute or as relative path."), *FileName);
+	UE_LOG(LogImportUtils, Error, TEXT("Cannot read file path %s either as absolute or as relative path."), *FileName);
 	return "";
 }
 
-TArray<FString> FTextureUtils::GetFilesInFolder(const FString& Directory, const FString& Extension)
+TArray<FString> FImportUtils::GetFilesInFolder(const FString& Directory, const FString& Extension)
 {
 	TArray<FString> OutPut;
 	OutPut.Empty();
@@ -36,7 +41,7 @@ TArray<FString> FTextureUtils::GetFilesInFolder(const FString& Directory, const 
 	return OutPut;
 }
 
-void FTextureUtils::SplitPath(const FString& FullPath, FString& OutFilePath, FString& OutPackageName)
+void FImportUtils::SplitPath(const FString& FullPath, FString& OutFilePath, FString& OutPackageName)
 {
 	FString ExtensionPart;
 
@@ -46,79 +51,18 @@ void FTextureUtils::SplitPath(const FString& FullPath, FString& OutFilePath, FSt
 	OutPackageName.ReplaceCharInline('.', '_');
 }
 
-void FTextureUtils::SetTextureDetails(UTexture* OutTexture, const FVector4 Dimensions)
-{
-	// Newly created Volume textures have this null'd
-	if (!OutTexture->GetRunningPlatformData()[0])
-	{
-		OutTexture->GetRunningPlatformData()[0] = new FTexturePlatformData();
-	}
-	// Set Dimensions and Pixel format.
-	OutTexture->GetRunningPlatformData()[0]->SizeX = Dimensions.X;
-	OutTexture->GetRunningPlatformData()[0]->SizeY = Dimensions.Y;
-	OutTexture->GetRunningPlatformData()[0]->SetNumSlices(Dimensions.Z);
-	OutTexture->GetRunningPlatformData()[0]->PixelFormat = PF_G8;
-	OutTexture->LODGroup = TEXTUREGROUP_8BitData;
-
-	// Set sRGB and streaming to false.
-	OutTexture->SRGB = false;
-	OutTexture->NeverStream = true;
-}
-
-void FTextureUtils::CreateTextureMip(UTexture* OutTexture, const FVector4 Dimensions,
-                                     uint8* BulkData, const int DataSize)
-{
-	// Create the one and only mip in this texture.
-	FTexture2DMipMap* Mip = new FTexture2DMipMap();
-	Mip->SizeX = Dimensions.X;
-	Mip->SizeY = Dimensions.Y;
-	Mip->SizeZ = Dimensions.Z == 0 ? 1 : Dimensions.Z;
-
-	Mip->BulkData.Lock(LOCK_READ_WRITE);
-	// Allocate memory in the mip and copy the actual texture data inside
-	uint8* ByteArray = static_cast<uint8*>(Mip->BulkData.Realloc(DataSize));
-
-	check(BulkData != nullptr)
-	FMemory::Memcpy(ByteArray, BulkData, DataSize);
-
-	Mip->BulkData.Unlock();
-	
-	FTexturePlatformData** PlatformData = OutTexture->GetRunningPlatformData();
-	// Newly created textures have this null'd
-	if (!PlatformData[0])
-	{
-		PlatformData[0] = new FTexturePlatformData();
-	}
-	// Add the new MIP to the list of mips.
-	PlatformData[0]->Mips.Add(Mip);
-}
-
-bool FTextureUtils::CreateTextureEditorData(UTexture* Texture, const FVector4 Dimensions,
-                                            const uint8* BulkData)
-{
-	Texture->MipGenSettings = TMGS_NoMipmaps;
-
-	// CompressionNone assures the texture is actually saved in the format we want and not DXT1.
-	Texture->CompressionNone = true;
-
-	// Otherwise initialize the source struct with our size and bulk data.
-	Texture->Source.Init(Dimensions.X, Dimensions.Y, Dimensions.Z == 0 ? 1 : Dimensions.Z, 1, TSF_G8, BulkData);
-
-	return true;
-}
-
-uint8* FTextureUtils::LoadDatFileIntoArray(const FString FileName, const int64 BytesToLoad)
+uint8* FImportUtils::LoadDatFileIntoArray(const FString FileName, const int64 BytesToLoad)
 {
 	IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
 	IFileHandle* FileHandle = PlatformFile.OpenRead(*FileName);
 	if (!FileHandle)
 	{
-		UE_LOG(LogTextureUtils, Error, TEXT("Data file %s could not be opened."), *FileName);
+		UE_LOG(LogImportUtils, Error, TEXT("Data file %s could not be opened."), *FileName);
 		return nullptr;
 	}
 	if (FileHandle->Size() < BytesToLoad)
 	{
-		UE_LOG(LogTextureUtils, Error,
+		UE_LOG(LogImportUtils, Error,
 		       TEXT("Data file %s does not have the expected size of (at least) %d bytes, aborting."), *FileName,
 		       BytesToLoad);
 		delete FileHandle;
@@ -132,7 +76,7 @@ uint8* FTextureUtils::LoadDatFileIntoArray(const FString FileName, const int64 B
 	return LoadedArray;
 }
 
-void FTextureUtils::DensityToTransmission(const float ExtinctionCoefficient, const FVolumeDataInfo& DataInfo,
+void FImportUtils::DensityToTransmission(const float ExtinctionCoefficient, const FVolumeDataInfo& DataInfo,
                                           uint8* Array)
 {
 	// Uses the Beer-Lambert law to convert densities to the corresponding transmission using the extinction coefficient
@@ -149,7 +93,7 @@ void FTextureUtils::DensityToTransmission(const float ExtinctionCoefficient, con
 	});
 }
 
-void FTextureUtils::NormalizeArray(const FVolumeDataInfo& DataInfo, uint8* Array)
+void FImportUtils::NormalizeArray(const FVolumeDataInfo& DataInfo, uint8* Array)
 {
 	const float ValueRange = 255.f / (DataInfo.MaxValue - DataInfo.MinValue);
 	ParallelFor(DataInfo.GetByteSize(), [&](const int Idx)
@@ -158,7 +102,7 @@ void FTextureUtils::NormalizeArray(const FVolumeDataInfo& DataInfo, uint8* Array
 	});
 }
 
-uint8* FTextureUtils::LoadAndConvertVolumeData(const float ExtinctionCoefficient, const FString& FilePath,
+uint8* FImportUtils::LoadAndConvertVolumeData(const float ExtinctionCoefficient, const FString& FilePath,
                                                const FVolumeDataInfo& DataInfo)
 {
 	// Load data
@@ -170,12 +114,12 @@ uint8* FTextureUtils::LoadAndConvertVolumeData(const float ExtinctionCoefficient
 	return LoadedArray;
 }
 
-uint8* FTextureUtils::LoadSliceData(const FString& FilePath, const FVolumeDataInfo& DataInfo)
+uint8* FImportUtils::LoadSliceData(const FString& FilePath, const FVolumeDataInfo& DataInfo)
 {
 	return LoadDatFileIntoArray(FilePath, DataInfo.GetByteSize());
 }
 
-uint8* FTextureUtils::LoadObstData(const FString& FilePath, const FBoundaryDataInfo& DataInfo)
+uint8* FImportUtils::LoadObstData(const FString& FilePath, const FBoundaryDataInfo& DataInfo)
 {
 	int TotalByteSize = 0;
 	TArray<int> Orientations;
@@ -187,7 +131,7 @@ uint8* FTextureUtils::LoadObstData(const FString& FilePath, const FBoundaryDataI
 	return LoadDatFileIntoArray(FilePath, TotalByteSize);
 }
 
-TMap<FString, FVolumeDataInfo> FTextureUtils::ParseSliceVolumeDataInfoFromHeader(const FString& FileName)
+TMap<FString, FVolumeDataInfo> FImportUtils::ParseSliceVolumeDataInfoFromFile(const FString& FileName)
 {
 	TMap<FString, FVolumeDataInfo> DataInfos;
 
@@ -223,7 +167,7 @@ TMap<FString, FVolumeDataInfo> FTextureUtils::ParseSliceVolumeDataInfoFromHeader
 	float ScaleFactor;
 	FDefaultValueHelper::ParseFloat(Right, ScaleFactor);
 
-	UE_LOG(LogTextureUtils, Log, TEXT("Loading volumes, nmeshes: %d"), NMeshes);
+	UE_LOG(LogImportUtils, Log, TEXT("Loading volumes, nmeshes: %d"), NMeshes);
 	// Meshes
 	for (int m = 0; m < NMeshes; ++m)
 	{
@@ -274,7 +218,7 @@ TMap<FString, FVolumeDataInfo> FTextureUtils::ParseSliceVolumeDataInfoFromHeader
 			else if (Left.Contains(TEXT("DataFile")))
 			{
 				DataInfo.DataFileName = Right.TrimStartAndEnd();
-				UE_LOG(LogTextureUtils, Log, TEXT("Found datafile %s"), *DataInfo.DataFileName);
+				UE_LOG(LogImportUtils, Log, TEXT("Found datafile %s"), *DataInfo.DataFileName);
 			}
 		}
 
@@ -287,7 +231,7 @@ TMap<FString, FVolumeDataInfo> FTextureUtils::ParseSliceVolumeDataInfoFromHeader
 	return DataInfos;
 }
 
-FBoundaryDataInfo FTextureUtils::ParseObstDataInfoFromHeader(const FString& FileName, TArray<float>& BoundingBoxOut)
+FBoundaryDataInfo FImportUtils::ParseObstDataInfoFromFile(const FString& FileName, TArray<float>& BoundingBoxOut)
 {
 	FBoundaryDataInfo DataInfo;
 
@@ -374,7 +318,7 @@ FBoundaryDataInfo FTextureUtils::ParseObstDataInfoFromHeader(const FString& File
 
 	const int QuantityOffset = 5 + NumOrientations * 3;
 
-	UE_LOG(LogTextureUtils, Log, TEXT("Loading obstruction, quantities: %d"), NumQuantities);
+	UE_LOG(LogImportUtils, Log, TEXT("Loading obstruction, quantities: %d"), NumQuantities);
 	// Quantities
 	for (int m = 0; m < NumQuantities; ++m)
 	{
@@ -397,71 +341,33 @@ FBoundaryDataInfo FTextureUtils::ParseObstDataInfoFromHeader(const FString& File
 	return DataInfo;
 }
 
-UTexture2D* FTextureUtils::CreateTextureAsset(const FString AssetName, const FVector4 Dimensions, UObject* OutPackage,
-                                              uint8* BulkData, const int DataSize)
+FSimulationInfo FImportUtils::ParseSimulationInfoFromFile(const FString& FileName)
 {
-	UTexture2D* Texture = NewObject<UTexture2D>(OutPackage, FName(*AssetName),
-	                                            RF_Public | RF_Standalone | RF_MarkAsRootSet);
+	FSimulationInfo SimInfo;
 
-	// Prevent garbage collection of the texture
-	Texture->AddToRoot();
+	const FString FileString = ReadFileAsString(FileName);
+	TArray<FString> Lines;
+	FileString.ParseIntoArray(Lines, _T("\n"));
 
-	SetTextureDetails(Texture, Dimensions);
-	CreateTextureMip(Texture, Dimensions, BulkData, DataSize);
-	CreateTextureEditorData(Texture, Dimensions, BulkData);
-	Texture->Filter = TF_Default;
+	FString Left, Right;
 
-	// Update resource, mark that the folder needs to be rescanned and notify editor about asset creation.
-	Texture->UpdateResource();
-	FAssetRegistryModule::AssetCreated(Texture);
+	int NumObstructions, NumSlices, NumVolumes, i;
+	
+	// NumObstructions
+	Lines[0].Split(TEXT(": "), &Left, &Right);
+	FDefaultValueHelper::ParseInt(Right, NumObstructions);
+	Lines[1].Split(TEXT(": "), &Left, &Right);
+	FDefaultValueHelper::ParseInt(Right, NumSlices);
+	Lines[2].Split(TEXT(": "), &Left, &Right);
+	FDefaultValueHelper::ParseInt(Right, NumVolumes);
+	
+	SimInfo.ObstPaths.Reserve(NumObstructions);
+	SimInfo.SlicePaths.Reserve(NumSlices);
+	SimInfo.VolumePaths.Reserve(NumVolumes);
+	
+	for (i = 0; i < NumObstructions; ++i) SimInfo.ObstPaths.Add(Lines[4 + i].RightChop(2).TrimEnd());
+	for (i = 0; i < NumSlices; ++i) SimInfo.SlicePaths.Add(Lines[5 + NumObstructions + i].RightChop(2).TrimEnd());
+	for (i = 0; i < NumVolumes; ++i) SimInfo.VolumePaths.Add(Lines[6 + NumObstructions + NumSlices + i].RightChop(2).TrimEnd());
 
-	return Texture;
-}
-
-UTexture2D* FTextureUtils::CreateSliceTextureAsset(const FString AssetName, FVector4 Dimensions, UObject* OutPackage,
-                                                   uint8* BulkData, const int DataSize)
-{
-	// The following function call expects the first two dimensions to be the ones describing the texture
-	// dimensions, we therefore might have to swap them now
-	const bool SwapX = Dimensions.X == 1;
-	const bool SwapY = Dimensions.Y == 1;
-	if (SwapX)
-	{
-		const float Tmp = Dimensions.X;
-		Dimensions.X = Dimensions.Y;
-		Dimensions.Y = Dimensions.Z;
-		Dimensions.Z = Tmp;
-	}
-	if (SwapY)
-	{
-		const float Tmp = Dimensions.Y;
-		Dimensions.Y = Dimensions.Z;
-		Dimensions.Z = Tmp;
-	}
-
-	UTexture2D* SliceTexture = CreateTextureAsset(AssetName, Dimensions, OutPackage, BulkData, DataSize);
-
-	return SliceTexture;
-}
-
-UVolumeTexture* FTextureUtils::CreateVolumeAsset(const FString AssetName, const FVector4 Dimensions,
-                                                 UObject* OutPackage,
-                                                 uint8* BulkData, const int DataSize)
-{
-	UVolumeTexture* Texture = NewObject<UVolumeTexture>(OutPackage, FName(*AssetName),
-	                                                    RF_Public | RF_Standalone | RF_MarkAsRootSet);
-
-	// Prevent garbage collection of the texture
-	Texture->AddToRoot();
-
-	SetTextureDetails(Texture, Dimensions);
-	CreateTextureMip(Texture, Dimensions, BulkData, DataSize);
-	CreateTextureEditorData(Texture, Dimensions, BulkData);
-
-
-	// Update resource, mark that the folder needs to be rescanned and notify editor about asset creation.
-	Texture->UpdateResource();
-	FAssetRegistryModule::AssetCreated(Texture);
-
-	return Texture;
+	return SimInfo;
 }

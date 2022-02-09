@@ -1,27 +1,61 @@
-﻿#include "VRSSGameInstance.h"
+﻿#include "Actor/Simulation.h"
+
+#include "Blueprint/UserWidget.h"
 #include "Engine/VolumeTexture.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetTextLibrary.h"
+#include "Components/TimelineComponent.h"
 #include "Misc/DefaultValueHelper.h"
-#include "Actor/RaymarchLight.h"
 #include "UI/UserInterfaceUserWidget.h"
 #include "UI/TimeUserWidget.h"
+#include "UI/SimControllerUserWidget.h"
 #include "UI/VRSSHUD.h"
-#include "Components/TimelineComponent.h"
 #include "Actor/Slice.h"
 #include "Actor/Obst.h"
+#include "Actor/RaymarchLight.h"
+#include "Assets/ObstAsset.h"
+#include "Assets/SliceAsset.h"
+#include "Assets/SimulationAsset.h"
 
-UVRSSGameInstance::UVRSSGameInstance(): UGameInstance()
+
+ASimulation::ASimulation()
 {
+	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bStartWithTickEnabled = false;
 	StreamableManager = new FStreamableManager();
 }
 
-void UVRSSGameInstance::Init()
+void ASimulation::BeginPlay()
 {
-	Super::Init();
+	Super::BeginPlay();
+
+	SimControllerUserWidget = CreateWidget<USimControllerUserWidget>(GetWorld(), SimControllerUserWidgetClass);
 }
 
-void UVRSSGameInstance::InitUpdateRate(const FString Type, const float UpdateRateSuggestion)
+void ASimulation::CheckObstActivations()
+{
+}
+
+void ASimulation::CheckSliceActivations()
+{
+}
+
+void ASimulation::CheckVolumeActivations()
+{
+}
+
+void ASimulation::TryActivateVolume()
+{
+	
+}
+
+void ASimulation::ToggleControllerUI()
+{
+	if (SimControllerUserWidget->IsInViewport()) SimControllerUserWidget->RemoveFromViewport();
+	else SimControllerUserWidget->AddToViewport();
+}
+
+void ASimulation::InitUpdateRate(const FString Type, const float UpdateRateSuggestion)
 {
 	if (UpdateRates.Contains(Type)) return;
 	UpdateRates.Add(Type, UpdateRateSuggestion);
@@ -34,7 +68,7 @@ void UVRSSGameInstance::InitUpdateRate(const FString Type, const float UpdateRat
 	Delegate.BindUFunction(this, FName("NextTimeStep"), Type);
 	// Delegate.BindLambda([this, Type](){NextTimeStep(Type);});
 	// Todo: Check first delay
-	GetTimerManager().SetTimer(UpdateTimerHandles[Type], Delegate, UpdateRates[Type], true, 1.f);
+	GetWorld()->GetTimerManager().SetTimer(UpdateTimerHandles[Type], Delegate, UpdateRates[Type], true, 1.f);
 
 	if (UpdateRates.Num() == 1)
 	{
@@ -43,7 +77,7 @@ void UVRSSGameInstance::InitUpdateRate(const FString Type, const float UpdateRat
 		UGameplayStatics::GetAllActorsOfClass(GetWorld(), RaymarchLightClass, FoundLights);
 		for (AActor* Light : FoundLights)
 		{
-			FString& RandomType = MaxTimeSteps.begin()->Key;
+			FString& RandomType = MaxTimeSteps.begin().Key();
 
 			Cast<ARaymarchLight>(Light)->LightIntensityTimelineComponent->SetTimelineLength(
 				MaxTimeSteps[RandomType] * UpdateRates[RandomType]);
@@ -51,21 +85,21 @@ void UVRSSGameInstance::InitUpdateRate(const FString Type, const float UpdateRat
 	}
 }
 
-void UVRSSGameInstance::SetUpdateRate(const FString Type, const float NewUpdateRate)
+void ASimulation::SetUpdateRate(const FString Type, const float NewUpdateRate)
 {
 	UpdateRates[Type] = NewUpdateRate;
-	GetTimerManager().ClearTimer(UpdateTimerHandles[Type]);
+	GetWorld()->GetTimerManager().ClearTimer(UpdateTimerHandles[Type]);
 	FTimerDelegate Delegate;
 	Delegate.BindUFunction(this, FName("NextTimeStep"), Type);
 	// Delegate.BindLambda([this, Type]{NextTimeStep(Type);});
-	GetTimerManager().SetTimer(UpdateTimerHandles[Type], Delegate, UpdateRates[Type], true, 1.f);
+	GetWorld()->GetTimerManager().SetTimer(UpdateTimerHandles[Type], Delegate, UpdateRates[Type], true, 1.f);
 
-	Cast<AVRSSHUD>(GetPrimaryPlayerController()->GetHUD())->UserInterfaceUserWidget->TimeUserWidget->SimTimeScale =
+	Cast<AVRSSHUD>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UserInterfaceUserWidget->TimeUserWidget->SimTimeScale =
 		UpdateRates[Type] /
 		NewUpdateRate;
 }
 
-void UVRSSGameInstance::FastForwardSimulation(const float Amount)
+void ASimulation::FastForwardSimulation(const float Amount)
 {
 	for (TTuple<FString, int>& CurrentTimeStep : CurrentTimeSteps)
 	{
@@ -77,7 +111,7 @@ void UVRSSGameInstance::FastForwardSimulation(const float Amount)
 	TArray<FString> Types;
 	CurrentTimeSteps.GetKeys(Types);
 	FString UIType = Types[0];
-	const AVRSSHUD* HUD = Cast<AVRSSHUD>(GetPrimaryPlayerController()->GetHUD());
+	const AVRSSHUD* HUD = Cast<AVRSSHUD>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD());
 	HUD->UserInterfaceUserWidget->TimeUserWidget->CurrentSimTime = CurrentTimeSteps[UIType] * UpdateRates[UIType];
 	for (FString Type : Types)
 	{
@@ -87,7 +121,7 @@ void UVRSSGameInstance::FastForwardSimulation(const float Amount)
 	HUD->UserInterfaceUserWidget->TimeUserWidget->UpdateTimeTextBlocks();
 }
 
-void UVRSSGameInstance::RewindSimulation(const float Amount)
+void ASimulation::RewindSimulation(const float Amount)
 {
 	for (TTuple<FString, int>& CurrentTimeStep : CurrentTimeSteps)
 	{
@@ -99,7 +133,7 @@ void UVRSSGameInstance::RewindSimulation(const float Amount)
 	TArray<FString> Types;
 	CurrentTimeSteps.GetKeys(Types);
 	FString UIType = Types[0];
-	const AVRSSHUD* HUD = Cast<AVRSSHUD>(GetPrimaryPlayerController()->GetHUD());
+	const AVRSSHUD* HUD = Cast<AVRSSHUD>( UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD());
 	HUD->UserInterfaceUserWidget->TimeUserWidget->CurrentSimTime = CurrentTimeSteps[UIType] * UpdateRates[UIType];
 	for (FString Type : Types)
 	{
@@ -109,27 +143,30 @@ void UVRSSGameInstance::RewindSimulation(const float Amount)
 	HUD->UserInterfaceUserWidget->TimeUserWidget->UpdateTimeTextBlocks();
 }
 
-void UVRSSGameInstance::TogglePauseSimulation()
+void ASimulation::TogglePauseSimulation()
 {
 	bIsPaused = !bIsPaused;
 	UGameplayStatics::SetGamePaused(GetWorld(), bIsPaused);
 
 	// Inform UI
-	Cast<AVRSSHUD>(GetPrimaryPlayerController()->GetHUD())->UserInterfaceUserWidget->TimeUserWidget->bIsPaused =
+	Cast<AVRSSHUD>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UserInterfaceUserWidget->TimeUserWidget->bIsPaused =
 		bIsPaused;
 }
 
-void UVRSSGameInstance::ToggleHUDVisibility() const
+void ASimulation::ToggleHUDVisibility() const
 {
-	const AVRSSHUD* HUD = Cast<AVRSSHUD>(GetPrimaryPlayerController()->GetHUD());
-	HUD->UserInterfaceUserWidget->SetVisibility(HUD->UserInterfaceUserWidget->IsVisible()
-		                                            ? ESlateVisibility::Hidden
-		                                            : ESlateVisibility::Visible);
+	const AVRSSHUD* HUD = Cast<AVRSSHUD>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD());
+	// Todo: Test this
+	if (HUD->UserInterfaceUserWidget->IsInViewport()) HUD->UserInterfaceUserWidget->RemoveFromViewport();
+	else HUD->UserInterfaceUserWidget->AddToViewport();
+	// HUD->UserInterfaceUserWidget->SetVisibility(HUD->UserInterfaceUserWidget->IsVisible()
+	// 	                                            ? ESlateVisibility::Hidden
+	// 	                                            : ESlateVisibility::Visible);
 }
 
-void UVRSSGameInstance::NextTimeStep(const FString Type)
+void ASimulation::NextTimeStep(const FString Type)
 {
-	const AVRSSHUD* HUD = Cast<AVRSSHUD>(GetPrimaryPlayerController()->GetHUD());
+	const AVRSSHUD* HUD = Cast<AVRSSHUD>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD());
 	CurrentTimeSteps[Type] += 1;
 	if (CurrentTimeSteps[Type] >= MaxTimeSteps[Type])
 	{
@@ -157,7 +194,7 @@ void UVRSSGameInstance::NextTimeStep(const FString Type)
 		FText::AsNumber(CurrentTimeSteps[Type]));
 }
 
-TArray<FString> UVRSSGameInstance::GetActiveSliceQuantities() const
+TArray<FString> ASimulation::GetActiveSliceQuantities() const
 {
 	TArray<FString> Quantities = TArray<FString>();
 	for (const ASlice* Slice : ActiveSlices)
@@ -168,7 +205,7 @@ TArray<FString> UVRSSGameInstance::GetActiveSliceQuantities() const
 	return Quantities;
 }
 
-void UVRSSGameInstance::GetActiveSlicesMaxMinForQuantity(const FString Quantity, float& MinOut, float& MaxOut) const
+void ASimulation::GetActiveSlicesMaxMinForQuantity(const FString Quantity, float& MinOut, float& MaxOut) const
 {
 	MinOut = TNumericLimits<float>::Max();
 	MaxOut = TNumericLimits<float>::Min();
@@ -182,7 +219,7 @@ void UVRSSGameInstance::GetActiveSlicesMaxMinForQuantity(const FString Quantity,
 	}
 }
 
-void UVRSSGameInstance::AddSlice(ASlice* Slice)
+void ASimulation::AddSlice(ASlice* Slice)
 {
 	ActiveSlices.Add(Slice);
 
@@ -195,7 +232,7 @@ void UVRSSGameInstance::AddSlice(ASlice* Slice)
 	ColorMapUpdateEvent.Broadcast(Quantity, Min, Max);
 }
 
-void UVRSSGameInstance::RemoveSlice(ASlice* Slice)
+void ASimulation::RemoveSlice(ASlice* Slice)
 {
 	const TArray<FString> QuantitiesBefore = GetActiveSliceQuantities();
 	ActiveSlices.Remove(Slice);
@@ -208,17 +245,17 @@ void UVRSSGameInstance::RemoveSlice(ASlice* Slice)
 
 	if (QuantitiesBefore.Num() != QuantitiesAfter.Num())
 	{
-		Cast<AVRSSHUD>(GetPrimaryPlayerController()->GetHUD())->UserInterfaceUserWidget->UpdateColorMaps();
+		Cast<AVRSSHUD>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UserInterfaceUserWidget->UpdateColorMaps();
 	}
 
 	if (ActiveSlices.Num() == 0)
 	{
 		TextureArrays["Slice"].Empty();
-		GetTimerManager().ClearTimer(UpdateTimerHandles["Slice"]);
+		GetWorld()->GetTimerManager().ClearTimer(UpdateTimerHandles["Slice"]);
 	}
 }
 
-TArray<FString> UVRSSGameInstance::GetActiveObstQuantities() const
+TArray<FString> ASimulation::GetActiveObstQuantities() const
 {
 	TArray<FString> Quantities = TArray<FString>();
 	for (const AObst* Obst : ActiveObstructions)
@@ -229,7 +266,7 @@ TArray<FString> UVRSSGameInstance::GetActiveObstQuantities() const
 	return Quantities;
 }
 
-void UVRSSGameInstance::GetActiveObstructionsMaxMinForQuantity(const FString Quantity, float& MinOut,
+void ASimulation::GetActiveObstructionsMaxMinForQuantity(const FString Quantity, float& MinOut,
                                                                float& MaxOut) const
 {
 	MinOut = TNumericLimits<float>::Max();
@@ -244,7 +281,7 @@ void UVRSSGameInstance::GetActiveObstructionsMaxMinForQuantity(const FString Qua
 	}
 }
 
-void UVRSSGameInstance::AddObst(AObst* Obst)
+void ASimulation::AddObst(AObst* Obst)
 {
 	ActiveObstructions.Add(Obst);
 
@@ -254,7 +291,7 @@ void UVRSSGameInstance::AddObst(AObst* Obst)
 	ChangeObstQuantity(Obst);
 }
 
-void UVRSSGameInstance::RemoveObst(AObst* Obst)
+void ASimulation::RemoveObst(AObst* Obst)
 {
 	const TArray<FString> QuantitiesBefore = GetActiveObstQuantities();
 	ActiveObstructions.Remove(Obst);
@@ -264,17 +301,17 @@ void UVRSSGameInstance::RemoveObst(AObst* Obst)
 
 	if (QuantitiesBefore.Num() != QuantitiesAfter.Num())
 	{
-		Cast<AVRSSHUD>(GetPrimaryPlayerController()->GetHUD())->UserInterfaceUserWidget->UpdateColorMaps();
+		Cast<AVRSSHUD>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UserInterfaceUserWidget->UpdateColorMaps();
 	}
 
 	if (ActiveObstructions.Num() == 0)
 	{
 		TextureArrays["Obst"].Empty();
-		GetTimerManager().ClearTimer(UpdateTimerHandles["Obst"]);
+		GetWorld()->GetTimerManager().ClearTimer(UpdateTimerHandles["Obst"]);
 	}
 }
 
-void UVRSSGameInstance::ChangeObstQuantity(AObst* Obst)
+void ASimulation::ChangeObstQuantity(AObst* Obst)
 {
 	float Min, Max;
 	const FString Quantity = Obst->ActiveQuantity;
@@ -282,7 +319,7 @@ void UVRSSGameInstance::ChangeObstQuantity(AObst* Obst)
 	ColorMapUpdateEvent.Broadcast(Quantity, Min, Max);
 }
 
-void UVRSSGameInstance::GetActiveMaxMinForQuantity(const FString Quantity, float& MinOut, float& MaxOut) const
+void ASimulation::GetActiveMaxMinForQuantity(const FString Quantity, float& MinOut, float& MaxOut) const
 {
 	float SMin, SMax, OMin, OMax;
 	GetActiveSlicesMaxMinForQuantity(Quantity, SMin, SMax);
@@ -291,14 +328,18 @@ void UVRSSGameInstance::GetActiveMaxMinForQuantity(const FString Quantity, float
 	MaxOut = FMath::Max(SMax, OMax);
 }
 
-FUpdateDataEvent& UVRSSGameInstance::RegisterTextureLoad(const FString Type, const FString& Directory,
-                                                         TArray<FAssetData>* TextureArray)
+TOptional<FUpdateDataEvent*> ASimulation::RegisterTextureLoad(const FString Type, const FString& Directory,
+                                                                    TArray<FAssetData>* TextureArray,
+                                                                    const int NumTextures)
 {
 	UObjectLibrary* ObjectLibrary = UObjectLibrary::CreateLibrary(UTexture::StaticClass(), false, GIsEditor);
 	ObjectLibrary->AddToRoot();
 	ObjectLibrary->LoadAssetDataFromPath(Directory);
 
+	TextureArray->Reserve(NumTextures);
 	ObjectLibrary->GetAssetDataList(*TextureArray);
+
+	if (TextureArray->Num() == NumTextures) return TOptional<FUpdateDataEvent*>();
 
 	if (!MaxTimeSteps.Contains(Type)) MaxTimeSteps.Add(Type, TextureArray->Num());
 
@@ -326,5 +367,5 @@ FUpdateDataEvent& UVRSSGameInstance::RegisterTextureLoad(const FString Type, con
 	{
 		StreamableManager->LoadSynchronous((*TextureArray)[CurrentTimeSteps[Type] + i].ToSoftObjectPath());
 	}
-	return UpdateDataEvents[Type];
+	return &UpdateDataEvents[Type];
 }

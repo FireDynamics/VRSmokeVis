@@ -2,7 +2,9 @@
 
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
-#include "Assets/TextureUtilities.h"
+#include "Util/TextureUtilities.h"
+#include "Assets/SliceAsset.h"
+#include "Actor/Simulation.h"
 
 DEFINE_LOG_CATEGORY(LogSlice)
 
@@ -43,7 +45,7 @@ void ASlice::BeginPlay()
 {
 	Super::BeginPlay();
 
-	GI = Cast<UVRSSGameInstance>(GetGameInstance());
+	Sim = Cast<ASimulation>(GetParentActor());
 
 	check(SliceAsset)
 
@@ -51,11 +53,12 @@ void ASlice::BeginPlay()
 	{
 		SliceMaterial = UMaterialInstanceDynamic::Create(SliceMaterialBase, this, "Slice Mat Dynamic Inst");
 
-		const float CutOffValue = (GI->Config->SliceCutOffValues[SliceAsset->SliceInfo.Quantity] - SliceAsset->SliceInfo.
+		const float CutOffValue = (Sim->Config->SliceCutOffValues[SliceAsset->SliceInfo.Quantity] - SliceAsset->SliceInfo
+			.
 			MinValue) * SliceAsset->SliceInfo.ScaleFactor / 255.f;
 		SliceMaterial->SetScalarParameterValue("CutOffValue", CutOffValue);
 
-		SliceMaterial->SetTextureParameterValue("ColorMap", GI->Config->ColorMaps[SliceAsset->SliceInfo.Quantity]);
+		SliceMaterial->SetTextureParameterValue("ColorMap", Sim->Config->ColorMaps[SliceAsset->SliceInfo.Quantity]);
 	}
 
 	if (StaticMeshComponent)
@@ -65,19 +68,37 @@ void ASlice::BeginPlay()
 
 	if (SliceAsset)
 	{
-		GI->InitUpdateRate("Slice", SliceAsset->SliceInfo.Spacing.W);
+		Sim->InitUpdateRate("Slice", SliceAsset->SliceInfo.Spacing.W);
+	}
+	// Registering the automatic async texture loading each timestep
+	// Check if the expected amount of data (textures) could be found in the given directory
+	if (TOptional<FUpdateDataEvent*> UpdateDataEvent = Sim->RegisterTextureLoad(
+			"Slice", SliceAsset->SliceInfo.TextureDir, &SliceAsset->SliceTextures, SliceAsset->SliceInfo.Dimensions.W);
+		UpdateDataEvent.IsSet())
+	{
+		UpdateDataEvent.GetValue()->AddUObject(this, &ASlice::UpdateTexture);
+	}
+	else
+	{
+		// If the data has not been loaded yet (or incorrectly loaded), do it again after loading the data
+		UpdateDataEvent = Sim->RegisterTextureLoad("Slice", SliceAsset->SliceInfo.TextureDir, &SliceAsset->SliceTextures,
+		                                          SliceAsset->SliceInfo.Dimensions.W);
+		if (UpdateDataEvent.IsSet())
+		{
+			UpdateDataEvent.GetValue()->AddUObject(this, &ASlice::UpdateTexture);
+		}
+		else
+		{
+			// Todo: Error - Data could not be loaded correctly (at least not the expected amount of data)
+		}
 	}
 
-	FUpdateDataEvent& UpdateDataEvent = GI->RegisterTextureLoad("Slice",
-		SliceAsset->SliceInfo.TextureDir, &SliceAsset->SliceTextures);
-	UpdateDataEvent.AddUObject(this, &ASlice::UpdateTexture);
-
 	// Initialize resources for first timesteps (for time interpolation)
-	UpdateTexture(GI->CurrentTimeSteps["Slice"] - 1);
-	UpdateTexture(GI->CurrentTimeSteps["Slice"]);
-	
+	UpdateTexture(Sim->CurrentTimeSteps["Slice"] - 1);
+	UpdateTexture(Sim->CurrentTimeSteps["Slice"]);
+
 	// Let the GameInstance know when we spawn a slice
-	GI->AddSlice(this);
+	Sim->AddSlice(this);
 }
 
 void ASlice::UpdateTexture(const int CurrentTimeStep)
@@ -133,7 +154,7 @@ void ASlice::Tick(const float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	TimePassedPercentage = FMath::Clamp<float>(TimePassedPercentage + DeltaTime / GI->UpdateRates["Slice"], 0, 1);
+	TimePassedPercentage = FMath::Clamp<float>(TimePassedPercentage + DeltaTime / Sim->UpdateRates["Slice"], 0, 1);
 }
 
 void ASlice::UseSimulationTransform()

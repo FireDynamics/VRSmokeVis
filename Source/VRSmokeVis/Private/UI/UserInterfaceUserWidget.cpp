@@ -2,7 +2,7 @@
 
 #include "UI/UserInterfaceUserWidget.h"
 
-#include "VRSSGameInstance.h"
+#include "VRSSGameInstanceSubsystem.h"
 #include "Blueprint/WidgetTree.h"
 #include "UI/ColorMapUserWidget.h"
 #include "Components/VerticalBox.h"

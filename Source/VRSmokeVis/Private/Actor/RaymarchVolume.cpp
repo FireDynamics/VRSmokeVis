@@ -2,7 +2,9 @@
 
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
-#include "Assets/TextureUtilities.h"
+#include "Util/TextureUtilities.h"
+#include "Assets/VolumeAsset.h"
+#include "Actor/Simulation.h"
 
 DEFINE_LOG_CATEGORY(LogRaymarchVolume)
 
@@ -46,7 +48,7 @@ ARaymarchVolume::ARaymarchVolume() : AActor()
 	{
 		// Find and assign cube material.
 		CubeBorderMeshComponent->SetStaticMesh(CubeBorder.Object);
-		
+
 		if (static ConstructorHelpers::FObjectFinder<UMaterial> BorderMaterial(
 			TEXT("Material'/Game/Materials/M_CubeBorder.M_CubeBorder'")); BorderMaterial.Succeeded())
 		{
@@ -67,8 +69,7 @@ void ARaymarchVolume::BeginPlay()
 
 	check(VolumeAsset)
 
-	UGameInstance* GIRaw = GetGameInstance();
-	GI = Cast<UVRSSGameInstance>(GIRaw);
+	Sim = Cast<ASimulation>(GetParentActor());
 
 	if (RaymarchMaterialBase)
 	{
@@ -76,7 +77,7 @@ void ARaymarchVolume::BeginPlay()
 			UMaterialInstanceDynamic::Create(RaymarchMaterialBase, this, "Intensity Raymarch Mat Dynamic Inst");
 
 		RaymarchMaterial->SetScalarParameterValue("Steps", RaymarchingSteps);
-		RaymarchMaterial->SetScalarParameterValue("JitterRadius", GI->JitterRadius);
+		RaymarchMaterial->SetScalarParameterValue("JitterRadius", Sim->JitterRadius);
 	}
 
 	if (StaticMeshComponent)
@@ -85,13 +86,33 @@ void ARaymarchVolume::BeginPlay()
 	}
 
 	// Unreal units = cm, FDS has sizes in m -> multiply by 100.
-	StaticMeshComponent->SetRelativeScale3D(VolumeAsset->DataInfo.WorldDimensions * 100);
+	StaticMeshComponent->SetRelativeScale3D(VolumeAsset->VolumeInfo.WorldDimensions * 100);
 
-	GI->InitUpdateRate("Volume", VolumeAsset->DataInfo.Spacing.W);
+	Sim->InitUpdateRate("Volume", VolumeAsset->VolumeInfo.Spacing.W);
 
-	FUpdateDataEvent& UpdateDataEvent = GI->RegisterTextureLoad("Volume",
-		VolumeAsset->DataInfo.TextureDir, &VolumeAsset->VolumeTextures);
-	UpdateDataEvent.AddUObject(this, &ARaymarchVolume::UpdateVolume);
+	// Registering the automatic async texture loading each timestep
+	// Check if the expected amount of data (textures) could be found in the given directory
+	if (TOptional<FUpdateDataEvent*> UpdateDataEvent = Sim->RegisterTextureLoad(
+			"Volume", VolumeAsset->VolumeInfo.TextureDir, &VolumeAsset->VolumeTextures,
+			VolumeAsset->VolumeInfo.Dimensions.W);
+		UpdateDataEvent.IsSet())
+	{
+		UpdateDataEvent.GetValue()->AddUObject(this, &ARaymarchVolume::UpdateVolume);
+	}
+	else
+	{
+		// If the data has not been loaded yet (or incorrectly loaded), do it again after loading the data
+		UpdateDataEvent = Sim->RegisterTextureLoad("Volume", VolumeAsset->VolumeInfo.TextureDir,
+		                                          &VolumeAsset->VolumeTextures, VolumeAsset->VolumeInfo.Dimensions.W);
+		if (UpdateDataEvent.IsSet())
+		{
+			UpdateDataEvent.GetValue()->AddUObject(this, &ARaymarchVolume::UpdateVolume);
+		}
+		else
+		{
+			// Todo: Error - Data could not be loaded correctly (at least not the expected amount of data)
+		}
+	}
 
 	// Initialize resources for timestep t=-1 and t=0 (for time interpolation)
 	UpdateVolume(-1);
@@ -138,7 +159,7 @@ void ARaymarchVolume::Tick(const float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	TimePassedPercentage = FMath::Clamp<float>(TimePassedPercentage + DeltaTime / GI->UpdateRates["Volume"], 0, 1);
+	TimePassedPercentage = FMath::Clamp<float>(TimePassedPercentage + DeltaTime / Sim->UpdateRates["Volume"], 0, 1);
 	RaymarchMaterial->SetScalarParameterValue("TimePassedPercentage", TimePassedPercentage);
 }
 
@@ -150,8 +171,8 @@ void ARaymarchVolume::UseSimulationTransform()
 		StaticMeshComponent->SetRelativeLocation(FVector{0, 0, 0});
 
 		// Unreal units = cm, FDS has sizes in m -> multiply by 100.
-		StaticMeshComponent->SetRelativeScale3D(VolumeAsset->DataInfo.WorldDimensions * 100);
-		SetActorLocation((VolumeAsset->DataInfo.MeshPos + VolumeAsset->DataInfo.WorldDimensions / 2) * 100);
+		StaticMeshComponent->SetRelativeScale3D(VolumeAsset->VolumeInfo.WorldDimensions * 100);
+		SetActorLocation((VolumeAsset->VolumeInfo.MeshPos + VolumeAsset->VolumeInfo.WorldDimensions / 2) * 100);
 	}
 }
 

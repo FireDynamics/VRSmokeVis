@@ -1,7 +1,9 @@
 #include "Actor/VR/VRCharacter.h"
 #include "Actor/VRSSPlayerController.h"
 #include "HeadMountedDisplayFunctionLibrary.h"
-#include "VRSSGameInstance.h"
+#include "VRSSGameInstanceSubsystem.h"
+#include "Actor/Simulation.h"
+#include "Kismet/GameplayStatics.h"
 
 AVRCharacter::AVRCharacter()
 {
@@ -62,20 +64,26 @@ void AVRCharacter::BeginPlay()
 void AVRCharacter::TogglePauseSimulation()
 {
 	UE_LOG(LogVRSSPlayerController, Warning, TEXT("Paused simulation."))
-	UVRSSGameInstance* GI = Cast<UVRSSGameInstance>(GetGameInstance());
-	GI->TogglePauseSimulation();
+
+	TArray<AActor*> Simulations;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ASimulation::StaticClass(), Simulations);
+	for (AActor* Simulation : Simulations)
+		Cast<ASimulation>(Simulation)->TogglePauseSimulation();
 }
 
 void AVRCharacter::FastForwardSimulation()
 {
-	UVRSSGameInstance* GI = Cast<UVRSSGameInstance>(GetGameInstance());
-	GI->FastForwardSimulation(25.0f);
+	TArray<AActor*> Simulations;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ASimulation::StaticClass(), Simulations);
+	for (AActor* Simulation : Simulations)
+		Cast<ASimulation>(Simulation)->FastForwardSimulation(25.0f);
 }
 
 void AVRCharacter::RewindSimulation()
-{
-	UVRSSGameInstance* GI = Cast<UVRSSGameInstance>(GetGameInstance());
-	GI->RewindSimulation(25.0f);
+{TArray<AActor*> Simulations;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ASimulation::StaticClass(), Simulations);
+	for (AActor* Simulation : Simulations)
+		Cast<ASimulation>(Simulation)->RewindSimulation(25.0f);
 }
 
 void AVRCharacter::ToggleHUDVisibility()

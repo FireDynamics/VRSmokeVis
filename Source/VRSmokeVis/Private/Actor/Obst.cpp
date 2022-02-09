@@ -2,7 +2,10 @@
 
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
-#include "Assets/TextureUtilities.h"
+#include "Util/TextureUtilities.h"
+#include "Assets/ObstAsset.h"
+#include "VRSSGameInstanceSubsystem.h"
+#include "Actor/Simulation.h"
 
 DEFINE_LOG_CATEGORY(LogObst)
 
@@ -21,7 +24,8 @@ AObst::AObst() : AActor()
 	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("Default Scene Root"));
 	RootComponent->SetWorldScale3D(FVector(1.0f));
 
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMesh(TEXT("StaticMesh'/Game/Meshes/SM_6SurfCube.SM_6SurfCube'"));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMesh(
+		TEXT("StaticMesh'/Game/Meshes/SM_6SurfCube.SM_6SurfCube'"));
 	StaticMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Obst Static Mesh"));
 	// Set basic unit cube properties.
 	if (CubeMesh.Succeeded())
@@ -39,7 +43,7 @@ AObst::AObst() : AActor()
 		ObstDataMaterialBase = Material.Object;
 	}
 
-	
+
 	// Create CubeBorderMeshComponent and find and assign cube border mesh (that's a cube with only edges visible).
 	CubeBorderMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Obst Cube Border"));
 	CubeBorderMeshComponent->SetupAttachment(StaticMeshComponent);
@@ -64,7 +68,7 @@ void AObst::BeginPlay()
 {
 	Super::BeginPlay();
 
-	GI = Cast<UVRSSGameInstance>(GetGameInstance());
+	Sim = Cast<ASimulation>(GetParentActor());
 
 	TArray<int> Orientations;
 	ObstAsset->ObstInfo.Dimensions.GetKeys(Orientations);
@@ -75,7 +79,7 @@ void AObst::BeginPlay()
 		DataTexturesT1.Add(Orientation, nullptr);
 	}
 
-	GI->InitUpdateRate("Obst", ObstAsset->ObstInfo.Spacings[Orientations[0]].W);
+	Sim->InitUpdateRate("Obst", ObstAsset->ObstInfo.Spacings[Orientations[0]].W);
 
 	// Set some default quantity as active
 	TArray<FString> Quantities;
@@ -84,11 +88,12 @@ void AObst::BeginPlay()
 	else SetActiveQuantity(Quantities[0]);
 
 	for (const int Orientation : Orientations)
-		if (StaticMeshComponent) StaticMeshComponent->SetMaterialByName(*FString::FromInt(Orientation),
-		                                                                ObstDataMaterials[Orientation]);
+		if (StaticMeshComponent)
+			StaticMeshComponent->SetMaterialByName(*FString::FromInt(Orientation),
+			                                       ObstDataMaterials[Orientation]);
 
 	// Let the GameInstance know when we spawn a obst
-	GI->AddObst(this);
+	Sim->AddObst(this);
 }
 
 void AObst::UpdateTexture(const int CurrentTimeStep, const int Orientation)
@@ -158,18 +163,35 @@ void AObst::SetActiveQuantity(FString NewQuantity)
 	TArray<int> Orientations;
 	ObstAsset->ObstInfo.Dimensions.GetKeys(Orientations);
 
-	const float CutOffValue = (GI->Config->ObstCutOffValues[ActiveQuantity] - ObstAsset->ObstInfo.
+	const float CutOffValue = (Sim->Config->ObstCutOffValues[ActiveQuantity] - ObstAsset->ObstInfo.
 		MinValues[ActiveQuantity]) * ObstAsset->ObstInfo.ScaleFactors[ActiveQuantity] / 255.f;
 	for (const int Orientation : Orientations)
 	{
 		ObstAsset->ObstTextures[NewQuantity].Add(Orientation, TArray<FAssetData>());
 
-		FUpdateDataEvent& UpdateDataEvent = GI->RegisterTextureLoad("Obst",
-		                                                            ObstAsset->ObstInfo.TextureDirs[ActiveQuantity].
-		                                                            FaceDirs[Orientation],
-		                                                            &ObstAsset->ObstTextures[ActiveQuantity][
-			                                                            Orientation]);
-		UpdateDataEvent.AddUObject(this, &AObst::UpdateTexture, Orientation);
+		// Registering the automatic async texture loading each timestep
+		// Check if the expected amount of data (textures) could be found in the given directory
+		if (TOptional<FUpdateDataEvent*> UpdateDataEvent = Sim->RegisterTextureLoad(
+			"Obst", ObstAsset->ObstInfo.TextureDirs[ActiveQuantity].FaceDirs[Orientation],
+			&ObstAsset->ObstTextures[ActiveQuantity][Orientation], ObstAsset->ObstInfo.Dimensions[Orientation].W); UpdateDataEvent.IsSet())
+		{
+			UpdateDataEvent.GetValue()->AddUObject(this, &AObst::UpdateTexture, Orientation);
+		}
+		else
+		{
+			// If the data has not been loaded yet (or incorrectly loaded), do it again after loading the data
+			UpdateDataEvent = Sim->RegisterTextureLoad(
+				"Obst", ObstAsset->ObstInfo.TextureDirs[ActiveQuantity].FaceDirs[Orientation],
+				&ObstAsset->ObstTextures[ActiveQuantity][Orientation], ObstAsset->ObstInfo.Dimensions[Orientation].W);
+			if (UpdateDataEvent.IsSet())
+			{
+				UpdateDataEvent.GetValue()->AddUObject(this, &AObst::UpdateTexture, Orientation);
+			}
+			else
+			{
+				// Todo: Error - Data could not be loaded correctly (at least not the expected amount of data)
+			}
+		}
 
 		if (ObstDataMaterialBase)
 		{
@@ -179,14 +201,14 @@ void AObst::SetActiveQuantity(FString NewQuantity)
 
 			ObstMaterial->SetScalarParameterValue("CutOffValue", CutOffValue);
 
-			ObstMaterial->SetTextureParameterValue("ColorMap", GI->Config->ColorMaps[ActiveQuantity]);
+			ObstMaterial->SetTextureParameterValue("ColorMap", Sim->Config->ColorMaps[ActiveQuantity]);
 
-			GI->ChangeObstQuantity(this);
+			Sim->ChangeObstQuantity(this);
 		}
 
 		// Initialize resources for timestep t=-1 and t=0 (for time interpolation)
-		UpdateTexture(GI->CurrentTimeSteps["Obst"] - 1, Orientation);
-		UpdateTexture(GI->CurrentTimeSteps["Obst"], Orientation);
+		UpdateTexture(Sim->CurrentTimeSteps["Obst"] - 1, Orientation);
+		UpdateTexture(Sim->CurrentTimeSteps["Obst"], Orientation);
 	}
 }
 
@@ -194,7 +216,7 @@ void AObst::Tick(const float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	TimePassedPercentage = FMath::Clamp<float>(TimePassedPercentage + DeltaTime / GI->UpdateRates["Obst"], 0, 1);
+	TimePassedPercentage = FMath::Clamp<float>(TimePassedPercentage + DeltaTime / Sim->UpdateRates["Obst"], 0, 1);
 }
 
 void AObst::UseSimulationTransform()

@@ -2,7 +2,7 @@
 
 #include "UI/ColorMapUserWidget.h"
 
-#include "VRSSGameInstance.h"
+#include "VRSSGameInstanceSubsystem.h"
 
 
 // Sets default values
