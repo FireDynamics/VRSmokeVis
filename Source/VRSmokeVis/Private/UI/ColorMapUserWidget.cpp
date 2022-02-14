@@ -1,8 +1,4 @@
-﻿
-
-#include "UI/ColorMapUserWidget.h"
-
-#include "VRSSGameInstanceSubsystem.h"
+﻿#include "UI/ColorMapUserWidget.h"
 
 
 // Sets default values
@@ -15,8 +11,6 @@ void UColorMapUserWidget::NativeConstruct()
 	Super::NativeConstruct();
 
 	TextBlockColorMapQuantity->SetText(FText::FromString(ColorMapQuantity));
-	const UVRSSGameInstance *GI = Cast<UVRSSGameInstance>(GetGameInstance());
-	ImageColorMap->SetBrushFromTexture(GI->Config->ColorMaps[ColorMapQuantity]);
 }
 
 void UColorMapUserWidget::NativeTick(const FGeometry& MyGeometry, const float DeltaTime)

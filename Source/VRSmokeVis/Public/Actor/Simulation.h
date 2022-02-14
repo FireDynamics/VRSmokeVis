@@ -1,13 +1,8 @@
 ﻿#pragma once
 
-#include "VRSSConfig.h"
-#include "Engine/StreamableManager.h"
-#include "Engine/ObjectLibrary.h"
 #include "Simulation.generated.h"
 
 DECLARE_EVENT_OneParam(UVRSSGameInstance, FUpdateDataEvent, int)
-
-DECLARE_EVENT_ThreeParams(UVRSSGameInstance, FColorMapUpdateEvent, FString, float, float)
 
 
 UCLASS()
@@ -22,11 +17,11 @@ public:
 	void ToggleControllerUI();
 
 	UFUNCTION()
-	void CheckObstActivations();
+	void CheckObstActivations(const TArray<bool> ObstsActive);
 	UFUNCTION()
-	void CheckSliceActivations();
+	void CheckSliceActivations(const TArray<bool> SlicesActive);
 	UFUNCTION()
-	void CheckVolumeActivations();
+	void CheckVolumeActivations(const TArray<bool> VolumesActive);
 
 	TOptional<FUpdateDataEvent*> RegisterTextureLoad(const FString Type, const FString& Directory,
 	                                                 TArray<FAssetData>* TextureArray, const int NumTextures);
@@ -47,62 +42,57 @@ public:
 	void TogglePauseSimulation();
 
 	UFUNCTION()
-	void ToggleHUDVisibility() const;
-
-	/** Returns the unique quantities of all active slices. */
-	UFUNCTION(BlueprintCallable)
-	TArray<FString> GetActiveSliceQuantities() const;
-
-	UFUNCTION(BlueprintCallable)
-	void GetActiveSlicesMaxMinForQuantity(const FString Quantity, float& MinOut, float& MaxOut) const;
-
-	UFUNCTION(BlueprintCallable)
-	void AddSlice(class ASlice* Slice);
-
-	UFUNCTION(BlueprintCallable)
-	void RemoveSlice(class ASlice* Slice);
-
-	/** Returns the unique quantities of all active obstructions. */
-	UFUNCTION(BlueprintCallable)
-	TArray<FString> GetActiveObstQuantities() const;
-
-	UFUNCTION(BlueprintCallable)
-	void GetActiveObstructionsMaxMinForQuantity(const FString Quantity, float& MinOut, float& MaxOut) const;
-
-	UFUNCTION(BlueprintCallable)
-	void AddObst(class AObst* Obst);
-
-	UFUNCTION(BlueprintCallable)
-	void RemoveObst(class AObst* Obst);
+	TArray<class AObst*>& GetAllObstructions();
+	
+	UFUNCTION()
+	TArray<class ASlice*>& GetAllSlices();
+	
+	UFUNCTION()
+	TArray<class ARaymarchVolume*>& GetAllVolumes();
 
 	UFUNCTION(BlueprintCallable)
 	void ChangeObstQuantity(class AObst* Obst);
+	
+	UFUNCTION(BlueprintCallable)
+	void GetMaxMins(TMap<FString, float> Mins, TMap<FString, float> Maxs) const;
 
 	UFUNCTION(BlueprintCallable)
-	void GetActiveMaxMinForQuantity(const FString Quantity, float& MinOut, float& MaxOut) const;
+	void GetMaxMinForQuantity(FString Quantity, float& MinOut, float& MaxOut) const;
+	
+	UFUNCTION(BlueprintCallable)
+	void UpdateColorMaps(const TMap<FString, float> Mins, const TMap<FString, float> Maxs);
+	
+	/** Returns all unique quantities present in this simulation. */
+	UFUNCTION(BlueprintCallable)
+	TArray<FString> GetQuantities(const bool ActiveOnly) const;
+	
+	/** Returns the unique quantities of all obstructions. */
+	UFUNCTION(BlueprintCallable)
+	TArray<FString> GetObstQuantities(const bool ActiveOnly) const;
+	
+	/** Returns the unique quantities of all slices. */
+	UFUNCTION(BlueprintCallable)
+	TArray<FString> GetSliceQuantities(const bool ActiveOnly) const;
+	
+	UFUNCTION(BlueprintCallable)
+	void GetSlicesMaxMinForQuantity(FString Quantity, float& MinOut, float& MaxOut) const;
 
+	UFUNCTION(BlueprintCallable)
+	void GetObstructionsMaxMinForQuantity(FString Quantity, float& MinOut, float& MaxOut) const;
+	
 protected:
 	virtual void BeginPlay() override;
 	
 	UFUNCTION()
 	void NextTimeStep(const FString Type);
-
-	/** Activate a specific RaymarchVolume if it is not activated yet. Spawn it if necessary. */
-	UFUNCTION()
-	void TryActivateVolume();
-
-public:
 	
+public:
 	/** The loaded slice asset belonging to this slice. */
 	UPROPERTY(BlueprintReadOnly, EditAnywhere)
 	class USimulationAsset* SimulationAsset;
 
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class USimControllerUserWidget> SimControllerUserWidgetClass;
-	
-	/** An instance of the configuration for the project which simply uses its default values set in the editor. */
-	UPROPERTY(EditAnywhere)
-	UVRSSConfig* Config;
 
 	/** The class of the raymarch lights that are dimmed over time. */
 	UPROPERTY(EditAnywhere)
@@ -118,8 +108,6 @@ public:
 	/** Controls the time between two updates of RaymarchingVolume textures. Defaults to the rate specified by the input from FDS if set to 0. */
 	UPROPERTY(VisibleAnywhere)
 	TMap<FString, float> UpdateRates;
-
-	FColorMapUpdateEvent ColorMapUpdateEvent;
 	
 protected:
 	UPROPERTY(BlueprintReadOnly)
@@ -127,25 +115,16 @@ protected:
 	
 	/** Lists of currently inactive obstructions. */
 	UPROPERTY(VisibleAnywhere)
-	TArray<class AObst*> InactiveObstructions;
+	TArray<class AObst*> Obstructions;
 	/** Lists of currently inactive slices. */
 	UPROPERTY(VisibleAnywhere)
-	TArray<class ASlice*> InactiveSlices;
+	TArray<class ASlice*> Slices;
 	/** Lists of currently inactive volumes. */
 	UPROPERTY(VisibleAnywhere)
-	TArray<class ARaymarchVolume*> InactiveVolumes;
-	/** Lists of currently active obstructions. */
-	UPROPERTY(VisibleAnywhere)
-	TArray<class AObst*> ActiveObstructions;
-	/** Lists of currently active slices. */
-	UPROPERTY(VisibleAnywhere)
-	TArray<class ASlice*> ActiveSlices;
-	/** Lists of currently active volumes. */
-	UPROPERTY(VisibleAnywhere)
-	TArray<class ARaymarchVolume*> ActiveVolumes;
+	TArray<class ARaymarchVolume*> Volumes;
 
 	/** Used to asynchronously load assets at runtime. */
-	FStreamableManager* StreamableManager;
+	struct FStreamableManager* StreamableManager;
 
 	/** Handles to manage the update timer. */
 	TMap<FString, FTimerHandle> UpdateTimerHandles;

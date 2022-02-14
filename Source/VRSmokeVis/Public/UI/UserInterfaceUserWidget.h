@@ -18,25 +18,31 @@ public:
 	virtual void NativeTick(const FGeometry& MyGeometry, const float DeltaTime) override;
 	
 	UFUNCTION(BlueprintCallable)
-	void UpdateColorMaps();
+	void UpdateColorMaps(TArray<FString> ActiveQuantities);
 
+	/** (Re-)Initialize all colormaps (all invisible for now) */
 	UFUNCTION(BlueprintCallable)
-	void UpdateColorMapRange(const FString Quantity, const float NewMin, const float NewMax);
+	void InitColorMaps(TMap<FString, UTexture2D*> ColorMapTextures, TMap<FString, float> Mins, TMap<FString, float> Maxs);
 	
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
-	class UGridPanel *RootGridPanel;
+	/** Get all quantities for which colormaps are currently shown in the UI */
+	UFUNCTION(BlueprintCallable)
+	TArray<FString> GetActiveColorMapQuantities();
 	
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class UTimeUserWidget> TimeUserWidgetClass;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	class UTimeUserWidget* TimeUserWidget;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
-	class UVerticalBox *ColorMapsVerticalBox;
-
+	
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class UColorMapUserWidget> ColorMapUserWidgetClass;
+	
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
+	class UGridPanel *RootGridPanel;
+	
+protected:
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
+	class UVerticalBox *ColorMapsVerticalBox;
 
 	UPROPERTY(BlueprintReadOnly)
 	TMap<FString, class UColorMapUserWidget*> ColorMapUserWidgets;

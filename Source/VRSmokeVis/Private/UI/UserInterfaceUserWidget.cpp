@@ -2,7 +2,6 @@
 
 #include "UI/UserInterfaceUserWidget.h"
 
-#include "VRSSGameInstanceSubsystem.h"
 #include "Blueprint/WidgetTree.h"
 #include "UI/ColorMapUserWidget.h"
 #include "Components/VerticalBox.h"
@@ -21,21 +20,6 @@ bool UUserInterfaceUserWidget::Initialize()
 void UUserInterfaceUserWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
-
-	UpdateColorMaps();
-	
-	UVRSSGameInstance* GI = Cast<UVRSSGameInstance>(GetGameInstance());
-	GI->ColorMapUpdateEvent.AddUObject(this, &UUserInterfaceUserWidget::UpdateColorMapRange);
-
-	// Update the ColorMap ranges manually once, in case the HUD's BeginPlay runs after the slice's/obst's BeginPlay
-	float Min, Max;
-	TArray<FString> Keys;
-	ColorMapUserWidgets.GetKeys(Keys);
-	for (const FString& Quantity : Keys)
-	{
-		GI->GetActiveMaxMinForQuantity(Quantity, Min, Max);
-		UpdateColorMapRange(Quantity, Min, Max);
-	}	
 }
 
 void UUserInterfaceUserWidget::NativeTick(const FGeometry& MyGeometry, const float DeltaTime)
@@ -43,33 +27,59 @@ void UUserInterfaceUserWidget::NativeTick(const FGeometry& MyGeometry, const flo
 	Super::NativeTick(MyGeometry, DeltaTime);
 }
 
-void UUserInterfaceUserWidget::UpdateColorMaps()
+void UUserInterfaceUserWidget::InitColorMaps(TMap<FString, UTexture2D*> ColorMapTextures, TMap<FString, float> Mins, TMap<FString, float> Maxs)
 {
-	TArray<FString> OldQuantities = TArray<FString>();
-	ColorMapUserWidgets.GetKeys(OldQuantities);
-	
-	const UVRSSGameInstance *GI = Cast<UVRSSGameInstance>(GetGameInstance());
-	for (FString Quantity : GI->GetActiveSliceQuantities())
+	// First remove all old colormaps
+	for (const auto ColorMap : ColorMapUserWidgets)
 	{
-		OldQuantities.Remove(Quantity);
-		if (!ColorMapUserWidgets.Contains(Quantity)){
-			UColorMapUserWidget* ColorMapUserWidget = WidgetTree->ConstructWidget<UColorMapUserWidget>(ColorMapUserWidgetClass, FName(*("ColorMapUserWidget" + Quantity)));
-			ColorMapUserWidget->ColorMapQuantity = Quantity;
-			ColorMapUserWidgets.Add(Quantity, ColorMapUserWidget);
-			ColorMapsVerticalBox->AddChildToVerticalBox(ColorMapUserWidget);
-		}
+		ColorMap.Value->RemoveFromParent();
 	}
-	for (FString Quantity : OldQuantities)
+	ColorMapUserWidgets.Empty();
+
+	// Now add a colormap for each quantity
+	TArray<FString> Quantities = TArray<FString>();
+	Mins.GetKeys(Quantities);
+
+	FNumberFormattingOptions LabelFormattingOptions;
+	LabelFormattingOptions.SetMaximumFractionalDigits(2);
+	LabelFormattingOptions.SetUseGrouping(false);
+	for (FString& Quantity : Quantities)
 	{
-		ColorMapUserWidgets[Quantity]->RemoveFromParent();
+		UColorMapUserWidget* ColorMapUserWidget = WidgetTree->ConstructWidget<UColorMapUserWidget>(ColorMapUserWidgetClass, FName(*("ColorMapUserWidget" + Quantity)));
+		ColorMapUserWidget->ColorMapQuantity = Quantity;
+		ColorMapUserWidgets.Add(Quantity, ColorMapUserWidget);
+		ColorMapsVerticalBox->AddChildToVerticalBox(ColorMapUserWidget);
+		ColorMapUserWidget->ImageColorMap->SetBrushFromTexture(ColorMapTextures[Quantity]);
+		
+		ColorMapUserWidget->TextBlockColorMapMin->SetText(FText::AsNumber(Mins[Quantity], &LabelFormattingOptions));
+		ColorMapUserWidget->TextBlockColorMapMax->SetText(FText::AsNumber(Maxs[Quantity], &LabelFormattingOptions));
+		
+		ColorMapUserWidget->SetVisibility(ESlateVisibility::Hidden);
 	}
 }
 
-void UUserInterfaceUserWidget::UpdateColorMapRange(const FString Quantity, const float NewMin, const float NewMax)
+TArray<FString> UUserInterfaceUserWidget::GetActiveColorMapQuantities()
 {
-	FNumberFormattingOptions FormattingOptions;
-	FormattingOptions.SetMaximumFractionalDigits(2);
-	FormattingOptions.SetUseGrouping(false);
-	ColorMapUserWidgets[Quantity]->TextBlockColorMapMin->SetText(FText::AsNumber(NewMin, &FormattingOptions));
-	ColorMapUserWidgets[Quantity]->TextBlockColorMapMax->SetText(FText::AsNumber(NewMax, &FormattingOptions));
+	TArray<FString> Quantities = TArray<FString>();
+	for (auto ColorMap : ColorMapUserWidgets)
+	{
+		if (ColorMap.Value->GetVisibility() != ESlateVisibility::Hidden)
+			Quantities.Add(ColorMap.Key);
+	}
+	return Quantities;
+}
+
+void UUserInterfaceUserWidget::UpdateColorMaps(TArray<FString> ActiveQuantities)
+{
+	TArray<FString> OldQuantities = GetActiveColorMapQuantities();
+
+	// Show currently falsely inactive ColorMaps
+	for (FString Quantity : ActiveQuantities)
+		if (!OldQuantities.Contains(Quantity))
+			ColorMapUserWidgets[Quantity]->SetVisibility(ESlateVisibility::Visible);
+
+	// Hide currently falsely active ColorMaps
+	for (FString& Quantity : OldQuantities)
+		if (!ActiveQuantities.Contains(Quantity))
+			ColorMapUserWidgets[Quantity]->SetVisibility(ESlateVisibility::Hidden);
 }

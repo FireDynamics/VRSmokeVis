@@ -11,6 +11,8 @@
 #include "Assets/VolumeAsset.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/CheckBox.h"
+#include "Components/HorizontalBox.h"
+#include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
 
 // Sets default values
@@ -37,37 +39,86 @@ void USimControllerUserWidget::InitSimulation(ASimulation* Simulation)
 {
 	Sim = Simulation;
 
-	// Obsts
+	InitObstCheckboxes();
+	InitSliceCheckboxes();
+	InitVolumeCheckboxes();
+}
+
+void USimControllerUserWidget::InitObstCheckboxes() const
+{
 	TScriptDelegate<> ObstsDelegate;
-	ObstsDelegate.BindUFunction(Sim, "CheckObstActivations");
-	for (int i = 0; i < Sim->Obstructions.Num(); ++i) {
-		const AObst* Obst = Sim->Obstructions[i];
-		const FString ObstName = Obst->ObstAsset->ObstInfo.DataFileNames.begin().Value();
-		UCheckBox* ObstActiveCheckBox = WidgetTree->ConstructWidget<UCheckBox>(UCheckBox::StaticClass(), FName(*("ObstActiveCheckBox" + ObstName)));
-		ObstsVerticalBox->AddChildToVerticalBox(ObstActiveCheckBox);
-		ObstActiveCheckBox->OnCheckStateChanged.Add(ObstsDelegate);
+	ObstsDelegate.BindUFunction(Sim, "OnObstCheckboxesStateChanged");
+	TArray<AObst*> Obstructions = Sim->GetAllObstructions();
+	for (int i = 0; i < Obstructions.Num(); ++i) {
+		const FString ObstName = Obstructions[i]->ObstAsset->ObstInfo.DataFileNames.begin().Value();
+		ObstsVerticalBox->AddChildToVerticalBox(ConstructCheckboxRow(ObstsDelegate, ObstName));
 	}
-	
-	// Slices
+}
+
+void USimControllerUserWidget::InitSliceCheckboxes() const
+{
 	TScriptDelegate<> SlicesDelegate;
-	SlicesDelegate.BindUFunction(Sim, "CheckSliceActivations");
-	for (int i = 0; i < Sim->Slices.Num(); ++i) {
-		const ASlice* Slice = Sim->Slices[i];
-		const FString SliceName = Slice->SliceAsset->SliceInfo.DataFileName;
-		UCheckBox* SliceActiveCheckBox = WidgetTree->ConstructWidget<UCheckBox>(UCheckBox::StaticClass(), FName(*("SliceActiveCheckBox" + SliceName)));
-		SlicesVerticalBox->AddChildToVerticalBox(SliceActiveCheckBox);
-		SliceActiveCheckBox->OnCheckStateChanged.Add(SlicesDelegate);
+	SlicesDelegate.BindUFunction(Sim, "OnSliceCheckboxesStateChanged");
+	TArray<ASlice*> Slices = Sim->GetAllSlices();
+	for (int i = 0; i < Slices.Num(); ++i) {
+		const FString SliceName = Slices[i]->SliceAsset->SliceInfo.DataFileName;
+		SlicesVerticalBox->AddChildToVerticalBox(ConstructCheckboxRow(SlicesDelegate, SliceName));
 	}
-	
+}
+
+void USimControllerUserWidget::InitVolumeCheckboxes() const
+{
 	// Volumes
 	TScriptDelegate<> VolumesDelegate;
-	VolumesDelegate.BindUFunction(Sim, "CheckVolumeActivations");
-	for (int i = 0; i < Sim->Volumes.Num(); ++i) {
-		const ARaymarchVolume* Volume = Sim->Volumes[i];
-		const FString VolumeName = Volume->VolumeAsset->VolumeInfo.DataFileName;
-		UCheckBox* VolumeActiveCheckBox = WidgetTree->ConstructWidget<UCheckBox>(UCheckBox::StaticClass(), FName(*("VolumeActiveCheckBox" + VolumeName)));
-		VolumesVerticalBox->AddChildToVerticalBox(VolumeActiveCheckBox);
-		VolumeActiveCheckBox->OnCheckStateChanged.Add(VolumesDelegate);
+	VolumesDelegate.BindUFunction(Sim, "OnVolumeCheckboxesStateChanged");
+	TArray<ARaymarchVolume*> Volumes = Sim->GetAllVolumes();
+	for (int i = 0; i < Volumes.Num(); ++i) {
+		const FString VolumeName = Volumes[i]->VolumeAsset->VolumeInfo.DataFileName;
+		VolumesVerticalBox->AddChildToVerticalBox(ConstructCheckboxRow(VolumesDelegate, VolumeName));
 	}
-	
+}
+
+UHorizontalBox* USimControllerUserWidget::ConstructCheckboxRow(const TScriptDelegate<> CheckboxDelegate, const FString CheckboxName) const
+{
+	UHorizontalBox* CheckboxRow = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), FName(*("CheckboxRow" + CheckboxName)));
+		
+	UTextBlock* CheckboxLabel = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), FName(*("Label" + CheckboxName)));
+	CheckboxRow->AddChildToHorizontalBox(CheckboxLabel);
+	CheckboxLabel->SetText(FText::FromString(CheckboxName));
+		
+	UCheckBox* Checkbox = WidgetTree->ConstructWidget<UCheckBox>(UCheckBox::StaticClass(), FName(*("CheckBox" + CheckboxName)));
+	CheckboxRow->AddChildToHorizontalBox(Checkbox);
+	Checkbox->OnCheckStateChanged.Add(CheckboxDelegate);
+
+	return CheckboxRow;
+}
+
+void USimControllerUserWidget::OnObstCheckboxesStateChanged() const
+{
+	TArray<bool> ObstsActive = TArray<bool>();
+	for(UWidget* Child : ObstsVerticalBox->GetAllChildren())
+	{
+		ObstsActive.Add(Cast<UCheckBox>(Cast<UHorizontalBox>(Child)->GetChildAt(1))->IsChecked());
+	}
+	Sim->CheckObstActivations(ObstsActive);
+}
+
+void USimControllerUserWidget::OnSliceCheckboxesStateChanged() const
+{
+	TArray<bool> SlicesActive = TArray<bool>();
+	for(UWidget* Child : SlicesVerticalBox->GetAllChildren())
+	{
+		SlicesActive.Add(Cast<UCheckBox>(Cast<UHorizontalBox>(Child)->GetChildAt(1))->IsChecked());
+	}
+	Sim->CheckSliceActivations(SlicesActive);
+}
+
+void USimControllerUserWidget::OnVolumeCheckboxesStateChanged() const
+{
+	TArray<bool> VolumesActive = TArray<bool>();
+	for(UWidget* Child : VolumesVerticalBox->GetAllChildren())
+	{
+		VolumesActive.Add(Cast<UCheckBox>(Cast<UHorizontalBox>(Child)->GetChildAt(1))->IsChecked());
+	}
+	Sim->CheckVolumeActivations(VolumesActive);
 }

@@ -1,5 +1,7 @@
 #include "Actor/Slice.h"
 
+#include "VRSSConfig.h"
+#include "VRSSGameInstanceSubsystem.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Util/TextureUtilities.h"
@@ -45,20 +47,21 @@ void ASlice::BeginPlay()
 {
 	Super::BeginPlay();
 
+	check(SliceAsset)
+
 	Sim = Cast<ASimulation>(GetParentActor());
 
-	check(SliceAsset)
+	const UVRSSGameInstanceSubsystem* GI = GetGameInstance()->GetSubsystem<UVRSSGameInstanceSubsystem>();
 
 	if (SliceMaterialBase)
 	{
 		SliceMaterial = UMaterialInstanceDynamic::Create(SliceMaterialBase, this, "Slice Mat Dynamic Inst");
 
-		const float CutOffValue = (Sim->Config->SliceCutOffValues[SliceAsset->SliceInfo.Quantity] - SliceAsset->SliceInfo
-			.
-			MinValue) * SliceAsset->SliceInfo.ScaleFactor / 255.f;
+		const float CutOffValue = (GI->Config->SliceCutOffValues[SliceAsset->SliceInfo.Quantity] - SliceAsset->
+			SliceInfo.MinValue) * SliceAsset->SliceInfo.ScaleFactor / 255.f;
 		SliceMaterial->SetScalarParameterValue("CutOffValue", CutOffValue);
 
-		SliceMaterial->SetTextureParameterValue("ColorMap", Sim->Config->ColorMaps[SliceAsset->SliceInfo.Quantity]);
+		SliceMaterial->SetTextureParameterValue("ColorMap", GI->Config->ColorMaps[SliceAsset->SliceInfo.Quantity]);
 	}
 
 	if (StaticMeshComponent)
@@ -81,8 +84,9 @@ void ASlice::BeginPlay()
 	else
 	{
 		// If the data has not been loaded yet (or incorrectly loaded), do it again after loading the data
-		UpdateDataEvent = Sim->RegisterTextureLoad("Slice", SliceAsset->SliceInfo.TextureDir, &SliceAsset->SliceTextures,
-		                                          SliceAsset->SliceInfo.Dimensions.W);
+		UpdateDataEvent = Sim->RegisterTextureLoad("Slice", SliceAsset->SliceInfo.TextureDir,
+		                                           &SliceAsset->SliceTextures,
+		                                           SliceAsset->SliceInfo.Dimensions.W);
 		if (UpdateDataEvent.IsSet())
 		{
 			UpdateDataEvent.GetValue()->AddUObject(this, &ASlice::UpdateTexture);
@@ -96,9 +100,6 @@ void ASlice::BeginPlay()
 	// Initialize resources for first timesteps (for time interpolation)
 	UpdateTexture(Sim->CurrentTimeSteps["Slice"] - 1);
 	UpdateTexture(Sim->CurrentTimeSteps["Slice"]);
-
-	// Let the GameInstance know when we spawn a slice
-	Sim->AddSlice(this);
 }
 
 void ASlice::UpdateTexture(const int CurrentTimeStep)
@@ -135,19 +136,17 @@ void ASlice::UpdateTexture(const int CurrentTimeStep)
 	SliceMaterial->SetScalarParameterValue("TimePassedPercentage", TimePassedPercentage);
 }
 
-void ASlice::UpdateColorMapScale(const FString Quantity, const float NewMin, const float NewMax) const
+void ASlice::UpdateColorMapScale(const float NewMin, const float NewMax) const
 {
-	if (Quantity.Equals(SliceAsset->SliceInfo.Quantity))
-	{
-		const float NewRange = NewMax - NewMin;
-		const float NewMinScaled = SliceAsset->SliceInfo.MinValue / NewRange + (SliceAsset->SliceInfo.MinValue - NewMin)
-			/ NewRange;
+	const FString Quantity = SliceAsset->SliceInfo.Quantity;
+	const float NewRange = NewMax - NewMin;
+	const float NewMinScaled = SliceAsset->SliceInfo.MinValue / NewRange + (SliceAsset->SliceInfo.MinValue - NewMin) /
+		NewRange;
 
-		SliceMaterial->SetScalarParameterValue("ColorMapMin", NewMinScaled);
-		SliceMaterial->SetScalarParameterValue("ColorMapRange",
-		                                       (SliceAsset->SliceInfo.MaxValue - SliceAsset->SliceInfo.MinValue) /
-		                                       NewRange);
-	}
+	SliceMaterial->SetScalarParameterValue("ColorMapMin", NewMinScaled);
+	SliceMaterial->SetScalarParameterValue("ColorMapRange",
+	                                       (SliceAsset->SliceInfo.MaxValue - SliceAsset->SliceInfo.MinValue) /
+	                                       NewRange);
 }
 
 void ASlice::Tick(const float DeltaTime)

@@ -16,7 +16,7 @@ UVRSSAssetFactory::UVRSSAssetFactory(const FObjectInitializer& ObjectInitializer
 {
 	Formats.Add(FString(TEXT("yaml;")) + NSLOCTEXT("UVRSSAssetFactory", "FormatYaml", ".yaml File").ToString());
 
-	SupportedClass = UVolumeAsset::StaticClass(); // Todo: Is this enough, even though we are also using other classes?
+	SupportedClass = USimulationAsset::StaticClass(); // Todo: Is this enough, even though we are also using other classes?
 	bCreateNew = false;
 	bEditorImport = true;
 	ImportPriority = 1;

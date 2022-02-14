@@ -21,9 +21,9 @@ public:
 	UFUNCTION(CallInEditor, Category="Obst")
 	void UseSimulationTransform();
 	
-	/** Delegate to update the ColorMap in case a obst with higher Max/lower Min has been added. */
+	/** Delegate to update the ColorMap in case a simulation with obsts with higher Max/lower Min has been added. */
 	UFUNCTION()
-	void UpdateColorMapScale(const FString Quantity, const float NewMin, const float NewMax) const;
+	void UpdateColorMapScale(const float NewMin, const float NewMax) const;
 
 protected:
 	virtual void BeginPlay() override;
@@ -36,10 +36,7 @@ protected:
 	void SetActiveQuantity(FString NewQuantity);
 	
 public:
-	UPROPERTY(VisibleAnywhere)
-	class ASimulation* Sim;
-
-	/** The base material for obst data. */
+/** The base material for obst data. */
 	UPROPERTY(BlueprintReadOnly, EditAnywhere)
 	UMaterial* ObstDataMaterialBase;
 	
@@ -51,6 +48,9 @@ public:
 	FString ActiveQuantity;
 	
 protected:
+	UPROPERTY(VisibleAnywhere)
+	class ASimulation* Sim;
+	
 	/** The % of time that has passed until the next frame is reached. */
 	UPROPERTY(VisibleAnywhere)
 	float TimePassedPercentage = 0;

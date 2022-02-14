@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "Blueprint/UserWidget.h"
+#include "Components/HorizontalBox.h"
 
 #include "SimControllerUserWidget.generated.h"
 
@@ -18,11 +19,25 @@ public:
 
 	virtual void NativeTick(const FGeometry& MyGeometry, const float DeltaTime) override;
 
+	UFUNCTION()
 	void InitSimulation(class ASimulation* Simulation);
 protected:
-	UPROPERTY()
-	class ASimulation* Sim;
+	UFUNCTION()
+	void OnObstCheckboxesStateChanged() const;
+	UFUNCTION()
+	void OnSliceCheckboxesStateChanged() const;
+	UFUNCTION()
+	void OnVolumeCheckboxesStateChanged() const;
 	
+	UFUNCTION()
+	void InitObstCheckboxes() const;
+	UFUNCTION()
+	void InitSliceCheckboxes() const;
+	UFUNCTION()
+	void InitVolumeCheckboxes() const;
+	
+	UHorizontalBox* ConstructCheckboxRow(TScriptDelegate<> CheckboxDelegate, FString CheckboxName) const;
+
 public:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	class UGridPanel *RootGridPanel;
@@ -35,4 +50,6 @@ public:
 	class UVerticalBox *VolumesVerticalBox;
 	
 protected:
+	UPROPERTY()
+	class ASimulation* Sim;
 };

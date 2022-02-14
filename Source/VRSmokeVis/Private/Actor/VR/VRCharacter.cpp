@@ -88,6 +88,5 @@ void AVRCharacter::RewindSimulation()
 
 void AVRCharacter::ToggleHUDVisibility()
 {
-	UVRSSGameInstance* GI = Cast<UVRSSGameInstance>(GetGameInstance());
-	GI->ToggleHUDVisibility();
+	GetGameInstance()->GetSubsystem<UVRSSGameInstanceSubsystem>()->ToggleHUDVisibility();
 }

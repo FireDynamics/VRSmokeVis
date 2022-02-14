@@ -21,9 +21,9 @@ public:
 	UFUNCTION(CallInEditor, Category="Slice")
 	void UseSimulationTransform();
 	
-	/** Delegate to update the ColorMap in case a slice with higher Max/lower Min has been added. */
+	/** Delegate to update the ColorMap in case a simulation with slices with higher Max/lower Min has been added. */
 	UFUNCTION()
-	void UpdateColorMapScale(const FString Quantity, const float NewMin, const float NewMax) const;
+	void UpdateColorMapScale(const float NewMin, const float NewMax) const;
 	
 protected:
 	virtual void BeginPlay() override;
@@ -33,9 +33,6 @@ protected:
 	void UpdateTexture(const int CurrentTimeStep);
 
 public:
-	UPROPERTY(VisibleAnywhere)
-	class ASimulation* Sim;
-
 	/** The base material for slice rendering. */
 	UPROPERTY(BlueprintReadOnly, EditAnywhere)
 	UMaterial* SliceMaterialBase;
@@ -45,6 +42,9 @@ public:
 	class USliceAsset* SliceAsset;
 
 protected:
+	UPROPERTY(VisibleAnywhere)
+	class ASimulation* Sim;
+	
 	/** The % of time that has passed until the next frame is reached. */
 	UPROPERTY(VisibleAnywhere)
 	float TimePassedPercentage = 0;

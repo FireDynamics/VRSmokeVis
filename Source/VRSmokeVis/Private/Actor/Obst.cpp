@@ -1,5 +1,6 @@
 #include "Actor/Obst.h"
 
+#include "VRSSConfig.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Util/TextureUtilities.h"
@@ -91,9 +92,6 @@ void AObst::BeginPlay()
 		if (StaticMeshComponent)
 			StaticMeshComponent->SetMaterialByName(*FString::FromInt(Orientation),
 			                                       ObstDataMaterials[Orientation]);
-
-	// Let the GameInstance know when we spawn a obst
-	Sim->AddObst(this);
 }
 
 void AObst::UpdateTexture(const int CurrentTimeStep, const int Orientation)
@@ -132,30 +130,29 @@ void AObst::UpdateTexture(const int CurrentTimeStep, const int Orientation)
 	ObstDataMaterials[Orientation]->SetScalarParameterValue("TimePassedPercentage", TimePassedPercentage);
 }
 
-void AObst::UpdateColorMapScale(const FString Quantity, const float NewMin, const float NewMax) const
+void AObst::UpdateColorMapScale(const float NewMin, const float NewMax) const
 {
-	if (Quantity.Equals(ActiveQuantity))
+	TArray<int> Orientations;
+	ObstAsset->ObstInfo.Dimensions.GetKeys(Orientations);
+
+	const float NewRange = NewMax - NewMin;
+	const float NewMinScaled = ObstAsset->ObstInfo.MinValues[ActiveQuantity] / NewRange + (ObstAsset->ObstInfo.
+			MinValues[ActiveQuantity] - NewMin)
+		/ NewRange;
+	const float ColorMapRange = (ObstAsset->ObstInfo.MaxValues[ActiveQuantity] - ObstAsset->ObstInfo.MinValues[
+		ActiveQuantity]) / NewRange;
+
+	for (const int Orientation : Orientations)
 	{
-		TArray<int> Orientations;
-		ObstAsset->ObstInfo.Dimensions.GetKeys(Orientations);
-
-		const float NewRange = NewMax - NewMin;
-		const float NewMinScaled = ObstAsset->ObstInfo.MinValues[ActiveQuantity] / NewRange + (ObstAsset->ObstInfo.
-				MinValues[ActiveQuantity] - NewMin)
-			/ NewRange;
-		const float ColorMapRange = (ObstAsset->ObstInfo.MaxValues[ActiveQuantity] - ObstAsset->ObstInfo.MinValues[
-			ActiveQuantity]) / NewRange;
-
-		for (const int Orientation : Orientations)
-		{
-			ObstDataMaterials[Orientation]->SetScalarParameterValue("ColorMapMin", NewMinScaled);
-			ObstDataMaterials[Orientation]->SetScalarParameterValue("ColorMapRange", ColorMapRange);
-		}
+		ObstDataMaterials[Orientation]->SetScalarParameterValue("ColorMapMin", NewMinScaled);
+		ObstDataMaterials[Orientation]->SetScalarParameterValue("ColorMapRange", ColorMapRange);
 	}
 }
 
 void AObst::SetActiveQuantity(FString NewQuantity)
 {
+	const UVRSSGameInstanceSubsystem* GI = GetGameInstance()->GetSubsystem<UVRSSGameInstanceSubsystem>();
+	
 	ActiveQuantity = NewQuantity;
 
 	ObstAsset->ObstTextures.Add(NewQuantity, TMap<int, TArray<FAssetData>>());
@@ -163,7 +160,7 @@ void AObst::SetActiveQuantity(FString NewQuantity)
 	TArray<int> Orientations;
 	ObstAsset->ObstInfo.Dimensions.GetKeys(Orientations);
 
-	const float CutOffValue = (Sim->Config->ObstCutOffValues[ActiveQuantity] - ObstAsset->ObstInfo.
+	const float CutOffValue = (GI->Config->ObstCutOffValues[ActiveQuantity] - ObstAsset->ObstInfo.
 		MinValues[ActiveQuantity]) * ObstAsset->ObstInfo.ScaleFactors[ActiveQuantity] / 255.f;
 	for (const int Orientation : Orientations)
 	{
@@ -201,7 +198,7 @@ void AObst::SetActiveQuantity(FString NewQuantity)
 
 			ObstMaterial->SetScalarParameterValue("CutOffValue", CutOffValue);
 
-			ObstMaterial->SetTextureParameterValue("ColorMap", Sim->Config->ColorMaps[ActiveQuantity]);
+			ObstMaterial->SetTextureParameterValue("ColorMap", GI->Config->ColorMaps[ActiveQuantity]);
 
 			Sim->ChangeObstQuantity(this);
 		}
