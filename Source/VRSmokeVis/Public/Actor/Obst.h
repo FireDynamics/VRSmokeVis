@@ -41,11 +41,20 @@ public:
 	UMaterial* ObstDataMaterialBase;
 	
 	/** The loaded obst asset belonging to this obst. */
-	UPROPERTY(BlueprintReadOnly, EditAnywhere)
+	UPROPERTY(BlueprintReadOnly, VisibleAnywhere)
 	class UObstAsset* ObstAsset;
 
 	UPROPERTY(BlueprintSetter=SetActiveQuantity, VisibleAnywhere, Transient)
 	FString ActiveQuantity;
+	
+	UPROPERTY(EditAnywhere)
+	UStaticMesh* Cube6SurfMesh;
+	
+	UPROPERTY(EditAnywhere)
+	UStaticMesh* CubeBorder;
+	
+	UPROPERTY(EditAnywhere)
+	UMaterial* BorderMaterial;
 	
 protected:
 	UPROPERTY(VisibleAnywhere)

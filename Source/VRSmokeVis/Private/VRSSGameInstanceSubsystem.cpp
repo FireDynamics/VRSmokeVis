@@ -1,6 +1,7 @@
 ﻿#include "VRSSGameInstanceSubsystem.h"
 #include "VRSSConfig.h"
 #include "Actor/Simulation.h"
+#include "Assets/SimulationAsset.h"
 #include "Kismet/GameplayStatics.h"
 #include "UI/UserInterfaceUserWidget.h"
 #include "UI/VRSSHUD.h"
@@ -8,11 +9,19 @@
 
 UVRSSGameInstanceSubsystem::UVRSSGameInstanceSubsystem()
 {
+	Simulations = TArray<ASimulation*>();
+	Config = NewObject<UVRSSConfig>();
 }
 
 void UVRSSGameInstanceSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
+
+	// Todo: tmp!
+	Config->ColorMapsPath = "/Game";
+	Config->ObstCutOffValues.Add("wall_temparature", 50);
+	Config->SliceCutOffValues.Add("temparature", 35);
+	Config->SaveConfig();
 }
 
 void UVRSSGameInstanceSubsystem::RegisterSimulation(ASimulation* Simulation)
@@ -44,8 +53,13 @@ void UVRSSGameInstanceSubsystem::RegisterSimulation(ASimulation* Simulation)
 
 	// Update the colormaps in the UI to reflect the new value range
 	UVRSSGameInstanceSubsystem* GI = GetGameInstance()->GetSubsystem<UVRSSGameInstanceSubsystem>();
-	const AVRSSHUD* HUD = Cast<AVRSSHUD>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD());
-	HUD->UserInterfaceUserWidget->InitColorMaps(GI->Config->ColorMaps, Mins, Maxs);
+	AVRSSHUD* HUD = Cast<AVRSSHUD>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD());
+	HUD->InitHUD();
+	HUD->UserInterfaceUserWidget->InitColorMaps(GI->Config, Mins, Maxs);
+	TScriptDelegate<> ToggleSimControllerDelegate;
+	ToggleSimControllerDelegate.BindUFunction(Simulations.Last(), "ToggleControllerUI");
+	HUD->UserInterfaceUserWidget->AddSimulationController(ToggleSimControllerDelegate,
+	                                                      Simulation->SimulationAsset->GetName());
 
 	// Update the colormaps for all assets in each simulation, to draw the correct colors for each value
 	for (ASimulation* Sim : Simulations)

@@ -33,7 +33,7 @@ public:
 	class ASimulation* Sim;
 
 	/** The loaded Volume asset belonging to this volume. */
-	UPROPERTY(BlueprintReadOnly, EditAnywhere)
+	UPROPERTY(BlueprintReadOnly, VisibleAnywhere)
 	class UVolumeAsset* VolumeAsset;
 
 	/** The base material for intensity rendering. */
@@ -43,6 +43,15 @@ public:
 	/** The number of steps to take when raymarching. This is multiplied by the volume thickness in texture space. */
 	UPROPERTY(EditAnywhere)
 	float RaymarchingSteps = 150;
+
+	UPROPERTY(EditAnywhere)
+	UStaticMesh* UnitCubeInsideOut;
+	
+	UPROPERTY(EditAnywhere)
+	UStaticMesh* CubeBorder;
+	
+	UPROPERTY(EditAnywhere)
+	UMaterial* BorderMaterial;
 
 protected:
 	/** The % of time that has passed until the next frame is reached. */

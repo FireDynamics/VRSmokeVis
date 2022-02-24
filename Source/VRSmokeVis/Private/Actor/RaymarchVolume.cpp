@@ -1,7 +1,6 @@
 #include "Actor/RaymarchVolume.h"
 
 #include "Materials/MaterialInstanceDynamic.h"
-#include "UObject/ConstructorHelpers.h"
 #include "Util/TextureUtilities.h"
 #include "Assets/VolumeAsset.h"
 #include "Actor/Simulation.h"
@@ -23,44 +22,21 @@ ARaymarchVolume::ARaymarchVolume() : AActor()
 	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("Default Scene Root"));
 	RootComponent->SetWorldScale3D(FVector(1.0f));
 
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> UnitCubeInsideOut(
-		TEXT("StaticMesh'/Game/Meshes/SM_Unit_Cube_Inside_Out.SM_Unit_Cube_Inside_Out'"));
-
 	StaticMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Raymarch Cube Static Mesh"));
-	// Set basic unit cube properties.
-	if (UnitCubeInsideOut.Succeeded())
-	{
-		StaticMeshComponent->SetStaticMesh(UnitCubeInsideOut.Object);
-		StaticMeshComponent->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
-		StaticMeshComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
-		StaticMeshComponent->SetRelativeScale3D(FVector(100.0f));
-		StaticMeshComponent->SetupAttachment(RootComponent);
-	}
+	// Set basic unit cube properties
+	StaticMeshComponent->SetStaticMesh(UnitCubeInsideOut);
+	StaticMeshComponent->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
+	StaticMeshComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
+	StaticMeshComponent->SetRelativeScale3D(FVector(100.0f));
+	StaticMeshComponent->SetupAttachment(RootComponent);
 
-	// Create CubeBorderMeshComponent and find and assign cube border mesh (that's a cube with only edges visible).
+	// Create CubeBorderMeshComponent and assign cube border mesh (that's a cube with only edges visible)
 	CubeBorderMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Raymarch Volume Cube Border"));
 	CubeBorderMeshComponent->SetupAttachment(StaticMeshComponent);
 	CubeBorderMeshComponent->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
 	CubeBorderMeshComponent->SetHiddenInGame(true);
-
-	if (static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeBorder(
-		TEXT("StaticMesh'/Game/Meshes/SM_Unit_Cube.SM_Unit_Cube'")); CubeBorder.Succeeded())
-	{
-		// Find and assign cube material.
-		CubeBorderMeshComponent->SetStaticMesh(CubeBorder.Object);
-
-		if (static ConstructorHelpers::FObjectFinder<UMaterial> BorderMaterial(
-			TEXT("Material'/Game/Materials/M_CubeBorder.M_CubeBorder'")); BorderMaterial.Succeeded())
-		{
-			CubeBorderMeshComponent->SetMaterial(0, BorderMaterial.Object);
-		}
-	}
-
-	if (static ConstructorHelpers::FObjectFinder<UMaterial> IntensityMaterial(
-		TEXT("Material'/Game/Materials/M_Raymarch.M_Raymarch'")); IntensityMaterial.Succeeded())
-	{
-		RaymarchMaterialBase = IntensityMaterial.Object;
-	}
+	CubeBorderMeshComponent->SetStaticMesh(CubeBorder);
+	CubeBorderMeshComponent->SetMaterial(0, BorderMaterial);
 }
 
 void ARaymarchVolume::BeginPlay()

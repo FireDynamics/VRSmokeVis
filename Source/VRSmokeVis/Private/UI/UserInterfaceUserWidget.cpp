@@ -2,7 +2,10 @@
 
 #include "UI/UserInterfaceUserWidget.h"
 
+#include "VRSSConfig.h"
 #include "Blueprint/WidgetTree.h"
+#include "Components/Button.h"
+#include "Components/HorizontalBox.h"
 #include "UI/ColorMapUserWidget.h"
 #include "Components/VerticalBox.h"
 
@@ -14,6 +17,8 @@ UUserInterfaceUserWidget::UUserInterfaceUserWidget(const FObjectInitializer& Obj
 
 bool UUserInterfaceUserWidget::Initialize()
 {	
+	ColorMapUserWidgets = TMap<FString, UColorMapUserWidget*>();
+	
 	return Super::Initialize();
 }
 
@@ -27,7 +32,7 @@ void UUserInterfaceUserWidget::NativeTick(const FGeometry& MyGeometry, const flo
 	Super::NativeTick(MyGeometry, DeltaTime);
 }
 
-void UUserInterfaceUserWidget::InitColorMaps(TMap<FString, UTexture2D*> ColorMapTextures, TMap<FString, float> Mins, TMap<FString, float> Maxs)
+void UUserInterfaceUserWidget::InitColorMaps(UVRSSConfig* Config, TMap<FString, float> Mins, TMap<FString, float> Maxs)
 {
 	// First remove all old colormaps
 	for (const auto ColorMap : ColorMapUserWidgets)
@@ -49,13 +54,23 @@ void UUserInterfaceUserWidget::InitColorMaps(TMap<FString, UTexture2D*> ColorMap
 		ColorMapUserWidget->ColorMapQuantity = Quantity;
 		ColorMapUserWidgets.Add(Quantity, ColorMapUserWidget);
 		ColorMapsVerticalBox->AddChildToVerticalBox(ColorMapUserWidget);
-		ColorMapUserWidget->ImageColorMap->SetBrushFromTexture(ColorMapTextures[Quantity]);
+		ColorMapUserWidget->ImageColorMap->SetBrushFromTexture(Config->GetColorMap(Quantity));
 		
 		ColorMapUserWidget->TextBlockColorMapMin->SetText(FText::AsNumber(Mins[Quantity], &LabelFormattingOptions));
 		ColorMapUserWidget->TextBlockColorMapMax->SetText(FText::AsNumber(Maxs[Quantity], &LabelFormattingOptions));
 		
 		ColorMapUserWidget->SetVisibility(ESlateVisibility::Hidden);
 	}
+}
+
+void UUserInterfaceUserWidget::AddSimulationController(const TScriptDelegate<> ToggleSimControllerDelegate, const FString& SimName)
+{
+	UButton* SimControllerButton = WidgetTree->ConstructWidget<UButton>(UButton::StaticClass(), FName(*("Button" + SimName)));
+	SimulationControllersHorizontalBox->AddChildToHorizontalBox(SimControllerButton);
+	SimControllerButton->OnClicked.Add(ToggleSimControllerDelegate);
+	UTextBlock* SimControllerButtonLabel = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), FName(*("ButtonLabel" + SimName)));
+	SimControllerButton->AddChild(SimControllerButtonLabel);
+	SimControllerButtonLabel->SetText(FText::FromString(SimName));
 }
 
 TArray<FString> UUserInterfaceUserWidget::GetActiveColorMapQuantities()

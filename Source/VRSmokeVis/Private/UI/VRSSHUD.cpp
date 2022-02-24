@@ -17,7 +17,10 @@ void AVRSSHUD::DrawHUD()
 void AVRSSHUD::BeginPlay()
 {
 	Super::BeginPlay();
+}
 
+void AVRSSHUD::InitHUD()
+{
 	UserInterfaceUserWidget = CreateWidget<UUserInterfaceUserWidget>(GetWorld(), UserInterfaceUserWidgetClass);
 	UserInterfaceUserWidget->AddToViewport();
 }

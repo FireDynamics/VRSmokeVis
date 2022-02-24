@@ -16,6 +16,9 @@ public:
 
 	virtual void BeginPlay() override;
 
+	/** Called manually as soon as other relevant systems are setup. */
+	void InitHUD();
+
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class UUserInterfaceUserWidget> UserInterfaceUserWidgetClass;
 

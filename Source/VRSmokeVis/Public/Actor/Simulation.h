@@ -94,6 +94,13 @@ public:
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class USimControllerUserWidget> SimControllerUserWidgetClass;
 
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<class AObst> ObstClass;
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<class ASlice> SliceClass;
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<class ARaymarchVolume> VolumeClass;
+	
 	/** The class of the raymarch lights that are dimmed over time. */
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class ARaymarchLight> RaymarchLightClass;
@@ -105,7 +112,7 @@ public:
 	UPROPERTY(BlueprintReadOnly)
 	TMap<FString, int> CurrentTimeSteps;
 
-	/** Controls the time between two updates of RaymarchingVolume textures. Defaults to the rate specified by the input from FDS if set to 0. */
+	/** Controls the time between two updates of textures. Defaults to the rate specified by the input from FDS if set to 0. */
 	UPROPERTY(VisibleAnywhere)
 	TMap<FString, float> UpdateRates;
 	

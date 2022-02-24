@@ -2,7 +2,6 @@
 
 #include "VRSSConfig.h"
 #include "Materials/MaterialInstanceDynamic.h"
-#include "UObject/ConstructorHelpers.h"
 #include "Util/TextureUtilities.h"
 #include "Assets/ObstAsset.h"
 #include "VRSSGameInstanceSubsystem.h"
@@ -25,44 +24,24 @@ AObst::AObst() : AActor()
 	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("Default Scene Root"));
 	RootComponent->SetWorldScale3D(FVector(1.0f));
 
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMesh(
-		TEXT("StaticMesh'/Game/Meshes/SM_6SurfCube.SM_6SurfCube'"));
 	StaticMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Obst Static Mesh"));
-	// Set basic unit cube properties.
-	if (CubeMesh.Succeeded())
-	{
-		StaticMeshComponent->SetStaticMesh(CubeMesh.Object);
-		StaticMeshComponent->SetCollisionEnabled(ECollisionEnabled::Type::QueryOnly);
-		StaticMeshComponent->SetRelativeLocation(FVector(0, 0, 0));
-		StaticMeshComponent->SetRelativeScale3D(FVector(0, 0, 0));
-		StaticMeshComponent->SetupAttachment(RootComponent);
-	}
+	// Set basic unit cube properties
+	StaticMeshComponent->SetStaticMesh(Cube6SurfMesh);
+	StaticMeshComponent->SetCollisionEnabled(ECollisionEnabled::Type::QueryOnly);
+	StaticMeshComponent->SetRelativeLocation(FVector(0, 0, 0));
+	StaticMeshComponent->SetRelativeScale3D(FVector(0, 0, 0));
+	StaticMeshComponent->SetupAttachment(RootComponent);
 
-	if (static ConstructorHelpers::FObjectFinder<UMaterial> Material(
-		TEXT("Material'/Game/Materials/M_Obst.M_Obst'")); Material.Succeeded())
-	{
-		ObstDataMaterialBase = Material.Object;
-	}
-
-
-	// Create CubeBorderMeshComponent and find and assign cube border mesh (that's a cube with only edges visible).
+	// Create CubeBorderMeshComponent and assign cube border mesh (that's a cube with only edges visible).
 	CubeBorderMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Obst Cube Border"));
 	CubeBorderMeshComponent->SetupAttachment(StaticMeshComponent);
 	CubeBorderMeshComponent->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
 	CubeBorderMeshComponent->SetHiddenInGame(true);
 	CubeBorderMeshComponent->SetRelativeScale3D(FVector(100.0f));
 
-	if (static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeBorder(
-		TEXT("StaticMesh'/Game/Meshes/SM_Unit_Cube.SM_Unit_Cube'")); CubeBorder.Succeeded())
-	{
-		// Find and assign cube material.
-		CubeBorderMeshComponent->SetStaticMesh(CubeBorder.Object);
-		if (static ConstructorHelpers::FObjectFinder<UMaterial> BorderMaterial(
-			TEXT("Material'/Game/Materials/M_CubeBorder.M_CubeBorder'")); BorderMaterial.Succeeded())
-		{
-			CubeBorderMeshComponent->SetMaterial(0, BorderMaterial.Object);
-		}
-	}
+	// Find and assign cube material.
+	CubeBorderMeshComponent->SetStaticMesh(CubeBorder);
+	CubeBorderMeshComponent->SetMaterial(0, BorderMaterial);
 }
 
 void AObst::BeginPlay()
@@ -198,7 +177,7 @@ void AObst::SetActiveQuantity(FString NewQuantity)
 
 			ObstMaterial->SetScalarParameterValue("CutOffValue", CutOffValue);
 
-			ObstMaterial->SetTextureParameterValue("ColorMap", GI->Config->ColorMaps[ActiveQuantity]);
+			ObstMaterial->SetTextureParameterValue("ColorMap", GI->Config->GetColorMap(ActiveQuantity));
 
 			Sim->ChangeObstQuantity(this);
 		}

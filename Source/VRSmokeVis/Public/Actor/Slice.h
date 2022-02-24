@@ -38,8 +38,11 @@ public:
 	UMaterial* SliceMaterialBase;
 	
 	/** The loaded slice asset belonging to this slice. */
-	UPROPERTY(BlueprintReadOnly, EditAnywhere)
+	UPROPERTY(BlueprintReadOnly, VisibleAnywhere)
 	class USliceAsset* SliceAsset;
+
+	UPROPERTY(EditAnywhere)
+	UStaticMesh* PlaneMesh;
 
 protected:
 	UPROPERTY(VisibleAnywhere)

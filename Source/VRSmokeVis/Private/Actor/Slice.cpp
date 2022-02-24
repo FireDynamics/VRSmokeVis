@@ -3,7 +3,6 @@
 #include "VRSSConfig.h"
 #include "VRSSGameInstanceSubsystem.h"
 #include "Materials/MaterialInstanceDynamic.h"
-#include "UObject/ConstructorHelpers.h"
 #include "Util/TextureUtilities.h"
 #include "Assets/SliceAsset.h"
 #include "Actor/Simulation.h"
@@ -24,23 +23,13 @@ ASlice::ASlice() : AActor()
 
 	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("Default Scene Root"));
 	RootComponent->SetWorldScale3D(FVector(1.0f));
-
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> PlaneMesh(TEXT("StaticMesh'/Game/Meshes/SM_Plane.SM_Plane'"));
+	
 	StaticMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Slice Static Mesh"));
-	// Set basic unit cube properties.
-	if (PlaneMesh.Succeeded())
-	{
-		StaticMeshComponent->SetStaticMesh(PlaneMesh.Object);
-		StaticMeshComponent->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
-		StaticMeshComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
-		StaticMeshComponent->SetupAttachment(RootComponent);
-	}
-
-	if (static ConstructorHelpers::FObjectFinder<UMaterial> Material(
-		TEXT("Material'/Game/Materials/M_Slice.M_Slice'")); Material.Succeeded())
-	{
-		SliceMaterialBase = Material.Object;
-	}
+	// Set basic unit cube properties
+	StaticMeshComponent->SetStaticMesh(PlaneMesh);
+	StaticMeshComponent->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
+	StaticMeshComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
+	StaticMeshComponent->SetupAttachment(RootComponent);
 }
 
 void ASlice::BeginPlay()
@@ -61,7 +50,7 @@ void ASlice::BeginPlay()
 			SliceInfo.MinValue) * SliceAsset->SliceInfo.ScaleFactor / 255.f;
 		SliceMaterial->SetScalarParameterValue("CutOffValue", CutOffValue);
 
-		SliceMaterial->SetTextureParameterValue("ColorMap", GI->Config->ColorMaps[SliceAsset->SliceInfo.Quantity]);
+		SliceMaterial->SetTextureParameterValue("ColorMap", GI->Config->GetColorMap(SliceAsset->SliceInfo.Quantity));
 	}
 
 	if (StaticMeshComponent)

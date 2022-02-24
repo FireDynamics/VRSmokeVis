@@ -40,7 +40,7 @@ void ASimulation::BeginPlay()
 	// Spawn all obstructions, slices and volumes, but hide them for now
 	for (FAssetData& ObstAsset : SimulationAsset->Obstructions)
 	{
-		AObst* NewObst = GetWorld()->SpawnActor<AObst>();
+		AObst* NewObst = GetWorld()->SpawnActor<AObst>(ObstClass);
 		Obstructions.Add(NewObst);
 		NewObst->ObstAsset = Cast<UObstAsset>(StreamableManager->LoadSynchronous(ObstAsset.ToSoftObjectPath()));
 		NewObst->UseSimulationTransform();
@@ -49,7 +49,7 @@ void ASimulation::BeginPlay()
 	}
 	for (FAssetData& SliceAsset : SimulationAsset->Slices)
 	{
-		ASlice* NewSlice = GetWorld()->SpawnActor<ASlice>();
+		ASlice* NewSlice = GetWorld()->SpawnActor<ASlice>(SliceClass);
 		Slices.Add(NewSlice);
 		NewSlice->SliceAsset = Cast<USliceAsset>(StreamableManager->LoadSynchronous(SliceAsset.ToSoftObjectPath()));
 		NewSlice->UseSimulationTransform();
@@ -58,13 +58,15 @@ void ASimulation::BeginPlay()
 	}
 	for (FAssetData& VolumeAsset : SimulationAsset->Volumes)
 	{
-		ARaymarchVolume* NewVolume = GetWorld()->SpawnActor<ARaymarchVolume>();
+		ARaymarchVolume* NewVolume = GetWorld()->SpawnActor<ARaymarchVolume>(VolumeClass);
 		Volumes.Add(NewVolume);
 		NewVolume->VolumeAsset = Cast<UVolumeAsset>(StreamableManager->LoadSynchronous(VolumeAsset.ToSoftObjectPath()));
 		NewVolume->UseSimulationTransform();
 		NewVolume->SetActorHiddenInGame(true);
 		NewVolume->SetActorEnableCollision(false);
 	}
+
+	GetGameInstance()->GetSubsystem<UVRSSGameInstanceSubsystem>()->RegisterSimulation(this);
 }
 
 void ASimulation::UpdateColorMaps(const TMap<FString, float> Mins, const TMap<FString, float> Maxs)
