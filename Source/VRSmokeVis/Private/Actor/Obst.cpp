@@ -48,7 +48,7 @@ void AObst::BeginPlay()
 {
 	Super::BeginPlay();
 
-	Sim = Cast<ASimulation>(GetParentActor());
+	Sim = Cast<ASimulation>(GetOwner());
 
 	TArray<int> Orientations;
 	ObstAsset->ObstInfo.Dimensions.GetKeys(Orientations);
@@ -59,18 +59,20 @@ void AObst::BeginPlay()
 		DataTexturesT1.Add(Orientation, nullptr);
 	}
 
-	Sim->InitUpdateRate("Obst", ObstAsset->ObstInfo.Spacings[Orientations[0]].W);
-
-	// Set some default quantity as active
-	TArray<FString> Quantities;
-	ObstAsset->ObstInfo.TextureDirs.GetKeys(Quantities);
-	if (Quantities.Contains("wall_temperature")) SetActiveQuantity("wall_temperature");
-	else SetActiveQuantity(Quantities[0]);
+	Sim->InitUpdateRate("Obst", ObstAsset->ObstInfo.Spacings[Orientations[0]].W, ObstAsset->ObstInfo.Dimensions[Orientations[0]].W);
 
 	for (const int Orientation : Orientations)
+	{
+		if (ObstDataMaterialBase)
+		{
+			UMaterialInstanceDynamic* ObstMaterial = UMaterialInstanceDynamic::Create(
+				ObstDataMaterialBase, this, *("Obst Mat Dynamic Inst" + FString::FromInt(Orientation)));
+			ObstDataMaterials.Add(Orientation, ObstMaterial);
+		}
+		
 		if (StaticMeshComponent)
-			StaticMeshComponent->SetMaterialByName(*FString::FromInt(Orientation),
-			                                       ObstDataMaterials[Orientation]);
+			StaticMeshComponent->SetMaterialByName(*FString::FromInt(Orientation), ObstDataMaterials[Orientation]);
+	}
 }
 
 void AObst::UpdateTexture(const int CurrentTimeStep, const int Orientation)
@@ -111,6 +113,8 @@ void AObst::UpdateTexture(const int CurrentTimeStep, const int Orientation)
 
 void AObst::UpdateColorMapScale(const float NewMin, const float NewMax) const
 {
+	if (ActiveQuantity.IsEmpty()) return;
+	
 	TArray<int> Orientations;
 	ObstAsset->ObstInfo.Dimensions.GetKeys(Orientations);
 
@@ -128,63 +132,29 @@ void AObst::UpdateColorMapScale(const float NewMin, const float NewMax) const
 	}
 }
 
-void AObst::SetActiveQuantity(FString NewQuantity)
+void AObst::SetActiveQuantity(FString GlobalObstQuantity)
 {
-	const UVRSSGameInstanceSubsystem* GI = GetGameInstance()->GetSubsystem<UVRSSGameInstanceSubsystem>();
+	// Don't change anything if nothing changed
+	if (ActiveQuantity == GlobalObstQuantity) return;
 	
-	ActiveQuantity = NewQuantity;
+	ActiveQuantity = GlobalObstQuantity;
+	
+	const UVRSSGameInstanceSubsystem* GI = GetGameInstance()->GetSubsystem<UVRSSGameInstanceSubsystem>();
 
-	ObstAsset->ObstTextures.Add(NewQuantity, TMap<int, TArray<FAssetData>>());
+	ObstAsset->ObstTextures.FindOrAdd(ActiveQuantity, TMap<int, TArray<FAssetData>>());
 
 	TArray<int> Orientations;
 	ObstAsset->ObstInfo.Dimensions.GetKeys(Orientations);
 
-	const float CutOffValue = (GI->Config->ObstCutOffValues[ActiveQuantity] - ObstAsset->ObstInfo.
+	const float CutOffValue = (GI->Config->GetObstCutOffValue(ActiveQuantity) - ObstAsset->ObstInfo.
 		MinValues[ActiveQuantity]) * ObstAsset->ObstInfo.ScaleFactors[ActiveQuantity] / 255.f;
 	for (const int Orientation : Orientations)
 	{
-		ObstAsset->ObstTextures[NewQuantity].Add(Orientation, TArray<FAssetData>());
+		ObstAsset->ObstTextures[ActiveQuantity].FindOrAdd(Orientation, TArray<FAssetData>());
 
-		// Registering the automatic async texture loading each timestep
-		// Check if the expected amount of data (textures) could be found in the given directory
-		if (TOptional<FUpdateDataEvent*> UpdateDataEvent = Sim->RegisterTextureLoad(
-			"Obst", ObstAsset->ObstInfo.TextureDirs[ActiveQuantity].FaceDirs[Orientation],
-			&ObstAsset->ObstTextures[ActiveQuantity][Orientation], ObstAsset->ObstInfo.Dimensions[Orientation].W); UpdateDataEvent.IsSet())
-		{
-			UpdateDataEvent.GetValue()->AddUObject(this, &AObst::UpdateTexture, Orientation);
-		}
-		else
-		{
-			// If the data has not been loaded yet (or incorrectly loaded), do it again after loading the data
-			UpdateDataEvent = Sim->RegisterTextureLoad(
-				"Obst", ObstAsset->ObstInfo.TextureDirs[ActiveQuantity].FaceDirs[Orientation],
-				&ObstAsset->ObstTextures[ActiveQuantity][Orientation], ObstAsset->ObstInfo.Dimensions[Orientation].W);
-			if (UpdateDataEvent.IsSet())
-			{
-				UpdateDataEvent.GetValue()->AddUObject(this, &AObst::UpdateTexture, Orientation);
-			}
-			else
-			{
-				// Todo: Error - Data could not be loaded correctly (at least not the expected amount of data)
-			}
-		}
+		ObstDataMaterials[Orientation]->SetScalarParameterValue("CutOffValue", CutOffValue);
 
-		if (ObstDataMaterialBase)
-		{
-			UMaterialInstanceDynamic* ObstMaterial = UMaterialInstanceDynamic::Create(
-				ObstDataMaterialBase, this, *("Obst Mat Dynamic Inst" + FString::FromInt(Orientation)));
-			ObstDataMaterials.Add(Orientation, ObstMaterial);
-
-			ObstMaterial->SetScalarParameterValue("CutOffValue", CutOffValue);
-
-			ObstMaterial->SetTextureParameterValue("ColorMap", GI->Config->GetColorMap(ActiveQuantity));
-
-			Sim->ChangeObstQuantity(this);
-		}
-
-		// Initialize resources for timestep t=-1 and t=0 (for time interpolation)
-		UpdateTexture(Sim->CurrentTimeSteps["Obst"] - 1, Orientation);
-		UpdateTexture(Sim->CurrentTimeSteps["Obst"], Orientation);
+		ObstDataMaterials[Orientation]->SetTextureParameterValue("ColorMap", GI->Config->GetColorMap(ActiveQuantity));
 	}
 }
 

@@ -59,6 +59,8 @@ void AVRCharacter::BeginPlay()
 	              .bExecuteWhenPaused = true;
 	InputComponent->BindAction("ToggleHUD", IE_Pressed, this, &AVRCharacter::ToggleHUDVisibility)
 	              .bExecuteWhenPaused = true;
+
+	TogglePauseSimulation();
 }
 
 void AVRCharacter::TogglePauseSimulation()

@@ -1,10 +1,9 @@
 ﻿#include "VRSSConfig.h"
 
 #include "Engine/ObjectLibrary.h"
-#include "Engine/StreamableManager.h"
 
 
-UTexture2D* UVRSSConfig::GetColorMap(const FString Quantity) const
+UTexture2D* UVRSSConfig::GetColorMap(const FString Quantity)
 {
 	TArray<FAssetData> ColorMapTextures;
 	
@@ -13,11 +12,36 @@ UTexture2D* UVRSSConfig::GetColorMap(const FString Quantity) const
 	ObjectLibrary->LoadAssetDataFromPath(ColorMapsPath);
 	ObjectLibrary->GetAssetDataList(ColorMapTextures);
 
-	for (FAssetData& ColorMap : ColorMapTextures)
+	if(const FString* ColorMapName = ColorMaps.Find(Quantity)){
+	for (const FAssetData& ColorMap : ColorMapTextures)
 	{
-		if(ColorMap.AssetName.ToString().Equals("CM_" + Quantity)){
-			return Cast<UTexture2D>(StreamableManager->LoadSynchronous(ColorMap.ToSoftObjectPath()));
+		if(ColorMap.AssetName.ToString().Equals("CM_" + *ColorMapName)){
+			return StreamableManager.LoadSynchronous<UTexture2D>(ColorMap.ToSoftObjectPath());
 		}
+	}}
+	return StreamableManager.LoadSynchronous<UTexture2D>(ColorMapTextures[0].ToSoftObjectPath());
+}
+
+float UVRSSConfig::GetSliceCutOffValue(const FString Quantity) const
+{
+	if (const float* CutOff = SliceCutOffValues.Find(Quantity))
+		return *CutOff;
+	return TNumericLimits<float>::Min();
+}
+
+float UVRSSConfig::GetObstCutOffValue(const FString Quantity) const
+{
+	if (const float* CutOff = ObstCutOffValues.Find(Quantity))
+		return *CutOff;
+	return TNumericLimits<float>::Min();
+}
+
+FString UVRSSConfig::GetColorMapsPath() const
+{
+	if (ColorMapsPath.IsEmpty()){
+		// Todo: Set final plugin name
+		FPaths::Combine(FPaths::ProjectPluginsDir(), "VRSmokeVis");
 	}
-	return nullptr;
+	
+	return ColorMapsPath;
 }

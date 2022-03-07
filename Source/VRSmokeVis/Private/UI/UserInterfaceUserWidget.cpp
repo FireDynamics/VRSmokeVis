@@ -3,11 +3,13 @@
 #include "UI/UserInterfaceUserWidget.h"
 
 #include "VRSSConfig.h"
+#include "Actor/Simulation.h"
+#include "Assets/SimulationAsset.h"
 #include "Blueprint/WidgetTree.h"
-#include "Components/Button.h"
 #include "Components/HorizontalBox.h"
 #include "UI/ColorMapUserWidget.h"
 #include "Components/VerticalBox.h"
+#include "UI/SimControllerUserWidget.h"
 
 
 // Sets default values
@@ -63,14 +65,13 @@ void UUserInterfaceUserWidget::InitColorMaps(UVRSSConfig* Config, TMap<FString, 
 	}
 }
 
-void UUserInterfaceUserWidget::AddSimulationController(const TScriptDelegate<> ToggleSimControllerDelegate, const FString& SimName)
+void UUserInterfaceUserWidget::AddSimulationController(ASimulation* Sim) const
 {
-	UButton* SimControllerButton = WidgetTree->ConstructWidget<UButton>(UButton::StaticClass(), FName(*("Button" + SimName)));
-	SimulationControllersHorizontalBox->AddChildToHorizontalBox(SimControllerButton);
-	SimControllerButton->OnClicked.Add(ToggleSimControllerDelegate);
-	UTextBlock* SimControllerButtonLabel = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), FName(*("ButtonLabel" + SimName)));
-	SimControllerButton->AddChild(SimControllerButtonLabel);
-	SimControllerButtonLabel->SetText(FText::FromString(SimName));
+	const FString SimName = Sim->SimulationAsset->GetName();
+	USimControllerUserWidget* SimControllerWidget = WidgetTree->ConstructWidget<USimControllerUserWidget>(SimControllerUserWidgetClass, FName(*("SimControllerUserWidget" + SimName)));
+	Sim->SimControllerUserWidget = SimControllerWidget;
+	SimControllerWidget->InitSimulation(Sim);
+	SimulationControllersHorizontalBox->AddChildToHorizontalBox(SimControllerWidget);
 }
 
 TArray<FString> UUserInterfaceUserWidget::GetActiveColorMapQuantities()

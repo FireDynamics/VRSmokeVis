@@ -38,7 +38,7 @@ void ASlice::BeginPlay()
 
 	check(SliceAsset)
 
-	Sim = Cast<ASimulation>(GetParentActor());
+	Sim = Cast<ASimulation>(GetOwner());
 
 	const UVRSSGameInstanceSubsystem* GI = GetGameInstance()->GetSubsystem<UVRSSGameInstanceSubsystem>();
 
@@ -46,7 +46,7 @@ void ASlice::BeginPlay()
 	{
 		SliceMaterial = UMaterialInstanceDynamic::Create(SliceMaterialBase, this, "Slice Mat Dynamic Inst");
 
-		const float CutOffValue = (GI->Config->SliceCutOffValues[SliceAsset->SliceInfo.Quantity] - SliceAsset->
+		const float CutOffValue = (GI->Config->GetSliceCutOffValue(SliceAsset->SliceInfo.Quantity) - SliceAsset->
 			SliceInfo.MinValue) * SliceAsset->SliceInfo.ScaleFactor / 255.f;
 		SliceMaterial->SetScalarParameterValue("CutOffValue", CutOffValue);
 
@@ -60,35 +60,8 @@ void ASlice::BeginPlay()
 
 	if (SliceAsset)
 	{
-		Sim->InitUpdateRate("Slice", SliceAsset->SliceInfo.Spacing.W);
+		Sim->InitUpdateRate("Slice", SliceAsset->SliceInfo.Spacing.W, SliceAsset->SliceInfo.Dimensions.W);
 	}
-	// Registering the automatic async texture loading each timestep
-	// Check if the expected amount of data (textures) could be found in the given directory
-	if (TOptional<FUpdateDataEvent*> UpdateDataEvent = Sim->RegisterTextureLoad(
-			"Slice", SliceAsset->SliceInfo.TextureDir, &SliceAsset->SliceTextures, SliceAsset->SliceInfo.Dimensions.W);
-		UpdateDataEvent.IsSet())
-	{
-		UpdateDataEvent.GetValue()->AddUObject(this, &ASlice::UpdateTexture);
-	}
-	else
-	{
-		// If the data has not been loaded yet (or incorrectly loaded), do it again after loading the data
-		UpdateDataEvent = Sim->RegisterTextureLoad("Slice", SliceAsset->SliceInfo.TextureDir,
-		                                           &SliceAsset->SliceTextures,
-		                                           SliceAsset->SliceInfo.Dimensions.W);
-		if (UpdateDataEvent.IsSet())
-		{
-			UpdateDataEvent.GetValue()->AddUObject(this, &ASlice::UpdateTexture);
-		}
-		else
-		{
-			// Todo: Error - Data could not be loaded correctly (at least not the expected amount of data)
-		}
-	}
-
-	// Initialize resources for first timesteps (for time interpolation)
-	UpdateTexture(Sim->CurrentTimeSteps["Slice"] - 1);
-	UpdateTexture(Sim->CurrentTimeSteps["Slice"]);
 }
 
 void ASlice::UpdateTexture(const int CurrentTimeStep)

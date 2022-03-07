@@ -1,6 +1,6 @@
 ﻿#pragma once
+
 #include "Blueprint/UserWidget.h"
-#include "Components/HorizontalBox.h"
 
 #include "SimControllerUserWidget.generated.h"
 
@@ -22,12 +22,6 @@ public:
 	UFUNCTION()
 	void InitSimulation(class ASimulation* Simulation);
 protected:
-	UFUNCTION()
-	void OnObstCheckboxesStateChanged() const;
-	UFUNCTION()
-	void OnSliceCheckboxesStateChanged() const;
-	UFUNCTION()
-	void OnVolumeCheckboxesStateChanged() const;
 	
 	UFUNCTION()
 	void InitObstCheckboxes() const;
@@ -36,18 +30,15 @@ protected:
 	UFUNCTION()
 	void InitVolumeCheckboxes() const;
 	
-	UHorizontalBox* ConstructCheckboxRow(TScriptDelegate<> CheckboxDelegate, FString CheckboxName) const;
+	class UHorizontalBox* ConstructCheckboxRow(TScriptDelegate<> CheckboxDelegate, FString CheckboxName) const;
 
-public:
+public:	
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
-	class UGridPanel *RootGridPanel;
-	
+	class UScrollBox *ObstsScrollBox;
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
-	class UVerticalBox *ObstsVerticalBox;
+	class UScrollBox *SlicesScrollBox;
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
-	class UVerticalBox *SlicesVerticalBox;
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
-	class UVerticalBox *VolumesVerticalBox;
+	class UScrollBox *VolumesScrollBox;
 	
 protected:
 	UPROPERTY()

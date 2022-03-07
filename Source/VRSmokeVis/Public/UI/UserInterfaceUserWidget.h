@@ -24,7 +24,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void InitColorMaps(class UVRSSConfig* Config, TMap<FString, float> Mins, TMap<FString, float> Maxs);
 
-	void AddSimulationController(TScriptDelegate<> ToggleSimControllerDelegate, const FString& SimName);
+	void AddSimulationController(class ASimulation* Sim) const;
 
 	/** Get all quantities for which colormaps are currently shown in the UI */
 	UFUNCTION(BlueprintCallable)
@@ -34,6 +34,9 @@ public:
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class UTimeUserWidget> TimeUserWidgetClass;
 
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<class USimControllerUserWidget> SimControllerUserWidgetClass;
+	
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	class UTimeUserWidget* TimeUserWidget;
 

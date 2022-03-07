@@ -13,6 +13,7 @@ class VRSMOKEVIS_API USliceAsset : public UDataAsset
 	GENERATED_BODY()
 
 public:
+	UPROPERTY()
 	TArray<FAssetData> SliceTextures;
 	
 	// Holds the general info about the Yaml Data read from disk.

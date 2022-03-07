@@ -2,7 +2,6 @@
 
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Misc/FileHelper.h"
-#include "Util/ImportUtilities.h"
 
 
 DEFINE_LOG_CATEGORY(LogTextureUtils);

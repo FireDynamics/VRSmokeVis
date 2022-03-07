@@ -46,7 +46,7 @@ public:
 	static TMap<FString, FVolumeDataInfo> ParseSliceVolumeDataInfoFromFile(const FString& FileName);
 
 	/** Getting info about obstructions before loading them. */
-	static FBoundaryDataInfo ParseObstDataInfoFromFile(const FString& FileName, TArray<float>& BoundingBoxOut);
+	static FBoundaryDataInfo ParseObstDataInfoFromFile(const FString& FilePath, TArray<float>& BoundingBoxOut);
 
 	static FSimulationInfo ParseSimulationInfoFromFile(const FString& FileName);
 

@@ -20,13 +20,13 @@ public:
 	
 	UFUNCTION(CallInEditor, Category="RaymarchVolume")
 	void UseSimulationTransform();
-	
-protected:
-	virtual void BeginPlay() override;
 
 	/** Delegate to update the volume texture after a given amount of time */
 	UFUNCTION()
 	void UpdateVolume(const int CurrentTimeStep);
+	
+protected:
+	virtual void BeginPlay() override;
 
 public:
 	UPROPERTY(VisibleAnywhere)

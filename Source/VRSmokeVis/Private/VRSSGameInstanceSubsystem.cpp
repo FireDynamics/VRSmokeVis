@@ -1,7 +1,6 @@
 ﻿#include "VRSSGameInstanceSubsystem.h"
 #include "VRSSConfig.h"
 #include "Actor/Simulation.h"
-#include "Assets/SimulationAsset.h"
 #include "Kismet/GameplayStatics.h"
 #include "UI/UserInterfaceUserWidget.h"
 #include "UI/VRSSHUD.h"
@@ -16,12 +15,6 @@ UVRSSGameInstanceSubsystem::UVRSSGameInstanceSubsystem()
 void UVRSSGameInstanceSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
-
-	// Todo: tmp!
-	Config->ColorMapsPath = "/Game";
-	Config->ObstCutOffValues.Add("wall_temparature", 50);
-	Config->SliceCutOffValues.Add("temparature", 35);
-	Config->SaveConfig();
 }
 
 void UVRSSGameInstanceSubsystem::RegisterSimulation(ASimulation* Simulation)
@@ -56,10 +49,7 @@ void UVRSSGameInstanceSubsystem::RegisterSimulation(ASimulation* Simulation)
 	AVRSSHUD* HUD = Cast<AVRSSHUD>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD());
 	HUD->InitHUD();
 	HUD->UserInterfaceUserWidget->InitColorMaps(GI->Config, Mins, Maxs);
-	TScriptDelegate<> ToggleSimControllerDelegate;
-	ToggleSimControllerDelegate.BindUFunction(Simulations.Last(), "ToggleControllerUI");
-	HUD->UserInterfaceUserWidget->AddSimulationController(ToggleSimControllerDelegate,
-	                                                      Simulation->SimulationAsset->GetName());
+	HUD->UserInterfaceUserWidget->AddSimulationController(Simulation);
 
 	// Update the colormaps for all assets in each simulation, to draw the correct colors for each value
 	for (ASimulation* Sim : Simulations)
@@ -68,13 +58,20 @@ void UVRSSGameInstanceSubsystem::RegisterSimulation(ASimulation* Simulation)
 
 void UVRSSGameInstanceSubsystem::ToggleHUDVisibility() const
 {
-	// Todo: Test this
-	if (const AVRSSHUD* HUD = Cast<AVRSSHUD>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD()); HUD->
-		UserInterfaceUserWidget->IsInViewport())
+	APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+	const AVRSSHUD* HUD = Cast<AVRSSHUD>(PC->GetHUD());
+	if (HUD->UserInterfaceUserWidget->IsInViewport())
+	{
 		HUD->UserInterfaceUserWidget->RemoveFromViewport();
-	else HUD->UserInterfaceUserWidget->AddToViewport();
-	// HUD->UserInterfaceUserWidget->SetVisibility(HUD->UserInterfaceUserWidget->IsVisible()
-	// 	                                            ? ESlateVisibility::Hidden : ESlateVisibility::Visible);
+		// PC->SetInputMode(FInputModeGameOnly());
+		PC->SetShowMouseCursor(false);
+	}
+	else
+	{
+		HUD->UserInterfaceUserWidget->AddToViewport();
+		// PC->SetInputMode(FInputModeUIOnly());
+		PC->SetShowMouseCursor(true);
+	}
 }
 
 void UVRSSGameInstanceSubsystem::OnActiveAssetsChanged() const
@@ -83,6 +80,8 @@ void UVRSSGameInstanceSubsystem::OnActiveAssetsChanged() const
 	for (const ASimulation* Sim : Simulations)
 		ActiveQuantities.Append(Sim->GetQuantities(true));
 
-	Cast<AVRSSHUD>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UserInterfaceUserWidget->
-		UpdateColorMaps(ActiveQuantities.Array());
+	const APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+	AHUD* HUD = PC->GetHUD();
+	UUserInterfaceUserWidget* UW = Cast<AVRSSHUD>(HUD)->UserInterfaceUserWidget;
+	UW->UpdateColorMaps(ActiveQuantities.Array());
 }

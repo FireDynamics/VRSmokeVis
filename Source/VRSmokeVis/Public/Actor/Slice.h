@@ -25,12 +25,12 @@ public:
 	UFUNCTION()
 	void UpdateColorMapScale(const float NewMin, const float NewMax) const;
 	
-protected:
-	virtual void BeginPlay() override;
-
 	/** Delegate to update the texture after a given amount of time. */
 	UFUNCTION()
 	void UpdateTexture(const int CurrentTimeStep);
+	
+protected:
+	virtual void BeginPlay() override;
 
 public:
 	/** The base material for slice rendering. */

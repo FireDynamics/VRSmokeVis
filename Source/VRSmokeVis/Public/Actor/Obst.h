@@ -25,15 +25,15 @@ public:
 	UFUNCTION()
 	void UpdateColorMapScale(const float NewMin, const float NewMax) const;
 
-protected:
-	virtual void BeginPlay() override;
+	UFUNCTION()
+	void SetActiveQuantity(FString GlobalObstQuantity);
 
 	/** Delegate to update the texture after a given amount of time. */
 	UFUNCTION()
 	void UpdateTexture(const int CurrentTimeStep, const int Orientation);
-
-	UFUNCTION(BlueprintSetter)
-	void SetActiveQuantity(FString NewQuantity);
+	
+protected:
+	virtual void BeginPlay() override;
 	
 public:
 /** The base material for obst data. */
@@ -43,9 +43,6 @@ public:
 	/** The loaded obst asset belonging to this obst. */
 	UPROPERTY(BlueprintReadOnly, VisibleAnywhere)
 	class UObstAsset* ObstAsset;
-
-	UPROPERTY(BlueprintSetter=SetActiveQuantity, VisibleAnywhere, Transient)
-	FString ActiveQuantity;
 	
 	UPROPERTY(EditAnywhere)
 	UStaticMesh* Cube6SurfMesh;
@@ -55,8 +52,11 @@ public:
 	
 	UPROPERTY(EditAnywhere)
 	UMaterial* BorderMaterial;
-	
+		
 protected:
+	UPROPERTY(VisibleAnywhere, Transient)
+	FString ActiveQuantity;
+	
 	UPROPERTY(VisibleAnywhere)
 	class ASimulation* Sim;
 	

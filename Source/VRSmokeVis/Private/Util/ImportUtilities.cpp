@@ -69,7 +69,7 @@ uint8* FImportUtils::LoadDatFileIntoArray(const FString FileName, const int64 By
 		return nullptr;
 	}
 
-	uint8* LoadedArray = new uint8[BytesToLoad];
+	uint8* LoadedArray = static_cast<uint8*>(FMemory::Malloc(BytesToLoad));  // new uint8[BytesToLoad];
 	FileHandle->Read(LoadedArray, BytesToLoad);
 	delete FileHandle;
 
@@ -225,17 +225,24 @@ TMap<FString, FVolumeDataInfo> FImportUtils::ParseSliceVolumeDataInfoFromFile(co
 		DataInfo.WorldDimensions = DataInfo.Spacing * FVector(DataInfo.Dimensions);
 		DataInfo.ScaleFactor = ScaleFactor;
 		DataInfo.Quantity = Quantity;
+
+		// Get slice/volume name
+		SplitPath(DataInfo.DataFileName, Left, DataInfo.FdsName);
+		
 		DataInfos.Add(MeshId, DataInfo);
 	}
 
 	return DataInfos;
 }
 
-FBoundaryDataInfo FImportUtils::ParseObstDataInfoFromFile(const FString& FileName, TArray<float>& BoundingBoxOut)
+FBoundaryDataInfo FImportUtils::ParseObstDataInfoFromFile(const FString& FilePath, TArray<float>& BoundingBoxOut)
 {
 	FBoundaryDataInfo DataInfo;
 
-	const FString FileString = ReadFileAsString(FileName);
+	FString Directory;
+	SplitPath(FilePath, Directory, DataInfo.ObstName);
+	
+	const FString FileString = ReadFileAsString(FilePath);
 	TArray<FString> Lines;
 	FileString.ParseIntoArray(Lines, _T("\n"));
 
@@ -344,6 +351,8 @@ FBoundaryDataInfo FImportUtils::ParseObstDataInfoFromFile(const FString& FileNam
 FSimulationInfo FImportUtils::ParseSimulationInfoFromFile(const FString& FileName)
 {
 	FSimulationInfo SimInfo;
+
+	SimInfo.SmokeViewOriginalFilePath = FileName;
 
 	const FString FileString = ReadFileAsString(FileName);
 	TArray<FString> Lines;

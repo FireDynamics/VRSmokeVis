@@ -19,12 +19,22 @@ class UVRSSAssetFactory : public UFactory
 	GENERATED_BODY()
 
 	UVRSSAssetFactory(const FObjectInitializer& ObjectInitializer);
-	
+
+public:
+	/** Loads all VolumeTextures for a specific volume */
+	void LoadVolumeTextures(FVolumeDataInfo& DataInfo, const FString& Directory);
+
+	/** Loads all Textures for a specific slice */
+	void LoadSliceTextures(FVolumeDataInfo& DataInfo, const FString& Directory);
+
+	/** Loads all Textures for a specific obst */
+	void LoadObstTextures(FBoundaryDataInfo& DataInfo, const FString& Directory);
+
+protected:
 	virtual UObject* FactoryCreateFile(UClass* InClass, UObject* InParent, FName InName, EObjectFlags Flags,
 	                                   const FString& FileName, const TCHAR* Params, FFeedbackContext* Warn,
 	                                   bool& bOutOperationCanceled) override;
 
-protected:
 	UObject* CreateSimulation(UObject* InParent, const FString& FileName);
 
 	UObject* CreateVolume(UObject* InParent, const FString& FileName, const bool LazyLoad);
@@ -36,16 +46,4 @@ protected:
 	UObject* CreateObstruction(UObject* InParent, const FString& FileName, const bool LazyLoad);
 	class UObstAsset* CreateObstructionFromFile(FBoundaryDataInfo& DataInfo, const FString& FileName, UObject* Package,
 	                                            const bool LazyLoad);
-
-	/** Loads all VolumeTextures for a specific volume */
-	void LoadVolumeTextures(FVolumeDataInfo& DataInfo, const FString& MeshName, const FString& VolumeName,
-	                        const FString& Directory, const FString& PackagePath);
-
-	/** Loads all Textures for a specific slice */
-	void LoadSliceTextures(FVolumeDataInfo& DataInfo, const FString& MeshName, const FString& SliceName,
-	                       const FString& Directory, const FString& PackagePath);
-
-	/** Loads all Textures for a specific obst */
-	void LoadObstTextures(FBoundaryDataInfo& DataInfo, const FString& ObstName, const FString& Directory,
-	                      const FString& PackagePath);
 };

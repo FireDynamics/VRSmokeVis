@@ -14,7 +14,6 @@ int64 FVolumeDataInfo::GetTotalVoxels() const
 
 FString FVolumeDataInfo::ToString() const
 {
-	FString Text = "File name " + DataFileName + " details:" + "\nDimensions = " + Dimensions.ToString() +
+	return "Name " + FdsName + " details:" + "\nDimensions = " + Dimensions.ToString() +
 		"\nSpacing : " + Spacing.ToString() + "\nWorld Size MM : " + Dimensions.ToString();
-	return Text;
 }

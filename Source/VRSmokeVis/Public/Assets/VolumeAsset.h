@@ -13,6 +13,7 @@ class VRSMOKEVIS_API UVolumeAsset : public UDataAsset
 	GENERATED_BODY()
 
 public:
+	UPROPERTY()
 	TArray<FAssetData> VolumeTextures;
 	
 	// The mass specific extinction coefficient

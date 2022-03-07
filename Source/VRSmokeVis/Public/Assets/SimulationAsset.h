@@ -14,8 +14,18 @@ public:
 	// Holds the general info about the simulation read from disk
 	UPROPERTY(EditAnywhere)
 	FSimulationInfo SimInfo;
+
+	UPROPERTY(VisibleAnywhere)
+	FString ObstructionsDirectory;
+	UPROPERTY(VisibleAnywhere)
+	FString SlicesDirectory;
+	UPROPERTY(VisibleAnywhere)
+	FString VolumesDirectory;
 	
+	UPROPERTY(VisibleAnywhere)
 	TArray<FAssetData> Obstructions;
+	UPROPERTY(VisibleAnywhere)
 	TArray<FAssetData> Slices;
+	UPROPERTY(VisibleAnywhere)
 	TArray<FAssetData> Volumes;
 };

@@ -45,7 +45,7 @@ void ARaymarchVolume::BeginPlay()
 
 	check(VolumeAsset)
 
-	Sim = Cast<ASimulation>(GetParentActor());
+	Sim = Cast<ASimulation>(GetOwner());
 
 	if (RaymarchMaterialBase)
 	{
@@ -64,35 +64,7 @@ void ARaymarchVolume::BeginPlay()
 	// Unreal units = cm, FDS has sizes in m -> multiply by 100.
 	StaticMeshComponent->SetRelativeScale3D(VolumeAsset->VolumeInfo.WorldDimensions * 100);
 
-	Sim->InitUpdateRate("Volume", VolumeAsset->VolumeInfo.Spacing.W);
-
-	// Registering the automatic async texture loading each timestep
-	// Check if the expected amount of data (textures) could be found in the given directory
-	if (TOptional<FUpdateDataEvent*> UpdateDataEvent = Sim->RegisterTextureLoad(
-			"Volume", VolumeAsset->VolumeInfo.TextureDir, &VolumeAsset->VolumeTextures,
-			VolumeAsset->VolumeInfo.Dimensions.W);
-		UpdateDataEvent.IsSet())
-	{
-		UpdateDataEvent.GetValue()->AddUObject(this, &ARaymarchVolume::UpdateVolume);
-	}
-	else
-	{
-		// If the data has not been loaded yet (or incorrectly loaded), do it again after loading the data
-		UpdateDataEvent = Sim->RegisterTextureLoad("Volume", VolumeAsset->VolumeInfo.TextureDir,
-		                                          &VolumeAsset->VolumeTextures, VolumeAsset->VolumeInfo.Dimensions.W);
-		if (UpdateDataEvent.IsSet())
-		{
-			UpdateDataEvent.GetValue()->AddUObject(this, &ARaymarchVolume::UpdateVolume);
-		}
-		else
-		{
-			// Todo: Error - Data could not be loaded correctly (at least not the expected amount of data)
-		}
-	}
-
-	// Initialize resources for timestep t=-1 and t=0 (for time interpolation)
-	UpdateVolume(-1);
-	UpdateVolume(0);
+	Sim->InitUpdateRate("Volume", VolumeAsset->VolumeInfo.Spacing.W, VolumeAsset->VolumeInfo.Dimensions.W);
 }
 
 void ARaymarchVolume::UpdateVolume(const int CurrentTimeStep)
