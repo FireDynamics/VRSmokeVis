@@ -260,11 +260,11 @@ void UVRSSAssetFactory::LoadVolumeTextures(FVolumeDataInfo& DataInfo, const FStr
 	uint8* LoadedArray = FImportUtils::LoadAndConvertVolumeData(1, FPaths::Combine(Directory, DataInfo.DataFileName),
 	                                                            DataInfo);
 
+	const long SingleTextureSize = static_cast<long>(DataInfo.Dimensions.X) * DataInfo.Dimensions.Y * DataInfo.
+		Dimensions.Z;
 	// Create the persistent volume textures
 	for (int t = 0; t < DataInfo.Dimensions.W; ++t)
 	{
-		const long SingleTextureSize = static_cast<long>(DataInfo.Dimensions.X) * DataInfo.Dimensions.Y * DataInfo
-			.Dimensions.Z;
 		const FString VolumeTextureName = "VT_" + DataInfo.FdsName + "_Data_t" + FString::FromInt(t);
 		UPackage* SubPackage = CreatePackage(*FPaths::Combine(DataInfo.TextureDir, VolumeTextureName));
 
