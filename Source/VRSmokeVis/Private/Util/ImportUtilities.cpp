@@ -181,10 +181,10 @@ TMap<FString, FVolumeDataInfo> FImportUtils::ParseSliceVolumeDataInfoFromFile(co
 			if (Left.Contains(TEXT("MeshPos")))
 			{
 				Right.Split(TEXT(" "), &Left, &Right);
-				FDefaultValueHelper::ParseFloat(Left, DataInfo.MeshPos.X);
+				FDefaultValueHelper::ParseDouble(Left, DataInfo.MeshPos.X);
 				Right.Split(TEXT(" "), &Left, &Right);
-				FDefaultValueHelper::ParseFloat(Left, DataInfo.MeshPos.Y);
-				FDefaultValueHelper::ParseFloat(Right, DataInfo.MeshPos.Z);
+				FDefaultValueHelper::ParseDouble(Left, DataInfo.MeshPos.Y);
+				FDefaultValueHelper::ParseDouble(Right, DataInfo.MeshPos.Z);
 			}
 			else if (Left.Contains(TEXT("Mesh")))
 			{
@@ -208,12 +208,12 @@ TMap<FString, FVolumeDataInfo> FImportUtils::ParseSliceVolumeDataInfoFromFile(co
 			else if (Left.Contains(TEXT("Spacing")))
 			{
 				Right.Split(TEXT(" "), &Left, &Right);
-				FDefaultValueHelper::ParseFloat(Left, DataInfo.Spacing.W);
+				FDefaultValueHelper::ParseDouble(Left, DataInfo.Spacing.W);
 				Right.Split(TEXT(" "), &Left, &Right);
-				FDefaultValueHelper::ParseFloat(Left, DataInfo.Spacing.X);
+				FDefaultValueHelper::ParseDouble(Left, DataInfo.Spacing.X);
 				Right.Split(TEXT(" "), &Left, &Right);
-				FDefaultValueHelper::ParseFloat(Left, DataInfo.Spacing.Y);
-				FDefaultValueHelper::ParseFloat(Right, DataInfo.Spacing.Z);
+				FDefaultValueHelper::ParseDouble(Left, DataInfo.Spacing.Y);
+				FDefaultValueHelper::ParseDouble(Right, DataInfo.Spacing.Z);
 			}
 			else if (Left.Contains(TEXT("DataFile")))
 			{
@@ -365,8 +365,10 @@ FSimulationInfo FImportUtils::ParseSimulationInfoFromFile(const FString& FileNam
 	// NumObstructions
 	Lines[0].Split(TEXT(": "), &Left, &Right);
 	FDefaultValueHelper::ParseInt(Right, NumObstructions);
+	// NumSlices
 	Lines[1].Split(TEXT(": "), &Left, &Right);
 	FDefaultValueHelper::ParseInt(Right, NumSlices);
+	// NumVolumes
 	Lines[2].Split(TEXT(": "), &Left, &Right);
 	FDefaultValueHelper::ParseInt(Right, NumVolumes);
 	

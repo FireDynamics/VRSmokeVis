@@ -7,6 +7,7 @@
 #include "Assets/SimulationAsset.h"
 #include "Containers/UnrealString.h"
 #include "Engine/VolumeTexture.h"
+#include "UObject/SavePackage.h"
 #include "Util/ImportUtilities.h"
 
 DEFINE_LOG_CATEGORY(LogAssetFactory)
@@ -62,6 +63,9 @@ UObject* UVRSSAssetFactory::CreateSimulation(UObject* InParent, const FString& F
 
 	SimAsset->SimInfo = FImportUtils::ParseSimulationInfoFromFile(FileName);
 
+	FSavePackageArgs SavePackageArgs;
+	SavePackageArgs.TopLevelFlags = RF_Standalone | RF_Public;
+	
 	// const FString ObstsPackagePath = FPaths::Combine(PackagePath, TEXT("Obsts"));
 	// Chop these 14 characters: "Package /Game/"
 	// const FString ObstsPackageAbsolutePath = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectContentDir(), ObstsPackagePath.RightChop(14)));
@@ -77,7 +81,7 @@ UObject* UVRSSAssetFactory::CreateSimulation(UObject* InParent, const FString& F
 
 		FString PackageFileName = FPackageName::LongPackageNameToFilename(
 			InParent->GetName(), FPackageName::GetAssetPackageExtension()); // ObstRootPackage
-		UPackage::Save(Cast<UPackage>(InParent), Obst, RF_Standalone | RF_Public, *PackageFileName); // ObstRootPackage
+		UPackage::Save(Cast<UPackage>(InParent), Obst, *PackageFileName, SavePackageArgs); // ObstRootPackage
 	}
 
 	// const FString SlicesPackagePath = FPaths::Combine(PackagePath, TEXT("Slices"));
@@ -93,7 +97,7 @@ UObject* UVRSSAssetFactory::CreateSimulation(UObject* InParent, const FString& F
 
 		FString PackageFileName = FPackageName::LongPackageNameToFilename(
 			InParent->GetName(), FPackageName::GetAssetPackageExtension()); // SliceRootPackage
-		UPackage::Save(Cast<UPackage>(InParent), Slice, RF_Standalone | RF_Public, *PackageFileName);
+		UPackage::Save(Cast<UPackage>(InParent), Slice, *PackageFileName, SavePackageArgs);
 		// SliceRootPackage
 	}
 
@@ -110,8 +114,7 @@ UObject* UVRSSAssetFactory::CreateSimulation(UObject* InParent, const FString& F
 
 		FString PackageFileName = FPackageName::LongPackageNameToFilename(
 			InParent->GetName(), FPackageName::GetAssetPackageExtension()); // VolumeRootPackage
-		UPackage::Save(Cast<UPackage>(InParent), Volume, RF_Standalone | RF_Public, *PackageFileName);
-		// VolumeRootPackage
+		UPackage::Save(Cast<UPackage>(InParent), Volume, *PackageFileName, SavePackageArgs); // VolumeRootPackage
 	}
 
 	AdditionalImportedObjects.Add(SimAsset);
@@ -260,6 +263,8 @@ void UVRSSAssetFactory::LoadVolumeTextures(FVolumeDataInfo& DataInfo, const FStr
 	uint8* LoadedArray = FImportUtils::LoadAndConvertVolumeData(1, FPaths::Combine(Directory, DataInfo.DataFileName),
 	                                                            DataInfo);
 
+	FSavePackageArgs SavePackageArgs;
+	SavePackageArgs.TopLevelFlags = RF_Standalone | RF_Public;
 	const long SingleTextureSize = static_cast<long>(DataInfo.Dimensions.X) * DataInfo.Dimensions.Y * DataInfo.
 		Dimensions.Z;
 	// Create the persistent volume textures
@@ -277,7 +282,7 @@ void UVRSSAssetFactory::LoadVolumeTextures(FVolumeDataInfo& DataInfo, const FStr
 
 		FString PackageFileName = FPackageName::LongPackageNameToFilename(
 			SubPackage->GetName(), FPackageName::GetAssetPackageExtension());
-		UPackage::Save(Cast<UPackage>(SubPackage), VolumeTexture, RF_Standalone | RF_Public, *PackageFileName);
+		UPackage::Save(Cast<UPackage>(SubPackage), VolumeTexture, *PackageFileName, SavePackageArgs);
 
 		// Add VolumeTextures to AdditionalImportedObjects so it also gets saved in-editor.
 		AdditionalImportedObjects.Add(VolumeTexture);
@@ -290,6 +295,8 @@ void UVRSSAssetFactory::LoadSliceTextures(FVolumeDataInfo& DataInfo, const FStri
 {
 	uint8* LoadedArray = FImportUtils::LoadSliceData(FPaths::Combine(Directory, DataInfo.DataFileName), DataInfo);
 
+	FSavePackageArgs SavePackageArgs;
+	SavePackageArgs.TopLevelFlags = RF_Standalone | RF_Public;
 	// Create the persistent slice textures.
 	for (int t = 0; t < DataInfo.Dimensions.W; ++t)
 	{
@@ -305,7 +312,7 @@ void UVRSSAssetFactory::LoadSliceTextures(FVolumeDataInfo& DataInfo, const FStri
 
 		FString PackageFileName = FPackageName::LongPackageNameToFilename(
 			SubPackage->GetName(), FPackageName::GetAssetPackageExtension());
-		UPackage::Save(SubPackage, SliceTexture, RF_Standalone | RF_Public, *PackageFileName);
+		UPackage::Save(SubPackage, SliceTexture, *PackageFileName, SavePackageArgs);
 
 		// Add SliceTexture to AdditionalImportedObjects so it also gets saved in-editor
 		AdditionalImportedObjects.Add(SliceTexture);
@@ -319,6 +326,8 @@ void UVRSSAssetFactory::LoadObstTextures(FBoundaryDataInfo& DataInfo, const FStr
 	TArray<int> Orientations;
 	DataInfo.Dimensions.GetKeys(Orientations);
 
+	FSavePackageArgs SavePackageArgs;
+	SavePackageArgs.TopLevelFlags = RF_Standalone | RF_Public;
 	// Iterate over all quantities
 	for (const auto DataFileName : DataInfo.DataFileNames)
 	{
@@ -343,7 +352,7 @@ void UVRSSAssetFactory::LoadObstTextures(FBoundaryDataInfo& DataInfo, const FStr
 				ObstTexture->Filter = TF_Default;
 				FString PackageFileName = FPackageName::LongPackageNameToFilename(
 					SubPackage->GetName(), FPackageName::GetAssetPackageExtension());
-				UPackage::Save(SubPackage, ObstTexture, RF_Standalone | RF_Public, *PackageFileName);
+				UPackage::Save(SubPackage, ObstTexture, *PackageFileName, SavePackageArgs);
 
 				AdditionalImportedObjects.Add(ObstTexture);
 
