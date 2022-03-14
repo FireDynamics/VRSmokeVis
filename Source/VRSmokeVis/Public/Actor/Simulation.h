@@ -109,6 +109,8 @@ public:
 	TSubclassOf<class ASlice> SliceClass;
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class ARaymarchVolume> VolumeClass;
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<class AActor> DebugCubeClass;
 
 	/** The class of the raymarch lights that are dimmed over time. */
 	UPROPERTY(EditAnywhere)

@@ -29,13 +29,6 @@ protected:
 	virtual void BeginPlay() override;
 
 public:
-	UPROPERTY(VisibleAnywhere)
-	class ASimulation* Sim;
-
-	/** The loaded Volume asset belonging to this volume. */
-	UPROPERTY(BlueprintReadOnly, VisibleAnywhere)
-	class UVolumeAsset* VolumeAsset;
-
 	/** The base material for intensity rendering. */
 	UPROPERTY(BlueprintReadOnly, EditAnywhere)
 	UMaterial* RaymarchMaterialBase;
@@ -48,12 +41,19 @@ public:
 	UStaticMesh* UnitCubeInsideOut;
 	
 	UPROPERTY(EditAnywhere)
-	UStaticMesh* CubeBorder;
-	
-	UPROPERTY(EditAnywhere)
 	UMaterial* BorderMaterial;
 
+	/** The loaded Volume asset belonging to this volume. */
+	UPROPERTY(BlueprintReadOnly)
+	class UVolumeAsset* VolumeAsset;
+	
 protected:
+	UPROPERTY()
+	class ASimulation* Sim;
+	
+	UPROPERTY()
+	UStaticMesh* CubeBorder;
+	
 	/** The % of time that has passed until the next frame is reached. */
 	UPROPERTY(VisibleAnywhere)
 	float TimePassedPercentage = 0;

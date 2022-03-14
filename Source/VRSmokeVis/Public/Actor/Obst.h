@@ -40,24 +40,24 @@ public:
 	UPROPERTY(BlueprintReadOnly, EditAnywhere)
 	UMaterial* ObstDataMaterialBase;
 	
-	/** The loaded obst asset belonging to this obst. */
-	UPROPERTY(BlueprintReadOnly, VisibleAnywhere)
-	class UObstAsset* ObstAsset;
-	
 	UPROPERTY(EditAnywhere)
 	UStaticMesh* Cube6SurfMesh;
 	
 	UPROPERTY(EditAnywhere)
-	UStaticMesh* CubeBorder;
-	
-	UPROPERTY(EditAnywhere)
 	UMaterial* BorderMaterial;
 		
+	/** The loaded obst asset belonging to this obst. */
+	UPROPERTY(BlueprintReadOnly)
+	class UObstAsset* ObstAsset;
+	
 protected:
+	UPROPERTY(EditAnywhere)
+	UStaticMesh* CubeBorder;
+	
 	UPROPERTY(VisibleAnywhere, Transient)
 	FString ActiveQuantity;
 	
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY()
 	class ASimulation* Sim;
 	
 	/** The % of time that has passed until the next frame is reached. */

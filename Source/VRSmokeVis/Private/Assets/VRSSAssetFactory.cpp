@@ -6,6 +6,7 @@
 #include "Assets/ObstAsset.h"
 #include "Assets/SimulationAsset.h"
 #include "Containers/UnrealString.h"
+#include "Engine/ObjectLibrary.h"
 #include "Engine/VolumeTexture.h"
 #include "UObject/SavePackage.h"
 #include "Util/ImportUtilities.h"
@@ -53,6 +54,9 @@ UObject* UVRSSAssetFactory::FactoryCreateFile(UClass* InClass, UObject* InParent
 
 UObject* UVRSSAssetFactory::CreateSimulation(UObject* InParent, const FString& FileName)
 {
+	// Todo: Fix this
+	const bool LazyLoad = false;
+	
 	// Get valid package name and filepath
 	FString Directory, SimName, PackagePath, OriginalDataDirectory, Temp;
 	FImportUtils::SplitPath(InParent->GetFullName(), PackagePath, Temp);
@@ -77,7 +81,7 @@ UObject* UVRSSAssetFactory::CreateSimulation(UObject* InParent, const FString& F
 	for (FString& ObstPath : SimAsset->SimInfo.ObstPaths)
 	{
 		FString ObstFullPath = FPaths::Combine(Directory, ObstPath);
-		UObject* Obst = CreateObstruction(InParent, ObstFullPath, true); // ObstRootPackage
+		UObject* Obst = CreateObstruction(InParent, ObstFullPath, LazyLoad); // ObstRootPackage
 
 		FString PackageFileName = FPackageName::LongPackageNameToFilename(
 			InParent->GetName(), FPackageName::GetAssetPackageExtension()); // ObstRootPackage
@@ -93,7 +97,7 @@ UObject* UVRSSAssetFactory::CreateSimulation(UObject* InParent, const FString& F
 	for (FString& SlicePath : SimAsset->SimInfo.SlicePaths)
 	{
 		FString SliceFullPath = FPaths::Combine(Directory, SlicePath);
-		UObject* Slice = CreateSlice(InParent, SliceFullPath, true); // SliceRootPackage
+		UObject* Slice = CreateSlice(InParent, SliceFullPath, LazyLoad); // SliceRootPackage
 
 		FString PackageFileName = FPackageName::LongPackageNameToFilename(
 			InParent->GetName(), FPackageName::GetAssetPackageExtension()); // SliceRootPackage
@@ -110,7 +114,7 @@ UObject* UVRSSAssetFactory::CreateSimulation(UObject* InParent, const FString& F
 	for (FString& VolumePath : SimAsset->SimInfo.VolumePaths)
 	{
 		FString VolumeFullPath = FPaths::Combine(Directory, VolumePath);
-		UObject* Volume = CreateVolume(InParent, VolumeFullPath, true); // VolumeRootPackage
+		UObject* Volume = CreateVolume(InParent, VolumeFullPath, LazyLoad); // VolumeRootPackage
 
 		FString PackageFileName = FPackageName::LongPackageNameToFilename(
 			InParent->GetName(), FPackageName::GetAssetPackageExtension()); // VolumeRootPackage

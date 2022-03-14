@@ -72,6 +72,7 @@ void ASimulation::BeginPlay()
 	if (ObstQuantities.Contains("wall_temperature")) ActiveObstQuantity = "wall_temperature";
 	else ActiveObstQuantity = ObstQuantities[0];
 
+	// Todo: Start with everything disabled (needs lazyload to work first)
 	const FTransform ZeroTransform;
 	for (FAssetData& ObstAsset : SimulationAsset->Obstructions)
 	{
@@ -84,17 +85,25 @@ void ASimulation::BeginPlay()
 		NewObst->AttachToActor(this, FAttachmentTransformRules::KeepRelativeTransform);
 		NewObst->UseSimulationTransform();
 		NewObst->SetActiveQuantity(ActiveObstQuantity);
+
+		// Todo: Debug
+		// ActivateObst(NewObst);
 	}
 	for (FAssetData& SliceAsset : SimulationAsset->Slices)
 	{
 		ASlice* NewSlice = GetWorld()->SpawnActorDeferred<ASlice>(SliceClass, ZeroTransform, this);
 		Slices.Add(NewSlice);
 		NewSlice->SliceAsset = Cast<USliceAsset>(StreamableManager.LoadSynchronous(SliceAsset.ToSoftObjectPath()));
-		NewSlice->SetActorHiddenInGame(true);
-		NewSlice->SetActorEnableCollision(false);
+		// NewSlice->SetActorHiddenInGame(true);
+		// NewSlice->SetActorEnableCollision(false);
 		NewSlice->FinishSpawning(ZeroTransform);
 		NewSlice->AttachToActor(this, FAttachmentTransformRules::KeepRelativeTransform);
 		NewSlice->UseSimulationTransform();
+		ActivateSlice(NewSlice);
+#if WITH_EDITOR
+		AActor* SliceDebubCube = GetWorld()->SpawnActor<AActor>(DebugCubeClass, ZeroTransform);
+		SliceDebubCube->AttachToActor(NewSlice, FAttachmentTransformRules::KeepRelativeTransform);
+#endif
 	}
 	for (FAssetData& VolumeAsset : SimulationAsset->Volumes)
 	{

@@ -89,8 +89,7 @@ void AObst::UpdateTexture(const int CurrentTimeStep, const int Orientation)
 		return;
 	}
 
-	if (!NextTexture->PlatformData || NextTexture->GetSizeX() == 0 || NextTexture->GetSizeY() == 0 ||
-		NextTexture->GetSizeY() == 0)
+	if (!NextTexture->GetPlatformData() || NextTexture->GetSizeX() == 0 || NextTexture->GetSizeY() == 0)
 	{
 		// Happens in cooking stage where per-platform data isn't initialized. Return.
 		UE_LOG(LogObst, Warning,

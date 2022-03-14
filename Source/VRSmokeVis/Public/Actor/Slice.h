@@ -36,16 +36,16 @@ public:
 	/** The base material for slice rendering. */
 	UPROPERTY(BlueprintReadOnly, EditAnywhere)
 	UMaterial* SliceMaterialBase;
-	
-	/** The loaded slice asset belonging to this slice. */
-	UPROPERTY(BlueprintReadOnly, VisibleAnywhere)
-	class USliceAsset* SliceAsset;
 
 	UPROPERTY(EditAnywhere)
 	UStaticMesh* PlaneMesh;
 
+	/** The loaded slice asset belonging to this slice. */
+	UPROPERTY(BlueprintReadOnly)
+	class USliceAsset* SliceAsset;
+	
 protected:
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY()
 	class ASimulation* Sim;
 	
 	/** The % of time that has passed until the next frame is reached. */
