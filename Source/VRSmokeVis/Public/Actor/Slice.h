@@ -65,6 +65,6 @@ protected:
 	UTexture2D* DataTextureT1;
 	
 	/** MeshComponent that contains the slice plane. */
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(EditDefaultsOnly)
 	UStaticMeshComponent* StaticMeshComponent;
 };

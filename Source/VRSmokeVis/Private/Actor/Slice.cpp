@@ -25,11 +25,11 @@ ASlice::ASlice() : AActor()
 	RootComponent->SetWorldScale3D(FVector(1.0f));
 	
 	StaticMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Slice Static Mesh"));
-	// Set basic unit cube properties
-	StaticMeshComponent->SetStaticMesh(PlaneMesh);
+	// StaticMeshComponent->SetStaticMesh(PlaneMesh);
 	StaticMeshComponent->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
 	StaticMeshComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
 	StaticMeshComponent->SetupAttachment(RootComponent);
+	// StaticMeshComponent->RegisterComponent();
 }
 
 void ASlice::BeginPlay()

@@ -32,15 +32,15 @@ UObject* UVRSSAssetFactory::FactoryCreateFile(UClass* InClass, UObject* InParent
 	UObject* Out = nullptr;
 	if (InName.ToString().Contains(TEXT("smoke")) || FileName.Contains(TEXT("slice3D")))
 	{
-		Out = CreateVolume(InParent, FileName, false);
+		// Out = CreateVolume(InParent, FileName, false);
 	}
 	else if (InName.ToString().Contains(TEXT("slice2D")))
 	{
-		Out = CreateSlice(InParent, FileName, false);
+		// Out = CreateSlice(InParent, FileName, false);
 	}
 	else if (InName.ToString().Contains(TEXT("obst")))
 	{
-		Out = CreateObstruction(InParent, FileName, false);
+		// Out = CreateObstruction(InParent, FileName, false);
 	}
 	else if (InName.ToString().Contains(TEXT("-smv")))
 	{
@@ -55,7 +55,7 @@ UObject* UVRSSAssetFactory::FactoryCreateFile(UClass* InClass, UObject* InParent
 UObject* UVRSSAssetFactory::CreateSimulation(UObject* InParent, const FString& FileName)
 {
 	// Todo: Fix this
-	const bool LazyLoad = false;
+	constexpr bool LazyLoad = false;
 	
 	// Get valid package name and filepath
 	FString Directory, SimName, PackagePath, OriginalDataDirectory, Temp;
@@ -70,11 +70,11 @@ UObject* UVRSSAssetFactory::CreateSimulation(UObject* InParent, const FString& F
 	FSavePackageArgs SavePackageArgs;
 	SavePackageArgs.TopLevelFlags = RF_Standalone | RF_Public;
 	
-	// const FString ObstsPackagePath = FPaths::Combine(PackagePath, TEXT("Obsts"));
+	const FString ObstsPackagePath = FPaths::Combine(PackagePath, TEXT("Obsts"));
 	// Chop these 14 characters: "Package /Game/"
-	// const FString ObstsPackageAbsolutePath = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectContentDir(), ObstsPackagePath.RightChop(14)));
-	// FImportUtils::VerifyOrCreateDirectory(ObstsPackageAbsolutePath);
-	// UPackage* ObstRootPackage = CreatePackage(*ObstsPackagePath);
+	const FString ObstsPackageAbsolutePath = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectContentDir(), ObstsPackagePath.RightChop(14)));
+	FImportUtils::VerifyOrCreateDirectory(ObstsPackageAbsolutePath);
+	UPackage* ObstRootPackage = CreatePackage(*ObstsPackagePath);
 	SimAsset->ObstructionsDirectory = PackagePath.RightChop(8);
 	FImportUtils::SplitPath(SimAsset->SimInfo.ObstPaths[0], OriginalDataDirectory, Temp);
 	SimAsset->SimInfo.OriginalObstFilesPath = OriginalDataDirectory;
@@ -255,7 +255,6 @@ UObstAsset* UVRSSAssetFactory::CreateObstructionFromFile(FBoundaryDataInfo& Data
 	}
 
 	if (!LazyLoad) LoadObstTextures(DataInfo, Directory);
-	// Todo: Else copy the data file somewhere so it can be opened
 
 	ObstAsset->ObstInfo = DataInfo;
 
