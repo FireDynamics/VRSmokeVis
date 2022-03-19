@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "Assets/VolumeDataInfo.h"
 #include "Engine/VolumeTexture.h"
 
 
@@ -17,10 +16,13 @@ public:
 	/** Creates the texture's 0th mip from the bulkdata provided.*/
 	static void CreateTextureMip(UTexture* OutTexture, const FVector4 Dimensions, uint8* BulkData, const int DataSize);
 
+	
+#if WITH_EDITOR
 	/** Handles the saving of source data to persistent textures. Only works in-editor, as packaged builds no longer
 	 * have source data for textures.*/
 	static bool CreateTextureEditorData(UTexture* Texture, const FVector4 Dimensions, const uint8* BulkData);
-
+#endif
+	
 	/** Creates a Texture asset with the given name, pixel format and dimensions and fills it with the bulk data
 	* provided */
 	static UTexture2D* CreateTextureAsset(const FString AssetName, const FVector4 Dimensions, UObject* OutPackage,

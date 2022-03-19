@@ -1,5 +1,5 @@
-#include "Assets/VRSSAssetFactory.h"
-
+﻿#include "Util/AssetUtilities.h"
+#include "AssetRegistry/AssetRegistryModule.h"
 #include "Util/TextureUtilities.h"
 #include "Assets/VolumeAsset.h"
 #include "Assets/SliceAsset.h"
@@ -10,178 +10,193 @@
 #include "Engine/VolumeTexture.h"
 #include "UObject/SavePackage.h"
 #include "Util/ImportUtilities.h"
+#include "Util/Preprocessor.h"
 
-DEFINE_LOG_CATEGORY(LogAssetFactory)
+
+DEFINE_LOG_CATEGORY(LogAssetUtils)
 
 
-UVRSSAssetFactory::UVRSSAssetFactory(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
+UObject* FAssetUtils::CreateSimulation(UObject* InParent, const FString& FileName)
 {
-	Formats.Add(FString(TEXT("yaml;")) + NSLOCTEXT("UVRSSAssetFactory", "FormatYaml", ".yaml File").ToString());
-
-	SupportedClass = USimulationAsset::StaticClass();
-	// Todo: Is this enough, even though we are also using other classes?
-	bCreateNew = false;
-	bEditorImport = true;
-	ImportPriority = 1;
-}
-
-UObject* UVRSSAssetFactory::FactoryCreateFile(UClass* InClass, UObject* InParent, FName InName, EObjectFlags Flags,
-                                              const FString& FileName, const TCHAR* Params, FFeedbackContext* Warn,
-                                              bool& bOutOperationCanceled)
-{
-	UObject* Out = nullptr;
-	if (InName.ToString().Contains(TEXT("smoke")) || FileName.Contains(TEXT("slice3D")))
+	constexpr bool LazyLoad = true;
+	FString SimulationIntermediateFile;
+	if (FileName.Contains(".smv"))
 	{
-		// Out = CreateVolume(InParent, FileName, false);
-	}
-	else if (InName.ToString().Contains(TEXT("slice2D")))
+		FString SmokeViewDir, Temp;
+		FImportUtils::SplitPath(FileName, SmokeViewDir, Temp);
+		const FString OutputDir = FPaths::Combine(SmokeViewDir, TEXT("SmokeVisIntermediate"));
+
+		// First check if there already is intermediate data from a previous run
+		if (FPaths::DirectoryExists(OutputDir))
+		{
+			TArray<FString> FoundFiles;
+			IPlatformFile& FileManager = FPlatformFileManager::Get().GetPlatformFile();
+			FileManager.FindFiles(FoundFiles, *OutputDir, TEXT(".yaml"));
+			for (const FString& File : FoundFiles)
+			{
+				if (File.Contains("-smv.yaml"))
+				{
+					SimulationIntermediateFile = File;
+					break;
+				}
+			}
+		}
+		if (SimulationIntermediateFile.IsEmpty())
+		{
+			FImportUtils::VerifyOrCreateDirectory(OutputDir);
+			UPreprocessor *PythonPreprocessor = NewObject<UPreprocessor>();
+			SimulationIntermediateFile = PythonPreprocessor->RunFdsreader(FileName, OutputDir);
+		}
+	} else
 	{
-		// Out = CreateSlice(InParent, FileName, false);
-	}
-	else if (InName.ToString().Contains(TEXT("obst")))
-	{
-		// Out = CreateObstruction(InParent, FileName, false);
-	}
-	else if (InName.ToString().Contains(TEXT("-smv")))
-	{
-		Out = CreateSimulation(InParent, FileName);
+		SimulationIntermediateFile = FileName;
 	}
 
-	bOutOperationCanceled = false;
-
-	return Out;
-}
-
-UObject* UVRSSAssetFactory::CreateSimulation(UObject* InParent, const FString& FileName)
-{
-	// Todo: Fix this
-	constexpr bool LazyLoad = false;
-	
 	// Get valid package name and filepath
 	FString Directory, SimName, PackagePath, OriginalDataDirectory, Temp;
 	FImportUtils::SplitPath(InParent->GetFullName(), PackagePath, Temp);
-	FImportUtils::SplitPath(FileName, Directory, SimName);
+	FImportUtils::SplitPath(SimulationIntermediateFile, Directory, SimName);
 
 	USimulationAsset* SimAsset = NewObject<USimulationAsset>(InParent, USimulationAsset::StaticClass(),
 	                                                         FName("SIM_" + SimName), RF_Standalone | RF_Public);
 
-	SimAsset->SimInfo = FImportUtils::ParseSimulationInfoFromFile(FileName);
+	SimAsset->SimInfo = FImportUtils::ParseSimulationInfoFromFile(SimulationIntermediateFile);
 
 	FSavePackageArgs SavePackageArgs;
 	SavePackageArgs.TopLevelFlags = RF_Standalone | RF_Public;
-	
-	const FString ObstsPackagePath = FPaths::Combine(PackagePath, TEXT("Obsts"));
-	// Chop these 14 characters: "Package /Game/"
-	const FString ObstsPackageAbsolutePath = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectContentDir(), ObstsPackagePath.RightChop(14)));
-	FImportUtils::VerifyOrCreateDirectory(ObstsPackageAbsolutePath);
-	UPackage* ObstRootPackage = CreatePackage(*ObstsPackagePath);
-	SimAsset->ObstructionsDirectory = PackagePath.RightChop(8);
-	FImportUtils::SplitPath(SimAsset->SimInfo.ObstPaths[0], OriginalDataDirectory, Temp);
-	SimAsset->SimInfo.OriginalObstFilesPath = OriginalDataDirectory;
-	for (FString& ObstPath : SimAsset->SimInfo.ObstPaths)
-	{
-		FString ObstFullPath = FPaths::Combine(Directory, ObstPath);
-		UObject* Obst = CreateObstruction(InParent, ObstFullPath, LazyLoad); // ObstRootPackage
 
-		FString PackageFileName = FPackageName::LongPackageNameToFilename(
-			InParent->GetName(), FPackageName::GetAssetPackageExtension()); // ObstRootPackage
-		UPackage::Save(Cast<UPackage>(InParent), Obst, *PackageFileName, SavePackageArgs); // ObstRootPackage
+	// Chop these 8 characters: "Package "
+	PackagePath.RightChopInline(8);
+	if (SimAsset->SimInfo.ObstPaths.Num() != 0)
+	{
+		const FString ObstsPackagePath = FPaths::Combine(PackagePath, TEXT("Obsts"));
+		// Chop these 6 characters: "/Game/"
+		const FString ObstsPackageAbsolutePath = FPaths::ConvertRelativePathToFull(
+			FPaths::Combine(FPaths::ProjectContentDir(), ObstsPackagePath.RightChop(6)));
+		FImportUtils::VerifyOrCreateDirectory(ObstsPackageAbsolutePath);
+		SimAsset->ObstructionsDirectory = ObstsPackagePath;
+		FImportUtils::SplitPath(SimAsset->SimInfo.ObstPaths[0], OriginalDataDirectory, Temp);
+		SimAsset->SimInfo.OriginalObstFilesPath = OriginalDataDirectory;
+		for (FString& ObstPath : SimAsset->SimInfo.ObstPaths)
+		{
+			FString ObstFullPath = FPaths::Combine(Directory, ObstPath);
+			UObject* Obst = CreateObstruction(ObstsPackagePath, ObstFullPath, LazyLoad);
+			FString PackageFileName = FPackageName::LongPackageNameToFilename(
+				Obst->GetPackage()->GetName(), FPackageName::GetAssetPackageExtension());
+			UPackage::Save(Obst->GetPackage(), Obst, *PackageFileName, SavePackageArgs);
+		}
 	}
 
-	// const FString SlicesPackagePath = FPaths::Combine(PackagePath, TEXT("Slices"));
-	// FImportUtils::VerifyOrCreateDirectory(SlicesPackagePath);
-	// UPackage* SliceRootPackage = CreatePackage(*SlicesPackagePath);
-	SimAsset->SlicesDirectory = PackagePath.RightChop(8);
-	FImportUtils::SplitPath(SimAsset->SimInfo.SlicePaths[0], OriginalDataDirectory, Temp);
-	SimAsset->SimInfo.OriginalSliceFilesPath = OriginalDataDirectory;
-	for (FString& SlicePath : SimAsset->SimInfo.SlicePaths)
+	if (SimAsset->SimInfo.SlicePaths.Num() != 0)
 	{
-		FString SliceFullPath = FPaths::Combine(Directory, SlicePath);
-		UObject* Slice = CreateSlice(InParent, SliceFullPath, LazyLoad); // SliceRootPackage
-
-		FString PackageFileName = FPackageName::LongPackageNameToFilename(
-			InParent->GetName(), FPackageName::GetAssetPackageExtension()); // SliceRootPackage
-		UPackage::Save(Cast<UPackage>(InParent), Slice, *PackageFileName, SavePackageArgs);
-		// SliceRootPackage
+		const FString SlicesPackagePath = FPaths::Combine(PackagePath, TEXT("Slices"));
+		const FString SlicesPackageAbsolutePath = FPaths::ConvertRelativePathToFull(
+			FPaths::Combine(FPaths::ProjectContentDir(), SlicesPackagePath.RightChop(6)));
+		FImportUtils::VerifyOrCreateDirectory(SlicesPackageAbsolutePath);
+		SimAsset->SlicesDirectory = SlicesPackagePath;
+		FImportUtils::SplitPath(SimAsset->SimInfo.SlicePaths[0], OriginalDataDirectory, Temp);
+		SimAsset->SimInfo.OriginalSliceFilesPath = OriginalDataDirectory;
+		for (FString& SlicePath : SimAsset->SimInfo.SlicePaths)
+		{
+			FString SliceFullPath = FPaths::Combine(Directory, SlicePath);
+			UObject* Slice = CreateSlice(SlicesPackagePath, SliceFullPath, LazyLoad);
+			FString PackageFileName = FPackageName::LongPackageNameToFilename(
+				Slice->GetPackage()->GetName(), FPackageName::GetAssetPackageExtension());
+			UPackage::Save(Slice->GetPackage(), Slice, *PackageFileName, SavePackageArgs);
+		}
 	}
 
-	// const FString VolumesPackagePath = FPaths::Combine(PackagePath, TEXT("Volumes"));
-	// FImportUtils::VerifyOrCreateDirectory(VolumesPackagePath);
-	// UPackage* VolumeRootPackage = CreatePackage(*VolumesPackagePath);
-	SimAsset->VolumesDirectory = PackagePath.RightChop(8);
-	FImportUtils::SplitPath(SimAsset->SimInfo.VolumePaths[0], OriginalDataDirectory, Temp);
-	SimAsset->SimInfo.OriginalVolumeFilesPath = OriginalDataDirectory;
-	for (FString& VolumePath : SimAsset->SimInfo.VolumePaths)
+	if (SimAsset->SimInfo.VolumePaths.Num() != 0)
 	{
-		FString VolumeFullPath = FPaths::Combine(Directory, VolumePath);
-		UObject* Volume = CreateVolume(InParent, VolumeFullPath, LazyLoad); // VolumeRootPackage
-
-		FString PackageFileName = FPackageName::LongPackageNameToFilename(
-			InParent->GetName(), FPackageName::GetAssetPackageExtension()); // VolumeRootPackage
-		UPackage::Save(Cast<UPackage>(InParent), Volume, *PackageFileName, SavePackageArgs); // VolumeRootPackage
+		const FString VolumesPackagePath = FPaths::Combine(PackagePath, TEXT("Volumes"));
+		const FString VolumesPackageAbsolutePath = FPaths::ConvertRelativePathToFull(
+			FPaths::Combine(FPaths::ProjectContentDir(), VolumesPackagePath.RightChop(6)));
+		FImportUtils::VerifyOrCreateDirectory(VolumesPackagePath);
+		SimAsset->VolumesDirectory = VolumesPackagePath;
+		FImportUtils::SplitPath(SimAsset->SimInfo.VolumePaths[0], OriginalDataDirectory, Temp);
+		SimAsset->SimInfo.OriginalVolumeFilesPath = OriginalDataDirectory;
+		for (FString& VolumePath : SimAsset->SimInfo.VolumePaths)
+		{
+			FString VolumeFullPath = FPaths::Combine(Directory, VolumePath);
+			UObject* Volume = CreateVolume(VolumesPackagePath, VolumeFullPath, LazyLoad);
+			FString PackageFileName = FPackageName::LongPackageNameToFilename(
+				Volume->GetPackage()->GetName(), FPackageName::GetAssetPackageExtension());
+			UPackage::Save(Volume->GetPackage(), Volume, *PackageFileName, SavePackageArgs);
+		}
 	}
 
-	AdditionalImportedObjects.Add(SimAsset);
-
-	if (!Cast<UPackage>(InParent)->MarkPackageDirty())
-	{
-		// Todo: Error - Something went wrong when marking the package as dirty
-	}
+	// AdditionalImportedObjects.Add(SimAsset);
+	FString PackageFileName = FPackageName::LongPackageNameToFilename(
+		SimAsset->GetPackage()->GetName(), FPackageName::GetAssetPackageExtension());
+	UPackage::Save(SimAsset->GetPackage(), SimAsset, *PackageFileName, SavePackageArgs);
 
 	return SimAsset;
 }
 
-UObject* UVRSSAssetFactory::CreateVolume(UObject* InParent, const FString& FileName, const bool LazyLoad)
+UObject* FAssetUtils::CreateVolume(const FString& RootPackage, const FString& FileName, const bool LazyLoad)
 {
 	TMap<FString, FVolumeDataInfo> DataInfos = FImportUtils::ParseSliceVolumeDataInfoFromFile(FileName);
 	UVolumeAsset* OutVolume = nullptr;
 	for (auto It = DataInfos.CreateIterator(); It; ++It)
 	{
 		TArray<UVolumeTexture*> VolumeTextures;
-		OutVolume = CreateVolumeFromFile(It.Value(), FileName, InParent, It.Key(), LazyLoad);
+		UPackage* VolumePackage = CreatePackage(*FPaths::Combine(RootPackage, It.Value().FdsName));
+		OutVolume = CreateVolumeFromFile(It.Value(), FileName, VolumePackage, It.Key(), LazyLoad);
 
 		OutVolume->VolumeTextures.Reserve(It.Value().Dimensions.W);
 
-		AdditionalImportedObjects.Add(OutVolume);
+		// AdditionalImportedObjects.Add(OutVolume);
+		const FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+		AssetRegistryModule.Get().AssetCreated(OutVolume);
+		// FAssetRegistryModule::AssetCreated(OutVolume);
 	}
 
 	// Return last volume
 	return OutVolume;
 }
 
-UObject* UVRSSAssetFactory::CreateSlice(UObject* InParent, const FString& FileName, const bool LazyLoad)
+UObject* FAssetUtils::CreateSlice(const FString& RootPackage, const FString& FileName, const bool LazyLoad)
 {
 	TMap<FString, FVolumeDataInfo> DataInfos = FImportUtils::ParseSliceVolumeDataInfoFromFile(FileName);
 	USliceAsset* OutSlice = nullptr;
 	for (auto It = DataInfos.CreateIterator(); It; ++It)
 	{
 		TArray<UTexture2D*> SliceTextures;
-		OutSlice = CreateSliceFromFile(It.Value(), FileName, InParent, It.Key(), LazyLoad);
+		UPackage* SlicePackage = CreatePackage(*FPaths::Combine(RootPackage, It.Value().FdsName));
+		OutSlice = CreateSliceFromFile(It.Value(), FileName, SlicePackage, It.Key(), LazyLoad);
 
 		OutSlice->SliceTextures.Reserve(It.Value().Dimensions.W);
 
-		AdditionalImportedObjects.Add(OutSlice);
+		// AdditionalImportedObjects.Add(OutSlice);
+		const FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+		AssetRegistryModule.Get().AssetCreated(OutSlice);
+		// FAssetRegistryModule::AssetCreated(OutSlice);
 	}
 
 	// Return last slice
 	return OutSlice;
 }
 
-UObject* UVRSSAssetFactory::CreateObstruction(UObject* InParent, const FString& FileName, const bool LazyLoad)
+UObject* FAssetUtils::CreateObstruction(const FString& RootPackage, const FString& FileName, const bool LazyLoad)
 {
 	TArray<float> BoundingBox = TArray<float>();
 	FBoundaryDataInfo DataInfo = FImportUtils::ParseObstDataInfoFromFile(FileName, BoundingBox);
 	TMap<FString, TMap<int, TArray<UTexture2D*>>> ObstructionTextures;
-	UObstAsset* OutObst = CreateObstructionFromFile(DataInfo, FileName, InParent, LazyLoad);
+
+	UPackage* ObstPackage = CreatePackage(*FPaths::Combine(RootPackage, DataInfo.ObstName));
+	UObstAsset* OutObst = CreateObstructionFromFile(DataInfo, FileName, ObstPackage, LazyLoad);
 	OutObst->BoundingBox = BoundingBox;
 
-	AdditionalImportedObjects.Add(OutObst);
+	// AdditionalImportedObjects.Add(OutObst);
+	const FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+	AssetRegistryModule.Get().AssetCreated(OutObst);
+	// FAssetRegistryModule::AssetCreated(OutObst);
 
 	// Return obstruction
 	return OutObst;
 }
 
-UVolumeAsset* UVRSSAssetFactory::CreateVolumeFromFile(FVolumeDataInfo& DataInfo, const FString& FileName,
+UVolumeAsset* FAssetUtils::CreateVolumeFromFile(FVolumeDataInfo& DataInfo, const FString& FileName,
                                                       UObject* Package, const FString& MeshName,
                                                       const bool LazyLoad)
 {
@@ -204,7 +219,7 @@ UVolumeAsset* UVRSSAssetFactory::CreateVolumeFromFile(FVolumeDataInfo& DataInfo,
 	return VolumeAsset;
 }
 
-USliceAsset* UVRSSAssetFactory::CreateSliceFromFile(FVolumeDataInfo& DataInfo, const FString& FileName,
+USliceAsset* FAssetUtils::CreateSliceFromFile(FVolumeDataInfo& DataInfo, const FString& FileName,
                                                     UObject* Package, const FString& MeshName,
                                                     const bool LazyLoad)
 {
@@ -227,7 +242,7 @@ USliceAsset* UVRSSAssetFactory::CreateSliceFromFile(FVolumeDataInfo& DataInfo, c
 	return SliceAsset;
 }
 
-UObstAsset* UVRSSAssetFactory::CreateObstructionFromFile(FBoundaryDataInfo& DataInfo, const FString& FileName,
+UObstAsset* FAssetUtils::CreateObstructionFromFile(FBoundaryDataInfo& DataInfo, const FString& FileName,
                                                          UObject* Package, const bool LazyLoad)
 {
 	// Get valid package name and filepath.
@@ -261,7 +276,7 @@ UObstAsset* UVRSSAssetFactory::CreateObstructionFromFile(FBoundaryDataInfo& Data
 	return ObstAsset;
 }
 
-void UVRSSAssetFactory::LoadVolumeTextures(FVolumeDataInfo& DataInfo, const FString& Directory)
+void FAssetUtils::LoadVolumeTextures(FVolumeDataInfo& DataInfo, const FString& Directory)
 {
 	uint8* LoadedArray = FImportUtils::LoadAndConvertVolumeData(1, FPaths::Combine(Directory, DataInfo.DataFileName),
 	                                                            DataInfo);
@@ -288,13 +303,13 @@ void UVRSSAssetFactory::LoadVolumeTextures(FVolumeDataInfo& DataInfo, const FStr
 		UPackage::Save(Cast<UPackage>(SubPackage), VolumeTexture, *PackageFileName, SavePackageArgs);
 
 		// Add VolumeTextures to AdditionalImportedObjects so it also gets saved in-editor.
-		AdditionalImportedObjects.Add(VolumeTexture);
+		// AdditionalImportedObjects.Add(VolumeTexture);
 	}
 
 	delete[] LoadedArray;
 }
 
-void UVRSSAssetFactory::LoadSliceTextures(FVolumeDataInfo& DataInfo, const FString& Directory)
+void FAssetUtils::LoadSliceTextures(FVolumeDataInfo& DataInfo, const FString& Directory)
 {
 	uint8* LoadedArray = FImportUtils::LoadSliceData(FPaths::Combine(Directory, DataInfo.DataFileName), DataInfo);
 
@@ -318,13 +333,13 @@ void UVRSSAssetFactory::LoadSliceTextures(FVolumeDataInfo& DataInfo, const FStri
 		UPackage::Save(SubPackage, SliceTexture, *PackageFileName, SavePackageArgs);
 
 		// Add SliceTexture to AdditionalImportedObjects so it also gets saved in-editor
-		AdditionalImportedObjects.Add(SliceTexture);
+		// AdditionalImportedObjects.Add(SliceTexture);
 	}
 
 	delete[] LoadedArray;
 }
 
-void UVRSSAssetFactory::LoadObstTextures(FBoundaryDataInfo& DataInfo, const FString& Directory)
+void FAssetUtils::LoadObstTextures(FBoundaryDataInfo& DataInfo, const FString& Directory)
 {
 	TArray<int> Orientations;
 	DataInfo.Dimensions.GetKeys(Orientations);
@@ -357,7 +372,7 @@ void UVRSSAssetFactory::LoadObstTextures(FBoundaryDataInfo& DataInfo, const FStr
 					SubPackage->GetName(), FPackageName::GetAssetPackageExtension());
 				UPackage::Save(SubPackage, ObstTexture, *PackageFileName, SavePackageArgs);
 
-				AdditionalImportedObjects.Add(ObstTexture);
+				// AdditionalImportedObjects.Add(ObstTexture);
 
 				Offset += SingleTextureSize;
 			}

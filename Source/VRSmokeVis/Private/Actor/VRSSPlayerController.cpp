@@ -1,5 +1,3 @@
-
-
 #include "Actor/VRSSPlayerController.h"
 #include "Actor/VR/Grabbable.h"
 #include "Components/WidgetInteractionComponent.h"
@@ -42,14 +40,17 @@ AVRSSPlayerController::AVRSSPlayerController()
 void AVRSSPlayerController::SetupInput(UInputComponent* InInputComponent)
 {
 	const FString Hand = bIsInRightHand ? "Right" : "Left";
-	const FName HandSourceId = bIsInRightHand ? FXRMotionControllerBase::RightHandSourceId : FXRMotionControllerBase::LeftHandSourceId;
+	const FName HandSourceId = bIsInRightHand
+		                           ? FXRMotionControllerBase::RightHandSourceId
+		                           : FXRMotionControllerBase::LeftHandSourceId;
 
 	MotionControllerComponent->SetTrackingMotionSource(HandSourceId);
-	
+
 	InInputComponent->BindAction(FName(Hand + "_Grip"), IE_Pressed, this, &AVRSSPlayerController::OnGripPressed);
 	InInputComponent->BindAction(FName(Hand + "_Grip"), IE_Released, this, &AVRSSPlayerController::OnGripReleased);
 	InInputComponent->BindAction(FName(Hand + "_Trigger"), IE_Pressed, this, &AVRSSPlayerController::OnTriggerPressed);
-	InInputComponent->BindAction(FName(Hand + "_Trigger"), IE_Released, this, &AVRSSPlayerController::OnTriggerReleased);
+	InInputComponent->BindAction(FName(Hand + "_Trigger"), IE_Released, this,
+	                             &AVRSSPlayerController::OnTriggerReleased);
 	InInputComponent->BindAxis(FName(Hand + "_Grip_Axis"), this, &AVRSSPlayerController::OnGripAxis);
 	InInputComponent->BindAxis(FName(Hand + "_Trigger_Axis"), this, &AVRSSPlayerController::OnTriggerAxis);
 	InInputComponent->BindAxis(FName(Hand + "_Joystick_Y"), this, &AVRSSPlayerController::OnJoystickYAxis);
@@ -110,7 +111,8 @@ void AVRSSPlayerController::OnGripAxis(float Axis)
 }
 
 void AVRSSPlayerController::OnOverlapBegin(class UPrimitiveComponent* OverlappedComponent, class AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+                                           UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
+                                           const FHitResult& SweepResult)
 {
 	if (Cast<IGrabbable>(OtherActor))
 	{
@@ -119,7 +121,8 @@ void AVRSSPlayerController::OnOverlapBegin(class UPrimitiveComponent* Overlapped
 }
 
 void AVRSSPlayerController::OnOverlapEnd(
-	class UPrimitiveComponent* OverlappedComponent, class AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+	class UPrimitiveComponent* OverlappedComponent, class AActor* OtherActor, UPrimitiveComponent* OtherComp,
+	int32 OtherBodyIndex)
 {
 	if (HoveredActor == Cast<IGrabbable>(OtherActor))
 	{

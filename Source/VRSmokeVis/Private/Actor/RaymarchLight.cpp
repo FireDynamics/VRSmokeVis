@@ -12,7 +12,7 @@ ARaymarchLight::ARaymarchLight()
 	PrimaryActorTick.bCanEverTick = false;
 
 	LightIntensityTimelineComponent = CreateDefaultSubobject<UTimelineComponent>(TEXT("Light intensity timeline"));
-	
+
 	PointLightComponent = CreateDefaultSubobject<UPointLightComponent>(TEXT("Point Light"));
 	PointLightComponent->SetMobility(EComponentMobility::Movable);
 	PointLightComponent->SetIntensityUnits(ELightUnits::Candelas);
@@ -23,12 +23,14 @@ void ARaymarchLight::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (LightIntensityCurve){
+	if (LightIntensityCurve)
+	{
 		// Gets called by the timeline each time there is an update in the intensity curve
 		FOnTimelineFloat UpdateLightIntensityFunction;
 		// UpdateLightIntensityFunction.BindUFunction(PointLightComponent, TEXT("SetIntensity"));
 		UpdateLightIntensityFunction.BindUFunction(this, TEXT("UpdateLight"));
-		LightIntensityTimelineComponent->AddInterpFloat(LightIntensityCurve, UpdateLightIntensityFunction, NAME_None, TEXT("LightIntensityTrack"));
+		LightIntensityTimelineComponent->AddInterpFloat(LightIntensityCurve, UpdateLightIntensityFunction, NAME_None,
+		                                                TEXT("LightIntensityTrack"));
 		LightIntensityTimelineComponent->Play();
 	}
 }
@@ -36,5 +38,5 @@ void ARaymarchLight::BeginPlay()
 void ARaymarchLight::UpdateLight(const float NewValue) const
 {
 	PointLightComponent->SetIntensity(NewValue);
-	PointLightComponent->SetAttenuationRadius(NewValue*100);
+	PointLightComponent->SetAttenuationRadius(NewValue * 100);
 }

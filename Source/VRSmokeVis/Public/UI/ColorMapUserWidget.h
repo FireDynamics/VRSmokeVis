@@ -6,7 +6,7 @@
 #include "ColorMapUserWidget.generated.h"
 
 UCLASS(Abstract)
-class UColorMapUserWidget : public UUserWidget
+class VRSMOKEVIS_API UColorMapUserWidget : public UUserWidget
 {
 	GENERATED_BODY()
 
@@ -16,7 +16,7 @@ public:
 	virtual void NativeConstruct() override;
 
 	virtual void NativeTick(const FGeometry& MyGeometry, const float DeltaTime) override;
-	
+
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 	UTextBlock* TextBlockColorMapMin;
 

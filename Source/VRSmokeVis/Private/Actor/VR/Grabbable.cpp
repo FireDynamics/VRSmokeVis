@@ -1,5 +1,3 @@
-
-
 #include "Actor/VR/Grabbable.h"
 
 void IGrabbable::OnGrabbed(USceneComponent* Grabber)

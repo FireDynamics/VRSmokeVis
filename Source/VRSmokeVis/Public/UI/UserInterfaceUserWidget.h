@@ -4,7 +4,7 @@
 #include "UserInterfaceUserWidget.generated.h"
 
 UCLASS()
-class UUserInterfaceUserWidget : public UUserWidget
+class VRSMOKEVIS_API UUserInterfaceUserWidget : public UUserWidget
 {
 	GENERATED_BODY()
 
@@ -36,7 +36,7 @@ public:
 
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class USimControllerUserWidget> SimControllerUserWidgetClass;
-	
+
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	class UTimeUserWidget* TimeUserWidget;
 

@@ -1,5 +1,3 @@
-
-
 #pragma once
 
 #include "Camera/CameraComponent.h"
@@ -20,7 +18,7 @@ enum class EVRPlatform
 
 // The 2 classes of VRMotionController to spawn for each platform.
 USTRUCT()
-struct FControllerPlatformClasses
+struct VRSMOKEVIS_API FControllerPlatformClasses
 {
 	GENERATED_BODY()
 	// Class of AVRMotionController to spawn for left hand.
@@ -35,7 +33,8 @@ struct FControllerPlatformClasses
 /**
  * VR pawn for handling volumetric volumes.
  */
-UCLASS() class AVRCharacter : public APawn
+UCLASS()
+class VRSMOKEVIS_API AVRCharacter : public APawn
 {
 	GENERATED_BODY()
 public:
@@ -64,7 +63,7 @@ public:
 
 	// Called when the game starts or when spawned.
 	virtual void BeginPlay() override;
-	
+
 protected:
 	/** Time controls */
 	UFUNCTION()

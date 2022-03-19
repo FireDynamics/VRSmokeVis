@@ -18,17 +18,19 @@ public:
 
 	UFUNCTION()
 	void ToggleHUDVisibility() const;
-	
+
 	UFUNCTION()
 	void OnActiveAssetsChanged() const;
-
+	
+	UFUNCTION(BlueprintCallable)
+	void ChangeObstQuantity(FString& NewQuantity);
+	
 protected:
-
-public:	
+public:
 	/** An instance of the configuration for the project which simply uses its default values set in the editor. */
 	UPROPERTY(EditAnywhere)
 	class UVRSSConfig* Config;
-	
+
 protected:
 	TArray<class ASimulation*> Simulations;
 };

@@ -17,4 +17,3 @@ void UColorMapUserWidget::NativeTick(const FGeometry& MyGeometry, const float De
 {
 	Super::NativeTick(MyGeometry, DeltaTime);
 }
-

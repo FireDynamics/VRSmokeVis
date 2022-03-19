@@ -1,3 +1,1 @@
-
-
 #include "Assets/SliceAsset.h"

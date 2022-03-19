@@ -1,5 +1,3 @@
-
-
 // This file contains functions used for raymarching in in-game materials, not for precomputing. 
 
 // Beware, modifications to this file will not be detected by the material shaders and they will not
@@ -80,7 +78,8 @@ float4 PerformRaymarchCubeSetup(FMaterialPixelParameters MaterialParameters)
 }
 
 // Jitter position by random temporal jitter (in a random direction perpendicular to the camera vector).
-void JitterEntryPos(inout float3 EntryPos, float3 LocalCamVec, float JitterRadius, FMaterialPixelParameters MaterialParameters)
+void JitterEntryPos(inout float3 EntryPos, float3 LocalCamVec, float JitterRadius,
+                    FMaterialPixelParameters MaterialParameters)
 {
 	float2 pos = frac(MaterialParameters.SvPosition.xy / 128.0f) * 128.0f + float2(-64.340622f, -72.465622f);
 	float rand1 = frac(dot(pos.xyx * pos.xyy, float3(20.390625f, 60.703125f, 2.4281209f))) - 0.5f;
@@ -94,7 +93,8 @@ void JitterEntryPos(inout float3 EntryPos, float3 LocalCamVec, float JitterRadiu
 }
 
 // Jitter position by random temporal jitter (in the direction of the camera).
-void JitterEntryPosCamDir(inout float3 EntryPos, float3 LocalCamVec, float JitterRadius, FMaterialPixelParameters MaterialParameters)
+void JitterEntryPosCamDir(inout float3 EntryPos, float3 LocalCamVec, float JitterRadius,
+                          FMaterialPixelParameters MaterialParameters)
 {
 	int3 RandomPos = int3(MaterialParameters.SvPosition.xy, View.StateFrameIndexMod8);
 	float rand = (float)(Rand3DPCG16(RandomPos).x) / 0xffff;
@@ -104,7 +104,7 @@ void JitterEntryPosCamDir(inout float3 EntryPos, float3 LocalCamVec, float Jitte
 // Samples the volume at next raymarch step.
 // Notice "Material.Clamp_WorldGroupSettings" used as a sampler. These are UE shared samplers.
 float GetRaymarchStepSample(float3 CurPos, float TimePassedPercentage, Texture3D DataVolumeT0,
-	SamplerState DataVolumeSamplerT0, Texture3D DataVolumeT1, SamplerState DataVolumeSamplerT1)
+                            SamplerState DataVolumeSamplerT0, Texture3D DataVolumeT1, SamplerState DataVolumeSamplerT1)
 {
 	float VolumeSampleT0 = DataVolumeT0.SampleLevel(DataVolumeSamplerT0, saturate(CurPos), 0).r;
 	float VolumeSampleT1 = DataVolumeT1.SampleLevel(DataVolumeSamplerT1, saturate(CurPos), 0).r;

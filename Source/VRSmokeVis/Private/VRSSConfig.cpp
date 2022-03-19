@@ -6,19 +6,22 @@
 UTexture2D* UVRSSConfig::GetColorMap(const FString Quantity)
 {
 	TArray<FAssetData> ColorMapTextures;
-	
+
 	UObjectLibrary* ObjectLibrary = UObjectLibrary::CreateLibrary(UTexture2D::StaticClass(), false, GIsEditor);
 	ObjectLibrary->AddToRoot();
 	ObjectLibrary->LoadAssetDataFromPath(ColorMapsPath);
 	ObjectLibrary->GetAssetDataList(ColorMapTextures);
 
-	if(const FString* ColorMapName = ColorMaps.Find(Quantity)){
-	for (const FAssetData& ColorMap : ColorMapTextures)
+	if (const FString* ColorMapName = ColorMaps.Find(Quantity))
 	{
-		if(ColorMap.AssetName.ToString().Equals("CM_" + *ColorMapName)){
-			return StreamableManager.LoadSynchronous<UTexture2D>(ColorMap.ToSoftObjectPath());
+		for (const FAssetData& ColorMap : ColorMapTextures)
+		{
+			if (ColorMap.AssetName.ToString().Equals("CM_" + *ColorMapName))
+			{
+				return StreamableManager.LoadSynchronous<UTexture2D>(ColorMap.ToSoftObjectPath());
+			}
 		}
-	}}
+	}
 	return StreamableManager.LoadSynchronous<UTexture2D>(ColorMapTextures[0].ToSoftObjectPath());
 }
 
@@ -38,10 +41,23 @@ float UVRSSConfig::GetObstCutOffValue(const FString Quantity) const
 
 FString UVRSSConfig::GetColorMapsPath() const
 {
-	if (ColorMapsPath.IsEmpty()){
+	if (ColorMapsPath.IsEmpty())
+	{
 		// Todo: Set final plugin name
 		FPaths::Combine(FPaths::ProjectPluginsDir(), "VRSmokeVis");
 	}
-	
+
 	return ColorMapsPath;
+}
+
+FString UVRSSConfig::GetActiveObstQuantity() const
+{
+	return ActiveObstQuantity;
+}
+	
+void UVRSSConfig::SetActiveObstQuantity(const FString& NewQuantity)
+{
+	ActiveObstQuantity = NewQuantity;
+
+	this->SaveConfig();
 }

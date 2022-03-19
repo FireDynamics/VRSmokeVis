@@ -16,27 +16,30 @@ DEFINE_LOG_CATEGORY(LogSlice)
 // Sets default values
 ASlice::ASlice() : AActor()
 {
+	/* Watch out, when changing anything in this function, the child blueprint (BP_Slice) will not reflect the changes
+	 * immediately. For the derived blueprint to apply the changes, one has to reparent the blueprint to sth. like
+	 * Actor and then reparent to Slice again. After that all default values in the Slice (M_Slice in RootComponent)
+	 * and the StaticMesh (SM_Plane) have to be set again. */
+	
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = true;
-
+	
 	SetActorEnableCollision(false);
 
 	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("Default Scene Root"));
 	RootComponent->SetWorldScale3D(FVector(1.0f));
-	
+	// RootComponent->SetMobility(EComponentMobility::Movable);
+
 	StaticMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Slice Static Mesh"));
-	// StaticMeshComponent->SetStaticMesh(PlaneMesh);
 	StaticMeshComponent->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
 	StaticMeshComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
+	StaticMeshComponent->SetCastShadow(false);
 	StaticMeshComponent->SetupAttachment(RootComponent);
-	// StaticMeshComponent->RegisterComponent();
 }
 
 void ASlice::BeginPlay()
 {
 	Super::BeginPlay();
-
-	check(SliceAsset)
 
 	Sim = Cast<ASimulation>(GetOwner());
 
@@ -169,7 +172,7 @@ void ASlice::UseSimulationTransform()
 			SliceAsset->SliceInfo.WorldDimensions.Y = Tmp;
 		}
 
-		SetActorLocation((SliceAsset->SliceInfo.MeshPos + SliceAsset->SliceInfo.WorldDimensions / 2) * 100);
+		SetActorRelativeLocation((SliceAsset->SliceInfo.MeshPos + SliceAsset->SliceInfo.WorldDimensions / 2) * 100);
 	}
 }
 

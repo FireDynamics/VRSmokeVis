@@ -16,6 +16,12 @@ DEFINE_LOG_CATEGORY(LogObst)
 // Sets default values
 AObst::AObst() : AActor()
 {
+	/* Watch out, when changing anything in this function, the child blueprint (BP_Obst) will not reflect the changes
+	 * immediately. For the derived blueprint to apply the changes, one has to reparent the blueprint to sth. like
+	 * Actor and then reparent to Obst again. After that all default values in the Obst (M_Obst and M_CubeBorder
+	 * in RootComponent) and the StaticMeshes (SM_6SurfCube1m in StaticMeshComponent and SM_UnitCube in
+	 * CubeBorderMeshComponent) have to be set again. */
+
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = true;
 
@@ -25,11 +31,10 @@ AObst::AObst() : AActor()
 	RootComponent->SetWorldScale3D(FVector(1.0f));
 
 	StaticMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Obst Static Mesh"));
-	// Set basic unit cube properties
-	StaticMeshComponent->SetStaticMesh(Cube6SurfMesh);
 	StaticMeshComponent->SetCollisionEnabled(ECollisionEnabled::Type::QueryOnly);
 	StaticMeshComponent->SetRelativeLocation(FVector(0, 0, 0));
-	StaticMeshComponent->SetRelativeScale3D(FVector(0, 0, 0));
+	StaticMeshComponent->SetRelativeScale3D(FVector(1, 1, 1));
+	StaticMeshComponent->SetCastShadow(false);
 	StaticMeshComponent->SetupAttachment(RootComponent);
 
 	// Create CubeBorderMeshComponent and assign cube border mesh (that's a cube with only edges visible).
@@ -38,9 +43,6 @@ AObst::AObst() : AActor()
 	CubeBorderMeshComponent->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
 	CubeBorderMeshComponent->SetHiddenInGame(true);
 	CubeBorderMeshComponent->SetRelativeScale3D(FVector(100.0f));
-
-	// Find and assign cube material.
-	CubeBorderMeshComponent->SetStaticMesh(CubeBorder);
 	CubeBorderMeshComponent->SetMaterial(0, BorderMaterial);
 }
 
@@ -59,7 +61,8 @@ void AObst::BeginPlay()
 		DataTexturesT1.Add(Orientation, nullptr);
 	}
 
-	Sim->InitUpdateRate("Obst", ObstAsset->ObstInfo.Spacings[Orientations[0]].W, ObstAsset->ObstInfo.Dimensions[Orientations[0]].W);
+	Sim->InitUpdateRate("Obst", ObstAsset->ObstInfo.Spacings[Orientations[0]].W,
+	                    ObstAsset->ObstInfo.Dimensions[Orientations[0]].W);
 
 	for (const int Orientation : Orientations)
 	{
@@ -69,7 +72,7 @@ void AObst::BeginPlay()
 				ObstDataMaterialBase, this, *("Obst Mat Dynamic Inst" + FString::FromInt(Orientation)));
 			ObstDataMaterials.Add(Orientation, ObstMaterial);
 		}
-		
+
 		if (StaticMeshComponent)
 			StaticMeshComponent->SetMaterialByName(*FString::FromInt(Orientation), ObstDataMaterials[Orientation]);
 	}
@@ -113,7 +116,7 @@ void AObst::UpdateTexture(const int CurrentTimeStep, const int Orientation)
 void AObst::UpdateColorMapScale(const float NewMin, const float NewMax) const
 {
 	if (ActiveQuantity.IsEmpty()) return;
-	
+
 	TArray<int> Orientations;
 	ObstAsset->ObstInfo.Dimensions.GetKeys(Orientations);
 
@@ -135,9 +138,9 @@ void AObst::SetActiveQuantity(FString GlobalObstQuantity)
 {
 	// Don't change anything if nothing changed
 	if (ActiveQuantity == GlobalObstQuantity) return;
-	
+
 	ActiveQuantity = GlobalObstQuantity;
-	
+
 	const UVRSSGameInstanceSubsystem* GI = GetGameInstance()->GetSubsystem<UVRSSGameInstanceSubsystem>();
 
 	ObstAsset->ObstTextures.FindOrAdd(ActiveQuantity, TMap<int, TArray<FAssetData>>());
@@ -175,11 +178,13 @@ void AObst::UseSimulationTransform()
 		const FVector ObstScale = FVector(ObstAsset->BoundingBox[1] - ObstAsset->BoundingBox[0],
 		                                  ObstAsset->BoundingBox[3] - ObstAsset->BoundingBox[2],
 		                                  ObstAsset->BoundingBox[5] - ObstAsset->BoundingBox[4]);
-		StaticMeshComponent->SetRelativeScale3D(ObstScale * 1.01);
-
+		StaticMeshComponent->SetRelativeScale3D(ObstScale + 0.001);
+		// The pivot point of the mesh is not in the center, but on the lower side instead. We therefore have to adjust
+		// the z-coordinate to re-center the actor
+		const FVector Adjustment = FVector(ObstScale.X, ObstScale.Y, -0.001);
 		const FVector ObstLocation = FVector(ObstAsset->BoundingBox[0], ObstAsset->BoundingBox[2],
-		                                     ObstAsset->BoundingBox[4]) + ObstScale / 2;
-		SetActorLocation(ObstLocation * 100);
+		                                     ObstAsset->BoundingBox[4]) + Adjustment / 2;
+		SetActorRelativeLocation(ObstLocation * 100);
 	}
 }
 

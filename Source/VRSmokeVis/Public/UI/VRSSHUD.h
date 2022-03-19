@@ -1,10 +1,10 @@
-﻿#pragma once 
+﻿#pragma once
 
 #include "GameFramework/HUD.h"
 #include "VRSSHUD.generated.h"
 
 UCLASS()
-class AVRSSHUD : public AHUD
+class VRSMOKEVIS_API AVRSSHUD : public AHUD
 {
 	GENERATED_BODY()
 

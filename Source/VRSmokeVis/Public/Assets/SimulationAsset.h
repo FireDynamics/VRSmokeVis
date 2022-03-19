@@ -21,11 +21,11 @@ public:
 	FString SlicesDirectory;
 	UPROPERTY(VisibleAnywhere)
 	FString VolumesDirectory;
-	
-	UPROPERTY(VisibleAnywhere)
+
+	UPROPERTY(VisibleAnywhere, Transient)
 	TArray<FAssetData> Obstructions;
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, Transient)
 	TArray<FAssetData> Slices;
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, Transient)
 	TArray<FAssetData> Volumes;
 };

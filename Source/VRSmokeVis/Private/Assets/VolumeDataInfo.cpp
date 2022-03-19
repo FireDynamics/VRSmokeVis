@@ -1,5 +1,3 @@
-
-
 #include "Assets/VolumeDataInfo.h"
 
 int64 FVolumeDataInfo::GetByteSize() const

@@ -5,6 +5,8 @@
 
 DECLARE_EVENT_OneParam(UVRSSGameInstance, FUpdateDataEvent, int)
 
+DECLARE_LOG_CATEGORY_EXTERN(LogSimulation, Log, All);
+
 
 UCLASS()
 class VRSMOKEVIS_API ASimulation : public AActor
@@ -20,10 +22,6 @@ public:
 	void CheckSliceActivations();
 	UFUNCTION()
 	void CheckVolumeActivations();
-
-	UFUNCTION()
-	void RegisterTextureLoad(const FString Type, const AActor* Asset, const FString& TextureDirectory,
-	                         UPARAM(ref) TArray<FAssetData>& TextureArray, const int NumTextures);
 
 	UFUNCTION()
 	void InitUpdateRate(const FString Type, float UpdateRateSuggestion, const int MaxNumUpdates);
@@ -49,7 +47,8 @@ public:
 	UFUNCTION()
 	TArray<class ARaymarchVolume*>& GetAllVolumes();
 
-	UFUNCTION(BlueprintCallable)
+	/** Gets called from GameInstanceSubsystem. */
+	UFUNCTION()
 	void ChangeObstQuantity(FString& NewQuantity);
 
 	UFUNCTION(BlueprintCallable)
@@ -65,11 +64,10 @@ public:
 	UFUNCTION(BlueprintCallable)
 	TArray<FString> GetQuantities(const bool ActiveOnly) const;
 
-	/** Returns the unique quantities of all obstructions. */
 	UFUNCTION(BlueprintCallable)
-	TArray<FString> GetObstQuantities(const bool ActiveOnly) const;
+	bool AnyObstActive() const;
 
-	/** Returns the unique quantities of all slices. */
+	/** Returns the active quantities of all slices. */
 	UFUNCTION(BlueprintCallable)
 	TArray<FString> GetSliceQuantities(const bool ActiveOnly) const;
 
@@ -86,6 +84,10 @@ protected:
 	void NextTimeStep(const FString Type);
 
 	UFUNCTION()
+	bool RegisterTextureLoad(const FString Type, const AActor* Asset, const FString& TextureDirectory,
+							 UPARAM(ref) TArray<FAssetData>& TextureArray, const int NumTextures);
+	
+	UFUNCTION()
 	void ActivateObst(AObst* Obst);
 	UFUNCTION()
 	void DeactivateObst(AObst* Obst);
@@ -97,6 +99,17 @@ protected:
 	void ActivateVolume(ARaymarchVolume* Volume);
 	UFUNCTION()
 	void DeactivateVolume(ARaymarchVolume* Volume);
+
+	UFUNCTION()
+	void InitObstructions();
+	UFUNCTION()
+	void InitSlices();
+	UFUNCTION()
+	void InitVolumes();
+
+/** Spawn meshes for each obstruction with size and location originating from the fds simulation */
+	UFUNCTION(CallInEditor, Category="Simulation")
+	void SpawnSimulationGeometry();
 
 public:
 	/** The loaded slice asset belonging to this slice. */
@@ -110,8 +123,10 @@ public:
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class ARaymarchVolume> VolumeClass;
 	UPROPERTY(EditAnywhere)
-	TSubclassOf<class AActor> DebugCubeClass;
-
+	class UStaticMesh* CubeStaticMesh;
+	UPROPERTY(EditAnywhere)
+	class UMaterial* CubeDefaultMaterial;
+	
 	/** The class of the raymarch lights that are dimmed over time. */
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class ARaymarchLight> RaymarchLightClass;
@@ -129,7 +144,7 @@ public:
 
 	UPROPERTY(BlueprintReadOnly)
 	class USimControllerUserWidget* SimControllerUserWidget;
-	
+
 protected:
 	/** Lists of currently inactive obstructions. */
 	UPROPERTY(VisibleAnywhere)
@@ -154,9 +169,6 @@ protected:
 
 	UPROPERTY()
 	bool bIsPaused = false;
-
-	UPROPERTY()
-	FString ActiveObstQuantity;
 
 	/** Maps actor names (obsts, slices and volumes) to DelegateHandles for the texture update event. */
 	TMap<FString, TMap<int, FDelegateHandle>> ObstUpdateDataEventDelegateHandles;

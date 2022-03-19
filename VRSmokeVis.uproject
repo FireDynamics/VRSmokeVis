@@ -7,7 +7,12 @@
 		{
 			"Name": "VRSmokeVis",
 			"Type": "Runtime",
-			"LoadingPhase": "PostConfigInit"
+			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "VRSmokeVisEditor",
+			"Type": "Editor",
+			"LoadingPhase": "PostEngineInit"
 		}
 	],
 	"Plugins": [
@@ -37,23 +42,12 @@
 				"Mac",
 				"Linux"
 			]
-		},
-		{
-			"Name": "PythonScriptPlugin",
-			"Enabled": true
 		}
 	],
 	"TargetPlatforms": [
-		"Android",
-		"IOS",
 		"Linux",
 		"Mac",
-		"PS4",
-		"PS5",
 		"Windows",
-		"WindowsNoEditor",
-		"Switch",
-		"XboxOne",
-		"XSX"
+		"WindowsNoEditor"
 	]
 }

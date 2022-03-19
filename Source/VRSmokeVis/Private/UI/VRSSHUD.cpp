@@ -1,6 +1,4 @@
-﻿
-
-#include "UI/VRSSHUD.h"
+﻿#include "UI/VRSSHUD.h"
 
 #include "UI/UserInterfaceUserWidget.h"
 

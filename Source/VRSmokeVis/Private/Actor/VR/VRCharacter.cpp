@@ -82,7 +82,8 @@ void AVRCharacter::FastForwardSimulation()
 }
 
 void AVRCharacter::RewindSimulation()
-{TArray<AActor*> Simulations;
+{
+	TArray<AActor*> Simulations;
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ASimulation::StaticClass(), Simulations);
 	for (AActor* Simulation : Simulations)
 		Cast<ASimulation>(Simulation)->RewindSimulation(25.0f);

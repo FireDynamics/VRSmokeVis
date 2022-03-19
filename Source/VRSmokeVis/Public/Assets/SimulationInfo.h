@@ -14,10 +14,10 @@ struct VRSMOKEVIS_API FSimulationInfo
 
 	UPROPERTY()
 	FString OriginalObstFilesPath;
-	
+
 	UPROPERTY()
 	FString OriginalSliceFilesPath;
-	
+
 	UPROPERTY()
 	FString OriginalVolumeFilesPath;
 

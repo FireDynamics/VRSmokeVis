@@ -1,5 +1,3 @@
-
-
 #pragma once
 
 #include "RaymarchVolume.generated.h"
@@ -14,17 +12,17 @@ class VRSMOKEVIS_API ARaymarchVolume : public AActor
 public:
 	/** Sets default values for this actor's properties*/
 	ARaymarchVolume();
-	
+
 	/** Called every frame. */
 	virtual void Tick(float DeltaTime) override;
-	
-	UFUNCTION(CallInEditor, Category="RaymarchVolume")
+
+	UFUNCTION()
 	void UseSimulationTransform();
 
 	/** Delegate to update the volume texture after a given amount of time */
 	UFUNCTION()
 	void UpdateVolume(const int CurrentTimeStep);
-	
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -32,14 +30,11 @@ public:
 	/** The base material for intensity rendering. */
 	UPROPERTY(BlueprintReadOnly, EditAnywhere)
 	UMaterial* RaymarchMaterialBase;
-	
+
 	/** The number of steps to take when raymarching. This is multiplied by the volume thickness in texture space. */
 	UPROPERTY(EditAnywhere)
 	float RaymarchingSteps = 150;
 
-	UPROPERTY(EditAnywhere)
-	UStaticMesh* UnitCubeInsideOut;
-	
 	UPROPERTY(EditAnywhere)
 	UMaterial* BorderMaterial;
 
@@ -50,10 +45,10 @@ public:
 protected:
 	UPROPERTY()
 	class ASimulation* Sim;
-	
+
 	UPROPERTY()
 	UStaticMesh* CubeBorder;
-	
+
 	/** The % of time that has passed until the next frame is reached. */
 	UPROPERTY(VisibleAnywhere)
 	float TimePassedPercentage = 0;
@@ -61,7 +56,7 @@ protected:
 	/** Current data volume texture. */
 	UPROPERTY(BlueprintReadOnly, Transient)
 	UVolumeTexture* DataVolumeTextureT0;
-	
+
 	/** Next data volume texture. */
 	UPROPERTY(BlueprintReadOnly, Transient)
 	UVolumeTexture* DataVolumeTextureT1;
@@ -69,12 +64,12 @@ protected:
 	/** Dynamic material instance for intensity rendering. */
 	UPROPERTY(BlueprintReadOnly, Transient)
 	UMaterialInstanceDynamic* RaymarchMaterial;
-	
+
 	/** Cube border mesh - this is just a cube with wireframe borders. */
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(EditDefaultsOnly)
 	UStaticMeshComponent* CubeBorderMeshComponent;
 	
 	/** MeshComponent that contains the raymarching cube. */
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(EditDefaultsOnly)
 	UStaticMeshComponent* StaticMeshComponent;
 };

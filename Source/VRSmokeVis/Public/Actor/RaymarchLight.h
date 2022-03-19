@@ -20,13 +20,12 @@ protected:
 
 public:
 	UPROPERTY(EditAnywhere)
-	UCurveFloat *LightIntensityCurve;
-	
+	UCurveFloat* LightIntensityCurve;
+
 	UPROPERTY(BlueprintReadOnly)
-	class UTimelineComponent *LightIntensityTimelineComponent;
+	class UTimelineComponent* LightIntensityTimelineComponent;
 
 protected:
 	UPROPERTY(VisibleAnywhere)
-	class UPointLightComponent *PointLightComponent;
-
+	class UPointLightComponent* PointLightComponent;
 };

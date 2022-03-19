@@ -15,7 +15,7 @@ struct VRSMOKEVIS_API FVolumeDataInfo
 	int64 GetTotalVoxels() const;
 
 	FString ToString() const;
-	
+
 	/** FDS name of the volume or slice */
 	UPROPERTY(VisibleAnywhere)
 	FString FdsName;

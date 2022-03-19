@@ -24,13 +24,13 @@ struct VRSMOKEVIS_API FBoundaryDataInfo
 
 	/** Returns the number of bytes needed to store a specific face */
 	int64 GetByteSize(const int Face) const;
-	
+
 	FString ToString() const;
 
 	/** FDS name of the obst */
 	UPROPERTY(VisibleAnywhere)
 	FString ObstName;
-	
+
 	/** Name of the obst files per quantity that were loaded */
 	UPROPERTY(VisibleAnywhere)
 	TMap<FString, FString> DataFileNames;

@@ -1,6 +1,4 @@
-﻿
-
-#include "UI/UserInterfaceUserWidget.h"
+﻿#include "UI/UserInterfaceUserWidget.h"
 
 #include "VRSSConfig.h"
 #include "Actor/Simulation.h"
@@ -13,14 +11,15 @@
 
 
 // Sets default values
-UUserInterfaceUserWidget::UUserInterfaceUserWidget(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
+UUserInterfaceUserWidget::UUserInterfaceUserWidget(const FObjectInitializer& ObjectInitializer) : Super(
+	ObjectInitializer)
 {
 }
 
 bool UUserInterfaceUserWidget::Initialize()
-{	
+{
 	ColorMapUserWidgets = TMap<FString, UColorMapUserWidget*>();
-	
+
 	return Super::Initialize();
 }
 
@@ -52,15 +51,16 @@ void UUserInterfaceUserWidget::InitColorMaps(UVRSSConfig* Config, TMap<FString, 
 	LabelFormattingOptions.SetUseGrouping(false);
 	for (FString& Quantity : Quantities)
 	{
-		UColorMapUserWidget* ColorMapUserWidget = WidgetTree->ConstructWidget<UColorMapUserWidget>(ColorMapUserWidgetClass, FName(*("ColorMapUserWidget" + Quantity)));
+		UColorMapUserWidget* ColorMapUserWidget = WidgetTree->ConstructWidget<UColorMapUserWidget>(
+			ColorMapUserWidgetClass, FName(*("ColorMapUserWidget" + Quantity)));
 		ColorMapUserWidget->ColorMapQuantity = Quantity;
 		ColorMapUserWidgets.Add(Quantity, ColorMapUserWidget);
 		ColorMapsVerticalBox->AddChildToVerticalBox(ColorMapUserWidget);
 		ColorMapUserWidget->ImageColorMap->SetBrushFromTexture(Config->GetColorMap(Quantity));
-		
+
 		ColorMapUserWidget->TextBlockColorMapMin->SetText(FText::AsNumber(Mins[Quantity], &LabelFormattingOptions));
 		ColorMapUserWidget->TextBlockColorMapMax->SetText(FText::AsNumber(Maxs[Quantity], &LabelFormattingOptions));
-		
+
 		ColorMapUserWidget->SetVisibility(ESlateVisibility::Hidden);
 	}
 }
@@ -68,7 +68,8 @@ void UUserInterfaceUserWidget::InitColorMaps(UVRSSConfig* Config, TMap<FString, 
 void UUserInterfaceUserWidget::AddSimulationController(ASimulation* Sim) const
 {
 	const FString SimName = Sim->SimulationAsset->GetName();
-	USimControllerUserWidget* SimControllerWidget = WidgetTree->ConstructWidget<USimControllerUserWidget>(SimControllerUserWidgetClass, FName(*("SimControllerUserWidget" + SimName)));
+	USimControllerUserWidget* SimControllerWidget = WidgetTree->ConstructWidget<USimControllerUserWidget>(
+		SimControllerUserWidgetClass, FName(*("SimControllerUserWidget" + SimName)));
 	Sim->SimControllerUserWidget = SimControllerWidget;
 	SimControllerWidget->InitSimulation(Sim);
 	SimulationControllersHorizontalBox->AddChildToHorizontalBox(SimControllerWidget);

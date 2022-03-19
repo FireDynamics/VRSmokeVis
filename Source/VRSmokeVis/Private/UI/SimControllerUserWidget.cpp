@@ -1,6 +1,4 @@
-﻿
-
-#include "UI/SimControllerUserWidget.h"
+﻿#include "UI/SimControllerUserWidget.h"
 
 #include "Actor/Obst.h"
 #include "Actor/RaymarchVolume.h"
@@ -16,12 +14,13 @@
 #include "Components/ScrollBox.h"
 
 // Sets default values
-USimControllerUserWidget::USimControllerUserWidget(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
+USimControllerUserWidget::USimControllerUserWidget(const FObjectInitializer& ObjectInitializer) : Super(
+	ObjectInitializer)
 {
 }
 
 bool USimControllerUserWidget::Initialize()
-{	
+{
 	return Super::Initialize();
 }
 
@@ -49,7 +48,8 @@ void USimControllerUserWidget::InitObstCheckboxes() const
 	TScriptDelegate<> ObstsDelegate;
 	ObstsDelegate.BindUFunction(Sim, "CheckObstActivations");
 	TArray<AObst*> Obstructions = Sim->GetAllObstructions();
-	for (int i = 0; i < Obstructions.Num(); ++i) {
+	for (int i = 0; i < Obstructions.Num(); ++i)
+	{
 		const FString ObstName = Obstructions[i]->ObstAsset->ObstInfo.ObstName;
 		ObstsScrollBox->AddChild(ConstructCheckboxRow(ObstsDelegate, ObstName));
 	}
@@ -60,7 +60,8 @@ void USimControllerUserWidget::InitSliceCheckboxes() const
 	TScriptDelegate<> SlicesDelegate;
 	SlicesDelegate.BindUFunction(Sim, "CheckSliceActivations");
 	TArray<ASlice*> Slices = Sim->GetAllSlices();
-	for (int i = 0; i < Slices.Num(); ++i) {
+	for (int i = 0; i < Slices.Num(); ++i)
+	{
 		const FString SliceName = Slices[i]->SliceAsset->SliceInfo.FdsName;
 		SlicesScrollBox->AddChild(ConstructCheckboxRow(SlicesDelegate, SliceName));
 	}
@@ -72,24 +73,29 @@ void USimControllerUserWidget::InitVolumeCheckboxes() const
 	TScriptDelegate<> VolumesDelegate;
 	VolumesDelegate.BindUFunction(Sim, "CheckVolumeActivations");
 	TArray<ARaymarchVolume*> Volumes = Sim->GetAllVolumes();
-	for (int i = 0; i < Volumes.Num(); ++i) {
+	for (int i = 0; i < Volumes.Num(); ++i)
+	{
 		const FString VolumeName = Volumes[i]->VolumeAsset->VolumeInfo.FdsName;
 		VolumesScrollBox->AddChild(ConstructCheckboxRow(VolumesDelegate, VolumeName));
 	}
 }
 
-UHorizontalBox* USimControllerUserWidget::ConstructCheckboxRow(const TScriptDelegate<> CheckboxDelegate, const FString CheckboxName) const
+UHorizontalBox* USimControllerUserWidget::ConstructCheckboxRow(const TScriptDelegate<> CheckboxDelegate,
+                                                               const FString CheckboxName) const
 {
-	UHorizontalBox* CheckboxRow = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), FName(*("CheckboxRow" + CheckboxName)));
-		
-	UTextBlock* CheckboxLabel = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), FName(*("Label" + CheckboxName)));
+	UHorizontalBox* CheckboxRow = WidgetTree->ConstructWidget<UHorizontalBox>(
+		UHorizontalBox::StaticClass(), FName(*("CheckboxRow" + CheckboxName)));
+
+	UTextBlock* CheckboxLabel = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(),
+	                                                                    FName(*("Label" + CheckboxName)));
 	FSlateFontInfo FontInfo = CheckboxLabel->Font;
 	FontInfo.Size = 10;
 	CheckboxLabel->SetFont(FontInfo);
 	CheckboxLabel->SetText(FText::FromString(CheckboxName));
 	CheckboxRow->AddChildToHorizontalBox(CheckboxLabel);
-		
-	UCheckBox* Checkbox = WidgetTree->ConstructWidget<UCheckBox>(UCheckBox::StaticClass(), FName(*("CheckBox" + CheckboxName)));
+
+	UCheckBox* Checkbox = WidgetTree->ConstructWidget<UCheckBox>(UCheckBox::StaticClass(),
+	                                                             FName(*("CheckBox" + CheckboxName)));
 	CheckboxRow->AddChildToHorizontalBox(Checkbox);
 	Checkbox->OnCheckStateChanged.Add(CheckboxDelegate);
 

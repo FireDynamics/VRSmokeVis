@@ -1,5 +1,3 @@
-
-
 #include "Assets/BoundaryDataInfo.h"
 
 int64 FBoundaryDataInfo::GetByteSize(const int Face) const

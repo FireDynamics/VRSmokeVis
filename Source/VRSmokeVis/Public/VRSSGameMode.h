@@ -7,7 +7,7 @@ UCLASS()
 class VRSMOKEVIS_API AVRSSGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
-	
+
 protected:
 	AVRSSGameMode();
 

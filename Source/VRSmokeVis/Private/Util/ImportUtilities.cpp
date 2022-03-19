@@ -69,7 +69,7 @@ uint8* FImportUtils::LoadDatFileIntoArray(const FString FileName, const int64 By
 		return nullptr;
 	}
 
-	uint8* LoadedArray = static_cast<uint8*>(FMemory::Malloc(BytesToLoad));  // new uint8[BytesToLoad];
+	uint8* LoadedArray = static_cast<uint8*>(FMemory::Malloc(BytesToLoad)); // new uint8[BytesToLoad];
 	FileHandle->Read(LoadedArray, BytesToLoad);
 	delete FileHandle;
 
@@ -77,7 +77,7 @@ uint8* FImportUtils::LoadDatFileIntoArray(const FString FileName, const int64 By
 }
 
 void FImportUtils::DensityToTransmission(const float ExtinctionCoefficient, const FVolumeDataInfo& DataInfo,
-                                          uint8* Array)
+                                         uint8* Array)
 {
 	// Uses the Beer-Lambert law to convert densities to the corresponding transmission using the extinction coefficient
 	// Adding 0.5 before assigning the float value to the uint8 array causes it to round correctly without having to
@@ -103,7 +103,7 @@ void FImportUtils::NormalizeArray(const FVolumeDataInfo& DataInfo, uint8* Array)
 }
 
 uint8* FImportUtils::LoadAndConvertVolumeData(const float ExtinctionCoefficient, const FString& FilePath,
-                                               const FVolumeDataInfo& DataInfo)
+                                              const FVolumeDataInfo& DataInfo)
 {
 	// Load data
 	uint8* LoadedArray = LoadDatFileIntoArray(FilePath, DataInfo.GetByteSize());
@@ -228,7 +228,7 @@ TMap<FString, FVolumeDataInfo> FImportUtils::ParseSliceVolumeDataInfoFromFile(co
 
 		// Get slice/volume name
 		SplitPath(DataInfo.DataFileName, Left, DataInfo.FdsName);
-		
+
 		DataInfos.Add(MeshId, DataInfo);
 	}
 
@@ -241,7 +241,7 @@ FBoundaryDataInfo FImportUtils::ParseObstDataInfoFromFile(const FString& FilePat
 
 	FString Directory;
 	SplitPath(FilePath, Directory, DataInfo.ObstName);
-	
+
 	const FString FileString = ReadFileAsString(FilePath);
 	TArray<FString> Lines;
 	FileString.ParseIntoArray(Lines, _T("\n"));
@@ -361,7 +361,7 @@ FSimulationInfo FImportUtils::ParseSimulationInfoFromFile(const FString& FileNam
 	FString Left, Right;
 
 	int NumObstructions, NumSlices, NumVolumes, i;
-	
+
 	// NumObstructions
 	Lines[0].Split(TEXT(": "), &Left, &Right);
 	FDefaultValueHelper::ParseInt(Right, NumObstructions);
@@ -371,14 +371,15 @@ FSimulationInfo FImportUtils::ParseSimulationInfoFromFile(const FString& FileNam
 	// NumVolumes
 	Lines[2].Split(TEXT(": "), &Left, &Right);
 	FDefaultValueHelper::ParseInt(Right, NumVolumes);
-	
+
 	SimInfo.ObstPaths.Reserve(NumObstructions);
 	SimInfo.SlicePaths.Reserve(NumSlices);
 	SimInfo.VolumePaths.Reserve(NumVolumes);
-	
+
 	for (i = 0; i < NumObstructions; ++i) SimInfo.ObstPaths.Add(Lines[4 + i].RightChop(2).TrimEnd());
 	for (i = 0; i < NumSlices; ++i) SimInfo.SlicePaths.Add(Lines[5 + NumObstructions + i].RightChop(2).TrimEnd());
-	for (i = 0; i < NumVolumes; ++i) SimInfo.VolumePaths.Add(Lines[6 + NumObstructions + NumSlices + i].RightChop(2).TrimEnd());
+	for (i = 0; i < NumVolumes; ++i) SimInfo.VolumePaths.Add(
+		Lines[6 + NumObstructions + NumSlices + i].RightChop(2).TrimEnd());
 
 	return SimInfo;
 }

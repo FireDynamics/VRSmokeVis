@@ -1,7 +1,4 @@
-﻿
-
-#include "UI/TimeUserWidget.h"
-
+﻿#include "UI/TimeUserWidget.h"
 
 
 // Sets default values
@@ -19,7 +16,8 @@ void UTimeUserWidget::NativeTick(const FGeometry& MyGeometry, const float DeltaT
 {
 	Super::NativeTick(MyGeometry, DeltaTime);
 
-	if (!bIsPaused){
+	if (!bIsPaused)
+	{
 		CurrentGameTime += DeltaTime;
 		CurrentSimTime += DeltaTime * SimTimeScale;
 		UpdateTimeTextBlocks();

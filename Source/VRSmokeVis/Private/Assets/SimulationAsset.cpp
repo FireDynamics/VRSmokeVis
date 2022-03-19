@@ -1,3 +1,1 @@
-﻿
-
-#include "Assets/SimulationAsset.h"
+﻿#include "Assets/SimulationAsset.h"

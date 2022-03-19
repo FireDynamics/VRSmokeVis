@@ -1,16 +1,14 @@
-
-
 #pragma once
 
 #include "Grabbable.generated.h"
 
 UINTERFACE(Blueprintable)
-class UGrabbable : public UInterface
+class VRSMOKEVIS_API UGrabbable : public UInterface
 {
 	GENERATED_BODY()
 };
 
-class IGrabbable
+class VRSMOKEVIS_API IGrabbable
 {
 	GENERATED_BODY()
 

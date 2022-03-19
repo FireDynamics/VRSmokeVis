@@ -5,7 +5,7 @@
 #include "TimeUserWidget.generated.h"
 
 UCLASS(Abstract)
-class UTimeUserWidget : public UUserWidget
+class VRSMOKEVIS_API UTimeUserWidget : public UUserWidget
 {
 	GENERATED_BODY()
 

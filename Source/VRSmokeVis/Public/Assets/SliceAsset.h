@@ -1,5 +1,3 @@
-
-
 #pragma once
 
 #include "Engine/DataAsset.h"
@@ -15,7 +13,7 @@ class VRSMOKEVIS_API USliceAsset : public UDataAsset
 public:
 	UPROPERTY()
 	TArray<FAssetData> SliceTextures;
-	
+
 	// Holds the general info about the Yaml Data read from disk.
 	UPROPERTY(EditAnywhere)
 	FVolumeDataInfo SliceInfo;

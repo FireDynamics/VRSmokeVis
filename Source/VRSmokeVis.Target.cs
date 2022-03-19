@@ -10,6 +10,15 @@ public class VRSmokeVisTarget : TargetRules
 		Type = TargetType.Game;
 		DefaultBuildSettings = BuildSettingsVersion.V2;
 
-		ExtraModuleNames.AddRange( new string[] { "VRSmokeVis" } );
+		ExtraModuleNames.AddRange(new string[] {"VRSmokeVis"});
+		
+		if (Type == TargetType.Editor)
+		{
+			ExtraModuleNames.AddRange( 
+				new string[]
+				{
+					"VRSmokeVisEditor"
+				});
+		}
 	}
 }

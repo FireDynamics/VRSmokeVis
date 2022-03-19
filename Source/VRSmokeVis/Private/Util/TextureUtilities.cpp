@@ -1,7 +1,6 @@
 #include "Util/TextureUtilities.h"
 
 #include "AssetRegistry/AssetRegistryModule.h"
-#include "Misc/FileHelper.h"
 
 
 DEFINE_LOG_CATEGORY(LogTextureUtils);
@@ -54,11 +53,13 @@ void FTextureUtils::CreateTextureMip(UTexture* OutTexture, const FVector4 Dimens
 	PlatformData[0]->Mips.Add(Mip);
 }
 
+#if WITH_EDITOR
+// Only available in editor
 bool FTextureUtils::CreateTextureEditorData(UTexture* Texture, const FVector4 Dimensions,
                                             const uint8* BulkData)
 {
 	Texture->MipGenSettings = TMGS_NoMipmaps;
-
+	
 	// CompressionNone assures the texture is actually saved in the format we want and not DXT1.
 	Texture->CompressionNone = true;
 
@@ -67,6 +68,7 @@ bool FTextureUtils::CreateTextureEditorData(UTexture* Texture, const FVector4 Di
 
 	return true;
 }
+#endif
 
 UTexture2D* FTextureUtils::CreateTextureAsset(const FString AssetName, const FVector4 Dimensions, UObject* OutPackage,
                                               uint8* BulkData, const int DataSize)
@@ -79,12 +81,17 @@ UTexture2D* FTextureUtils::CreateTextureAsset(const FString AssetName, const FVe
 
 	SetTextureDetails(Texture, Dimensions);
 	CreateTextureMip(Texture, Dimensions, BulkData, DataSize);
+#if WITH_EDITOR
 	CreateTextureEditorData(Texture, Dimensions, BulkData);
+#endif
 	Texture->Filter = TF_Default;
 
 	// Update resource, mark that the folder needs to be rescanned and notify editor about asset creation.
 	Texture->UpdateResource();
-	FAssetRegistryModule::AssetCreated(Texture);
+
+	const FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+	AssetRegistryModule.Get().AssetCreated(Texture);
+	// AssetRegistryModule::AssetCreated(Texture);
 
 	return Texture;
 }
@@ -127,12 +134,16 @@ UVolumeTexture* FTextureUtils::CreateVolumeAsset(const FString AssetName, const 
 
 	SetTextureDetails(Texture, Dimensions);
 	CreateTextureMip(Texture, Dimensions, BulkData, DataSize);
+#if WITH_EDITOR
 	CreateTextureEditorData(Texture, Dimensions, BulkData);
-
+#endif
 
 	// Update resource, mark that the folder needs to be rescanned and notify editor about asset creation.
 	Texture->UpdateResource();
-	FAssetRegistryModule::AssetCreated(Texture);
+	
+	const FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+	AssetRegistryModule.Get().AssetCreated(Texture);
+	// FAssetRegistryModule::AssetCreated(Texture);
 
 	return Texture;
 }

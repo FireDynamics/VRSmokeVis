@@ -1,5 +1,3 @@
-
-
 #pragma once
 
 #include "Components/SphereComponent.h"
@@ -20,7 +18,7 @@ DECLARE_LOG_CATEGORY_EXTERN(LogVRSSPlayerController, Log, All);
  * A class for motion controller actors.
  */
 UCLASS(Abstract)
-class AVRSSPlayerController : public APlayerController
+class VRSMOKEVIS_API AVRSSPlayerController : public APlayerController
 {
 	GENERATED_BODY()
 public:
@@ -72,12 +70,14 @@ public:
 	virtual void OnGripAxis(float Axis);
 
 	UFUNCTION()
-	void OnOverlapBegin(class UPrimitiveComponent* OverlappedComponent, class AActor* OtherActor, UPrimitiveComponent* OtherComp,
-		int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	void OnOverlapBegin(class UPrimitiveComponent* OverlappedComponent, class AActor* OtherActor,
+	                    UPrimitiveComponent* OtherComp,
+	                    int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 	UFUNCTION()
-	void OnOverlapEnd(class UPrimitiveComponent* OverlappedComponent, class AActor* OtherActor, UPrimitiveComponent* OtherComp,
-		int32 OtherBodyIndex);
+	void OnOverlapEnd(class UPrimitiveComponent* OverlappedComponent, class AActor* OtherActor,
+	                  UPrimitiveComponent* OtherComp,
+	                  int32 OtherBodyIndex);
 
 	UFUNCTION()
 	void OnWidgetInteractorHoverChanged(UWidgetComponent* Old, UWidgetComponent* New);

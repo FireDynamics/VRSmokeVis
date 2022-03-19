@@ -85,3 +85,13 @@ void UVRSSGameInstanceSubsystem::OnActiveAssetsChanged() const
 	UUserInterfaceUserWidget* UW = Cast<AVRSSHUD>(HUD)->UserInterfaceUserWidget;
 	UW->UpdateColorMaps(ActiveQuantities.Array());
 }
+
+void UVRSSGameInstanceSubsystem::ChangeObstQuantity(FString& NewQuantity)
+{
+	Config->SetActiveObstQuantity(NewQuantity);
+
+	for (ASimulation* Sim : Simulations)
+	{
+		Sim->ChangeObstQuantity(NewQuantity);
+	}
+}

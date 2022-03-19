@@ -14,9 +14,14 @@ DEFINE_LOG_CATEGORY(LogRaymarchVolume)
 // Sets default values
 ARaymarchVolume::ARaymarchVolume() : AActor()
 {
+	/* Watch out, when changing anything in this function, the child blueprint (BP_RaymarchVolume) will not reflect the
+	 * changes immediately. For the derived blueprint to apply the changes, one has to reparent the blueprint to sth.
+	 * like Actor and then reparent to RaymarchVolume again. After that all default values in the RaymarchVolume
+	* (M_Raymarch and M_CubeBorder in RootComponent) and the StaticMeshes (SM_UnitCubeInsideOut in StaticMeshComponent
+	* and SM_UnitCube in CubeBorderMeshComponent) have to be set again. */
+	
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = true;
-
 	SetActorEnableCollision(false);
 
 	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("Default Scene Root"));
@@ -24,10 +29,10 @@ ARaymarchVolume::ARaymarchVolume() : AActor()
 
 	StaticMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Raymarch Cube Static Mesh"));
 	// Set basic unit cube properties
-	StaticMeshComponent->SetStaticMesh(UnitCubeInsideOut);
 	StaticMeshComponent->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
 	StaticMeshComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
 	StaticMeshComponent->SetRelativeScale3D(FVector(100.0f));
+	StaticMeshComponent->SetCastShadow(false);
 	StaticMeshComponent->SetupAttachment(RootComponent);
 
 	// Create CubeBorderMeshComponent and assign cube border mesh (that's a cube with only edges visible)
@@ -35,7 +40,6 @@ ARaymarchVolume::ARaymarchVolume() : AActor()
 	CubeBorderMeshComponent->SetupAttachment(StaticMeshComponent);
 	CubeBorderMeshComponent->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
 	CubeBorderMeshComponent->SetHiddenInGame(true);
-	CubeBorderMeshComponent->SetStaticMesh(CubeBorder);
 	CubeBorderMeshComponent->SetMaterial(0, BorderMaterial);
 }
 
@@ -120,7 +124,7 @@ void ARaymarchVolume::UseSimulationTransform()
 
 		// Unreal units = cm, FDS has sizes in m -> multiply by 100.
 		StaticMeshComponent->SetRelativeScale3D(VolumeAsset->VolumeInfo.WorldDimensions * 100);
-		SetActorLocation((VolumeAsset->VolumeInfo.MeshPos + VolumeAsset->VolumeInfo.WorldDimensions / 2) * 100);
+		SetActorRelativeLocation((VolumeAsset->VolumeInfo.MeshPos + VolumeAsset->VolumeInfo.WorldDimensions / 2) * 100);
 	}
 }
 

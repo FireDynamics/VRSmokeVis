@@ -33,8 +33,7 @@ public class VRSmokeVis : ModuleRules
                 "RHI",
                 "AssetRegistry",
 				"HeadMountedDisplay",
-				"InputCore",
-				"PythonScriptPlugin"
+				"InputCore"
 			}
             );
 			
@@ -47,11 +46,10 @@ public class VRSmokeVis : ModuleRules
 				"Slate",
                 "SlateCore",
                 "UMG",
-                "UnrealEd"
 				// ... add private dependencies that you statically link with here ...	
 			}
             );
-		
+	
 		
 		DynamicallyLoadedModuleNames.AddRange(
 			new string[]
