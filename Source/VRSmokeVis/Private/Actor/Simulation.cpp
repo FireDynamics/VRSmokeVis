@@ -26,7 +26,7 @@
 #include "Components/ScrollBox.h"
 #include "Engine/ObjectLibrary.h"
 #include "Engine/StaticMeshActor.h"
-#include "Util/AssetUtilities.h"
+#include "Util/AssetCreationUtilities.h"
 #include "Util/ImportUtilities.h"
 
 
@@ -636,19 +636,19 @@ bool ASimulation::RegisterTextureLoad(const FString Type, const AActor* Asset, c
 		if (Type.Equals("Obst"))
 		{
 			FBoundaryDataInfo& ObstInfo = Cast<AObst>(Asset)->ObstAsset->ObstInfo;
-			FAssetUtils::LoadObstTextures(
+			FAssetCreationUtils::LoadObstTextures(
 				ObstInfo, FPaths::Combine(OriginalDataDirectory, SimulationAsset->SimInfo.OriginalObstFilesPath));
 		}
 		else if (Type.Equals("Slice"))
 		{
 			FVolumeDataInfo& SliceInfo = Cast<ASlice>(Asset)->SliceAsset->SliceInfo;
-			FAssetUtils::LoadSliceTextures(
+			FAssetCreationUtils::LoadSliceTextures(
 				SliceInfo, FPaths::Combine(OriginalDataDirectory, SimulationAsset->SimInfo.OriginalSliceFilesPath));
 		}
 		else if (Type.Equals("Volume"))
 		{
 			FVolumeDataInfo& VolumeInfo = Cast<ARaymarchVolume>(Asset)->VolumeAsset->VolumeInfo;
-			FAssetUtils::LoadVolumeTextures(
+			FAssetCreationUtils::LoadVolumeTextures(
 				VolumeInfo, FPaths::Combine(OriginalDataDirectory, SimulationAsset->SimInfo.OriginalVolumeFilesPath));
 		}
 		else return false;

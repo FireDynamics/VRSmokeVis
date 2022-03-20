@@ -23,13 +23,13 @@ float PerformRaymarch(Texture3D DataVolumeT0, SamplerState DataVolumeSamplerT0,
 
 	// Get camera vector in local space and multiply it by step size.
 	float3 LocalCamVec = -normalize(mul(MaterialParameters.CameraVector,
-	                                    GetPrimitiveData(MaterialParameters.PrimitiveId).WorldToLocal)) * StepSize;
+	                                    GetPrimitiveData(MaterialParameters.PrimitiveId).WorldToLocal.M)) * StepSize;
 
 	// Snap start positions to view aligned planes
 	float LocalSceneDepth = CalcSceneDepth(ScreenAlignedPosition(GetScreenPosition(MaterialParameters)));
 	float VolumeCenterDistance = length(
-		ResolvedView.WorldCameraOrigin - GetPrimitiveData(MaterialParameters.PrimitiveId).ActorWorldPosition);
-	float3 PlaneOffset = mul((LocalSceneDepth - VolumeCenterDistance) % StepSize, LocalCamVec); // VolumeCenterDistance
+		LWCToFloat(ResolvedView.WorldCameraOrigin) - LWCToFloat(GetPrimitiveData(MaterialParameters.PrimitiveId).ActorWorldPosition));
+	float3 PlaneOffset = mul((LocalSceneDepth - VolumeCenterDistance) % StepSize, LocalCamVec);
 	CurPos += PlaneOffset;
 	Thickness -= PlaneOffset;
 

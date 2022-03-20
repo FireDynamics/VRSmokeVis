@@ -18,14 +18,11 @@ float4 PerformRaymarchCubeSetup(FMaterialPixelParameters MaterialParameters)
 	// Get scene depth at this pixel.
 	float LocalSceneDepth = CalcSceneDepth(ScreenAlignedPosition(GetScreenPosition(MaterialParameters)));
 
-	// Get camera forward vector in world space.
-	float3 CameraFWDVecWorld = mul(float3(0.00000000, 0.00000000, 1.00000000), ResolvedView.ViewToTranslatedWorld);
-
 	// Get world space vector going from camera center to current scene depth.
 	float3 WorldDepthVec = normalize(MaterialParameters.CameraVector) * LocalSceneDepth;
 
 	// Transform this vector into the box's local space
-	WorldDepthVec = mul(WorldDepthVec, GetPrimitiveData(MaterialParameters.PrimitiveId).WorldToLocal);
+	WorldDepthVec = mul(WorldDepthVec, GetPrimitiveData(MaterialParameters.PrimitiveId).WorldToLocal.M);
 
 	// Get actual depth in local space, account for mesh bounds (by default, we use a centered 1x1x1 cube mesh, so this is unnecessary)
 	LocalSceneDepth = length(WorldDepthVec);
@@ -33,14 +30,17 @@ float4 PerformRaymarchCubeSetup(FMaterialPixelParameters MaterialParameters)
 	// We use unit cubes now, uncomment this if you want to use non-unit meshes for some reason.
 	LocalSceneDepth /= (GetPrimitiveData(MaterialParameters.PrimitiveId).LocalObjectBoundsMax.x * 2);
 
+	// Get camera forward vector in world space.
+	float3 CameraFWDVecWorld = mul(float3(0.00000000, 0.00000000, 1.00000000), ResolvedView.ViewToTranslatedWorld);
+
 	// Account for difference between camera center vector and camera-to-pixel depth
 	LocalSceneDepth /= abs(dot(CameraFWDVecWorld, MaterialParameters.CameraVector));
 
 	// Get cam pos and vector into local space too.
-	float3 LocalCamPos = mul(float4(ResolvedView.WorldCameraOrigin, 1.00000000),
-	                         GetPrimitiveData(MaterialParameters.PrimitiveId).WorldToLocal).xyz;
+	float3 LocalCamPos = mul(float4(LWCToFloat(ResolvedView.WorldCameraOrigin), 1.00000000),
+	                         GetPrimitiveData(MaterialParameters.PrimitiveId).WorldToLocal.M).xyz;
 	float3 LocalCamVec = -normalize(mul(MaterialParameters.CameraVector,
-	                                    GetPrimitiveData(MaterialParameters.PrimitiveId).WorldToLocal));
+	                                    GetPrimitiveData(MaterialParameters.PrimitiveId).WorldToLocal.M));
 
 	// Transform camera pos from local to UVW coords (from +-0.5 to [0 - 1]).
 	LocalCamPos += 0.5;

@@ -4,7 +4,7 @@
 #include "Assets/SimulationAsset.h"
 #include "Containers/UnrealString.h"
 #include "UObject/SavePackage.h"
-#include "Util/AssetUtilities.h"
+#include "Util/AssetCreationUtilities.h"
 #include "Util/ImportUtilities.h"
 #include "Util/Preprocessor.h"
 
@@ -61,5 +61,5 @@ UObject* UVRSSAssetFactory::FactoryCreateFile(UClass* InClass, UObject* InParent
 	}
 	
 	bOutOperationCanceled = false;
-	return FAssetUtils::CreateSimulation(InParent, SimulationIntermediateFile);
+	return FAssetCreationUtils::CreateSimulation(InParent, SimulationIntermediateFile);
 }
