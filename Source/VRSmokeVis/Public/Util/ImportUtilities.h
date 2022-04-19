@@ -1,9 +1,5 @@
 ﻿#pragma once
 
-#include "Assets/VolumeAsset.h"
-#include "Assets/ObstAsset.h"
-#include "Assets/SimulationInfo.h"
-
 
 DECLARE_LOG_CATEGORY_EXTERN(LogImportUtils, All, All);
 
@@ -27,28 +23,31 @@ public:
 	static uint8* LoadDatFileIntoArray(const FString FileName, const int64 BytesToLoad);
 
 	/** Converts an array of densities to the resulting transmission. */
-	static void DensityToTransmission(const float ExtinctionCoefficient, const FVolumeDataInfo& DataInfo, uint8* Array);
+	static void DensityToTransmission(const float ExtinctionCoefficient, const class UVolumeDataInfo* DataInfo, uint8* Array);
 
 	/** Normalizes an array to the full range of 0-255 (1 Byte). */
-	static void NormalizeArray(const FVolumeDataInfo& DataInfo, uint8* Array);
+	static void NormalizeArray(const class UVolumeDataInfo* DataInfo, uint8* Array);
 
 	/** Loads the raw data specified in the DataInfo and converts it so that it is usable with our raymarching materials. */
 	static uint8* LoadAndConvertVolumeData(const float ExtinctionCoefficient, const FString& FilePath,
-	                                       const FVolumeDataInfo& DataInfo);
+	                                       const class UVolumeDataInfo* DataInfo);
 
 	/** Loads the raw data specified in the DataInfo. */
-	static uint8* LoadSliceData(const FString& FilePath, const FVolumeDataInfo& DataInfo);
+	static uint8* LoadSliceData(const FString& FilePath, const class USliceDataInfo* DataInfo);
 
 	/** Loads the raw data specified in the DataInfo. */
-	static uint8* LoadObstData(const FString& FilePath, const FBoundaryDataInfo& DataInfo);
+	static uint8* LoadObstData(const FString& FilePath, const class UBoundaryDataInfo* DataInfo);
 
-	/** Getting info about slices or volumes before loading them. */
-	static TMap<FString, FVolumeDataInfo> ParseSliceVolumeDataInfoFromFile(const FString& FileName);
+	/** Getting info about volumes before loading them. */
+	static void ParseVolumeDataInfoFromFile(const FString& FileName, UPARAM(ref) TMap<FString, class UVolumeDataInfo*>& DataInfos);
+
+	/** Getting info about slices before loading them. */
+	static void ParseSliceDataInfoFromFile(const FString& FileName, UPARAM(ref) TMap<FString, class USliceDataInfo*>& DataInfos);
 
 	/** Getting info about obstructions before loading them. */
-	static FBoundaryDataInfo ParseObstDataInfoFromFile(const FString& FilePath, TArray<float>& BoundingBoxOut);
+	static void ParseObstDataInfoFromFile(const FString& FilePath, UPARAM(ref) class UBoundaryDataInfo* DataInfo, UPARAM(ref) TArray<float>& BoundingBoxOut);
 
-	static FSimulationInfo ParseSimulationInfoFromFile(const FString& FileName);
+	static void ParseSimulationInfoFromFile(const FString& FileName, UPARAM(ref) class USimulationInfo* SimInfo);
 
 	/** If this function cannot find or create the directory, returns false. */
 	static FORCEINLINE bool VerifyOrCreateDirectory(const FString& TestDir)

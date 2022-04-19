@@ -1,17 +1,17 @@
 #include "Assets/VolumeDataInfo.h"
 
-int64 FVolumeDataInfo::GetByteSize() const
+int64 UVolumeDataInfo::GetByteSize() const
 {
 	return Dimensions.X * Dimensions.Y * Dimensions.Z * Dimensions.W;
 }
 
-int64 FVolumeDataInfo::GetTotalVoxels() const
+int64 UVolumeDataInfo::GetTotalVoxels() const
 {
 	return Dimensions.X * Dimensions.Y * Dimensions.Z;
 }
 
-FString FVolumeDataInfo::ToString() const
+FString UVolumeDataInfo::ToString() const
 {
-	return "Name " + FdsName + " details:" + "\nDimensions = " + Dimensions.ToString() +
+	return "Volumename " + FdsName + " details:" + "\nDimensions = " + Dimensions.ToString() +
 		"\nSpacing : " + Spacing.ToString() + "\nWorld Size MM : " + Dimensions.ToString();
 }

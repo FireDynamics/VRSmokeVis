@@ -4,11 +4,12 @@
 
 
 // Contains information about the data loaded from a postprocessed .smv file
-USTRUCT(BlueprintType)
-struct VRSMOKEVIS_API FSimulationInfo
+UCLASS(BlueprintType)
+class VRSMOKEVIS_API USimulationInfo : public UObject
 {
 	GENERATED_BODY()
 
+public:
 	UPROPERTY()
 	FString SmokeViewOriginalFilePath;
 

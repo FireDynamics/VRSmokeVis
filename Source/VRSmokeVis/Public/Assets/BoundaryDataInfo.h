@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Assets/DataInfo.h"
 #include "BoundaryDataInfo.generated.h"
 
 USTRUCT()
@@ -17,19 +18,18 @@ struct VRSMOKEVIS_API FQuantityDir
 };
 
 /** Contains information about the data loaded from the binary data and yaml header file */
-USTRUCT(BlueprintType)
-struct VRSMOKEVIS_API FBoundaryDataInfo
+UCLASS(BlueprintType)
+class VRSMOKEVIS_API UBoundaryDataInfo : public UDataInfo
 {
 	GENERATED_BODY()
-
+	
+public:
 	/** Returns the number of bytes needed to store a specific face */
 	int64 GetByteSize(const int Face) const;
 
-	FString ToString() const;
+	virtual int64 GetByteSize() const override;
 
-	/** FDS name of the obst */
-	UPROPERTY(VisibleAnywhere)
-	FString ObstName;
+	virtual FString ToString() const override;
 
 	/** Name of the obst files per quantity that were loaded */
 	UPROPERTY(VisibleAnywhere)

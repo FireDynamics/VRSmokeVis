@@ -50,7 +50,7 @@ void USimControllerUserWidget::InitObstCheckboxes() const
 	TArray<AObst*> Obstructions = Sim->GetAllObstructions();
 	for (int i = 0; i < Obstructions.Num(); ++i)
 	{
-		const FString ObstName = Obstructions[i]->ObstAsset->ObstInfo.ObstName;
+		const FString ObstName = Obstructions[i]->DataAsset->DataInfo->FdsName;
 		ObstsScrollBox->AddChild(ConstructCheckboxRow(ObstsDelegate, ObstName));
 	}
 }
@@ -62,7 +62,7 @@ void USimControllerUserWidget::InitSliceCheckboxes() const
 	TArray<ASlice*> Slices = Sim->GetAllSlices();
 	for (int i = 0; i < Slices.Num(); ++i)
 	{
-		const FString SliceName = Slices[i]->SliceAsset->SliceInfo.FdsName;
+		const FString SliceName = Slices[i]->DataAsset->DataInfo->FdsName;
 		SlicesScrollBox->AddChild(ConstructCheckboxRow(SlicesDelegate, SliceName));
 	}
 }
@@ -75,7 +75,7 @@ void USimControllerUserWidget::InitVolumeCheckboxes() const
 	TArray<ARaymarchVolume*> Volumes = Sim->GetAllVolumes();
 	for (int i = 0; i < Volumes.Num(); ++i)
 	{
-		const FString VolumeName = Volumes[i]->VolumeAsset->VolumeInfo.FdsName;
+		const FString VolumeName = Volumes[i]->DataAsset->DataInfo->FdsName;
 		VolumesScrollBox->AddChild(ConstructCheckboxRow(VolumesDelegate, VolumeName));
 	}
 }

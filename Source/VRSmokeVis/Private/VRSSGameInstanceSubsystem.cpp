@@ -50,6 +50,7 @@ void UVRSSGameInstanceSubsystem::RegisterSimulation(ASimulation* Simulation)
 	HUD->InitHUD();
 	HUD->UserInterfaceUserWidget->InitColorMaps(GI->Config, Mins, Maxs);
 	HUD->UserInterfaceUserWidget->AddSimulationController(Simulation);
+	// Todo: Improve UI so multiple simulation controllers actually fit on the screen
 
 	// Update the colormaps for all assets in each simulation, to draw the correct colors for each value
 	for (ASimulation* Sim : Simulations)

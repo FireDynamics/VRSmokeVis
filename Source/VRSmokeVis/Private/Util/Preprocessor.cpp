@@ -103,12 +103,14 @@ void UPreprocessor::FdsreaderOutput(const FString Output)
 	}
 	else
 	{
+		// Todo: Check for prerequisites when starting the project instead
+		
 		// Todo: Error - Something went wrong when running the postprocessing script
-		// Make sure fdsreader and yaml python-packages are installed
+		// Make sure "fdsreader", "pathos" and "pyyaml" python-packages are installed
 
 		UE_LOG(LogPreprocessor, Error,
 		       TEXT(
-			       "Something went wrong when running the postprocessing script\nMake sure fdsreader and yaml python-packages are installed"
+			       "Something went wrong when running the postprocessing script\nMake sure \"fdsreader\", \"pathos\" and \"pyyaml\" python-packages are installed"
 		       ));
 	}
 }

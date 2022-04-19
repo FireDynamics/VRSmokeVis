@@ -17,6 +17,7 @@
 #include "Actor/RaymarchLight.h"
 #include "Actor/RaymarchVolume.h"
 #include "AssetRegistry/AssetRegistryModule.h"
+#include "Assets/FdsDataAsset.h"
 #include "Assets/ObstAsset.h"
 #include "Assets/SliceAsset.h"
 #include "Assets/SimulationAsset.h"
@@ -37,7 +38,6 @@ ASimulation::ASimulation()
 {
 	PrimaryActorTick.bCanEverTick = false;
 	PrimaryActorTick.bStartWithTickEnabled = false;
-	// StreamableManager = FStreamableManager();
 }
 
 void ASimulation::BeginPlay()
@@ -58,20 +58,20 @@ void ASimulation::InitObstructions()
 	ObjectLibrary->AddToRoot();
 	ObjectLibrary->LoadAssetDataFromPath(SimulationAsset->ObstructionsDirectory);
 	ObjectLibrary->GetAssetDataList(SimulationAsset->Obstructions);
-	
+
 	if (SimulationAsset->Obstructions.Num() == 0) return;
-	
+
 	// Set some default obst quantity as active
 	const UVRSSGameInstanceSubsystem* GI = GetGameInstance()->GetSubsystem<UVRSSGameInstanceSubsystem>();
-		TArray<FString> ObstQuantities;
-		const UObstAsset* RandomObstAsset = Cast<UObstAsset>(
-			StreamableManager.LoadSynchronous(SimulationAsset->Obstructions[0].ToSoftObjectPath()));
-		RandomObstAsset->ObstInfo.ScaleFactors.GetKeys(ObstQuantities);
+	TArray<FString> ObstQuantities;
+	const UObstAsset* RandomObstAsset = Cast<UObstAsset>(
+		StreamableManager.LoadSynchronous(SimulationAsset->Obstructions[0].ToSoftObjectPath()));
+	Cast<UBoundaryDataInfo>(RandomObstAsset->DataInfo)->ScaleFactors.GetKeys(ObstQuantities);
 
-		if (!ObstQuantities.Contains(GI->Config->GetActiveObstQuantity()))
-		{
-			GI->Config->SetActiveObstQuantity(ObstQuantities[0]);
-		}
+	if (!ObstQuantities.Contains(GI->Config->GetActiveObstQuantity()))
+	{
+		GI->Config->SetActiveObstQuantity(ObstQuantities[0]);
+	}
 
 	const FString& ActiveObstQuantity = GetGameInstance()->GetSubsystem<UVRSSGameInstanceSubsystem>()->Config->
 	                                                       GetActiveObstQuantity();
@@ -81,9 +81,9 @@ void ASimulation::InitObstructions()
 	{
 		AObst* NewObst = GetWorld()->SpawnActorDeferred<AObst>(ObstClass, ZeroTransform, this);
 		Obstructions.Add(NewObst);
-		NewObst->ObstAsset = Cast<UObstAsset>(StreamableManager.LoadSynchronous(ObstAsset.ToSoftObjectPath()));
+		NewObst->DataAsset = Cast<UObstAsset>(StreamableManager.LoadSynchronous(ObstAsset.ToSoftObjectPath()));
 #if WITH_EDITOR
-		NewObst->SetActorLabel(NewObst->ObstAsset->ObstInfo.ObstName);
+		NewObst->SetActorLabel(NewObst->DataAsset->DataInfo->FdsName);
 #endif
 		NewObst->SetActorHiddenInGame(true);
 		NewObst->SetActorEnableCollision(false);
@@ -92,10 +92,6 @@ void ASimulation::InitObstructions()
 		NewObst->UseSimulationTransform();
 		NewObst->SetActiveQuantity(ActiveObstQuantity);
 	}
-		
-#if !WITH_EDITOR
-	SpawnSimulationGeometry();
-#endif
 }
 
 void ASimulation::InitSlices()
@@ -104,15 +100,15 @@ void ASimulation::InitSlices()
 	ObjectLibrary->AddToRoot();
 	ObjectLibrary->LoadAssetDataFromPath(SimulationAsset->SlicesDirectory);
 	ObjectLibrary->GetAssetDataList(SimulationAsset->Slices);
-	
+
 	const FTransform ZeroTransform;
 	for (FAssetData& SliceAsset : SimulationAsset->Slices)
 	{
 		ASlice* NewSlice = GetWorld()->SpawnActorDeferred<ASlice>(SliceClass, ZeroTransform, this);
 		Slices.Add(NewSlice);
-		NewSlice->SliceAsset = Cast<USliceAsset>(StreamableManager.LoadSynchronous(SliceAsset.ToSoftObjectPath()));
+		NewSlice->DataAsset = Cast<USliceAsset>(StreamableManager.LoadSynchronous(SliceAsset.ToSoftObjectPath()));
 #if WITH_EDITOR
-		NewSlice->SetActorLabel(NewSlice->SliceAsset->SliceInfo.FdsName);
+		NewSlice->SetActorLabel(NewSlice->DataAsset->DataInfo->FdsName);
 #endif
 		NewSlice->SetActorHiddenInGame(true);
 		NewSlice->SetActorEnableCollision(false);
@@ -128,15 +124,15 @@ void ASimulation::InitVolumes()
 	ObjectLibrary->AddToRoot();
 	ObjectLibrary->LoadAssetDataFromPath(SimulationAsset->VolumesDirectory);
 	ObjectLibrary->GetAssetDataList(SimulationAsset->Volumes);
-	
+
 	const FTransform ZeroTransform;
 	for (FAssetData& VolumeAsset : SimulationAsset->Volumes)
 	{
 		ARaymarchVolume* NewVolume = GetWorld()->SpawnActorDeferred<ARaymarchVolume>(VolumeClass, ZeroTransform, this);
 		Volumes.Add(NewVolume);
-		NewVolume->VolumeAsset = Cast<UVolumeAsset>(StreamableManager.LoadSynchronous(VolumeAsset.ToSoftObjectPath()));
+		NewVolume->DataAsset = Cast<UVolumeAsset>(StreamableManager.LoadSynchronous(VolumeAsset.ToSoftObjectPath()));
 #if WITH_EDITOR
-		NewVolume->SetActorLabel(NewVolume->VolumeAsset->VolumeInfo.FdsName);
+		NewVolume->SetActorLabel(NewVolume->DataAsset->DataInfo->FdsName);
 #endif
 		NewVolume->SetActorHiddenInGame(true);
 		NewVolume->SetActorEnableCollision(false);
@@ -159,7 +155,7 @@ void ASimulation::SpawnSimulationGeometry()
 		UObstAsset* ObstAsset = Cast<UObstAsset>(StreamableManager.LoadSynchronous(ObstAssetData.ToSoftObjectPath()));
 		AStaticMeshActor* ObstCuboid = GetWorld()->SpawnActor<AStaticMeshActor>(Params);
 #if WITH_EDITOR
-		ObstCuboid->SetActorLabel(ObstAsset->ObstInfo.ObstName + "-Geometry");
+		ObstCuboid->SetActorLabel(ObstAsset->DataInfo->FdsName + "-Geometry");
 #endif
 		ObstCuboid->SetMobility(EComponentMobility::Static);
 		ObstCuboid->AttachToActor(this, FAttachmentTransformRules::KeepRelativeTransform);
@@ -193,8 +189,8 @@ void ASimulation::UpdateColorMaps(const TMap<FString, float>& Mins, const TMap<F
 		Obst->UpdateColorMapScale(Mins[ActiveObstQuantity], Maxs[ActiveObstQuantity]);
 
 	for (const ASlice* Slice : Slices)
-		Slice->UpdateColorMapScale(Mins[Slice->SliceAsset->SliceInfo.Quantity],
-		                           Maxs[Slice->SliceAsset->SliceInfo.Quantity]);
+		Slice->UpdateColorMapScale(Mins[Cast<USliceDataInfo>(Slice->DataAsset->DataInfo)->Quantity],
+		                           Maxs[Cast<USliceDataInfo>(Slice->DataAsset->DataInfo)->Quantity]);
 }
 
 void ASimulation::CheckObstActivations()
@@ -223,7 +219,8 @@ void ASimulation::ActivateObst(AObst* Obst)
 	                                                       GetActiveObstQuantity();
 
 	TArray<int> Orientations;
-	Obst->ObstAsset->ObstInfo.Dimensions.GetKeys(Orientations);
+	UBoundaryDataInfo *ObstDataInfo = Cast<UBoundaryDataInfo>(Obst->DataAsset->DataInfo);
+	ObstDataInfo->Dimensions.GetKeys(Orientations);
 	for (const int Orientation : Orientations)
 	{
 		ObstUpdateDataEventDelegateHandles.FindOrAdd(Obst->GetName(), TMap<int, FDelegateHandle>());
@@ -233,9 +230,9 @@ void ASimulation::ActivateObst(AObst* Obst)
 
 		// Registering the automatic async texture loading each timestep
 		if (!RegisterTextureLoad("Obst", Obst,
-		                         Obst->ObstAsset->ObstInfo.TextureDirs[ActiveObstQuantity].FaceDirs[Orientation],
-		                         Obst->ObstAsset->ObstTextures[ActiveObstQuantity][Orientation],
-		                         Obst->ObstAsset->ObstInfo.Dimensions[Orientation].W))
+		                         ObstDataInfo->TextureDirs[ActiveObstQuantity].FaceDirs[Orientation],
+		                         Cast<UObstAsset>(Obst->DataAsset)->ObstTextures[ActiveObstQuantity][Orientation],
+		                         ObstDataInfo->Dimensions[Orientation].W))
 			return;
 		FDelegateHandle Handle = UpdateDataEvents["Obst"].AddUObject(Obst, &AObst::UpdateTexture, Orientation);
 		if (ObstUpdateDataEventDelegateHandles[Obst->GetName()].Contains(Orientation))
@@ -261,7 +258,7 @@ void ASimulation::DeactivateObst(AObst* Obst)
 {
 	// Remove the existing update event delegates
 	TArray<int> Orientations;
-	Obst->ObstAsset->ObstInfo.Dimensions.GetKeys(Orientations);
+	Cast<UBoundaryDataInfo>(Obst->DataAsset->DataInfo)->Dimensions.GetKeys(Orientations);
 	for (const int Orientation : Orientations)
 		UpdateDataEvents["Obst"].Remove(ObstUpdateDataEventDelegateHandles[Obst->GetName()][Orientation]);
 
@@ -297,8 +294,8 @@ void ASimulation::ActivateSlice(ASlice* Slice)
 	if (SliceUpdateDataEventDelegateHandles.Contains(Slice->GetName()))
 		UpdateDataEvents["Slice"].Remove(SliceUpdateDataEventDelegateHandles[Slice->GetName()]);
 	// Registering the automatic async texture loading each timestep
-	if (!RegisterTextureLoad("Slice", Slice, Slice->SliceAsset->SliceInfo.TextureDir, Slice->SliceAsset->SliceTextures,
-	                         Slice->SliceAsset->SliceInfo.Dimensions.W))
+	if (!RegisterTextureLoad("Slice", Slice, Cast<USliceDataInfo>(Slice->DataAsset->DataInfo)->TextureDir, Cast<USliceAsset>(Slice->DataAsset)->SliceTextures,
+	                         Cast<USliceDataInfo>(Slice->DataAsset->DataInfo)->Dimensions.W))
 		return;
 	FDelegateHandle Handle = UpdateDataEvents["Slice"].AddUObject(Slice, &ASlice::UpdateTexture);
 	if (SliceUpdateDataEventDelegateHandles.Contains(Slice->GetName()))
@@ -353,8 +350,8 @@ void ASimulation::ActivateVolume(ARaymarchVolume* Volume)
 	if (VolumeUpdateDataEventDelegateHandles.Contains(Volume->GetName()))
 		UpdateDataEvents["Volume"].Remove(VolumeUpdateDataEventDelegateHandles[Volume->GetName()]);
 	// Registering the automatic async texture loading each timestep
-	if (!RegisterTextureLoad("Volume", Volume, Volume->VolumeAsset->VolumeInfo.TextureDir,
-	                         Volume->VolumeAsset->VolumeTextures, Volume->VolumeAsset->VolumeInfo.Dimensions.W))
+	if (!RegisterTextureLoad("Volume", Volume, Cast<UVolumeDataInfo>(Volume->DataAsset->DataInfo)->TextureDir,
+	                         Cast<UVolumeAsset>(Volume->DataAsset)->VolumeTextures, Cast<UVolumeDataInfo>(Volume->DataAsset->DataInfo)->Dimensions.W))
 		return;
 
 	FDelegateHandle Handle = UpdateDataEvents["Volume"].AddUObject(Volume, &ARaymarchVolume::UpdateVolume);
@@ -477,8 +474,6 @@ void ASimulation::RewindSimulation(const float Amount)
 void ASimulation::TogglePauseSimulation()
 {
 	bIsPaused = !bIsPaused;
-	// Todo: Change this
-	// UGameplayStatics::SetGamePaused(GetWorld(), bIsPaused);
 
 	for (AObst* Obst : Obstructions)
 	{
@@ -543,7 +538,7 @@ TArray<FString> ASimulation::GetSliceQuantities(const bool ActiveOnly) const
 	TSet<FString> Quantities = TSet<FString>();
 	for (const ASlice* Slice : Slices)
 		if (!ActiveOnly || !Slice->IsHidden())
-			Quantities.Add(Slice->SliceAsset->SliceInfo.Quantity);
+			Quantities.Add(Cast<USliceDataInfo>(Slice->DataAsset->DataInfo)->Quantity);
 	return Quantities.Array();
 }
 
@@ -553,10 +548,11 @@ void ASimulation::GetSlicesMaxMinForQuantity(const FString Quantity, float& MinO
 	MaxOut = TNumericLimits<float>::Min();
 	for (const ASlice* Slice : Slices)
 	{
-		if (Slice->SliceAsset->SliceInfo.Quantity.Equals(Quantity))
+		const USliceDataInfo* DataInfo = Cast<USliceDataInfo>(Slice->DataAsset->DataInfo);
+		if (DataInfo->Quantity.Equals(Quantity))
 		{
-			MinOut = FMath::Min(Slice->SliceAsset->SliceInfo.MinValue, MinOut);
-			MaxOut = FMath::Max(Slice->SliceAsset->SliceInfo.MaxValue, MaxOut);
+			MinOut = FMath::Min(DataInfo->MinValue, MinOut);
+			MaxOut = FMath::Max(DataInfo->MaxValue, MaxOut);
 		}
 	}
 }
@@ -567,14 +563,13 @@ void ASimulation::GetObstructionsMaxMinForQuantity(const FString Quantity, float
 	MaxOut = TNumericLimits<float>::Min();
 	for (const AObst* Obst : Obstructions)
 	{
-		float* Val = Obst->ObstAsset->ObstInfo.MinValues.Find(Quantity);
-		if (Val) MinOut = FMath::Min(*Val, MinOut);
-		Val = Obst->ObstAsset->ObstInfo.MaxValues.Find(Quantity);
-		if (Val) MaxOut = FMath::Max(*Val, MaxOut);
+		const UBoundaryDataInfo* DataInfo = Cast<UBoundaryDataInfo>(Obst->DataAsset->DataInfo);
+		if (const float* MinVal = DataInfo->MinValues.Find(Quantity)) MinOut = FMath::Min(*MinVal, MinOut);
+		if (const float* MaxVal = DataInfo->MaxValues.Find(Quantity)) MaxOut = FMath::Max(*MaxVal, MaxOut);
 	}
 }
 
-void ASimulation::ChangeObstQuantity(FString& NewQuantity)
+void ASimulation::ChangeObstQuantity(const FString& NewQuantity)
 {
 	float Min, Max;
 	GetMaxMinForQuantity(NewQuantity, Min, Max);
@@ -583,7 +578,7 @@ void ASimulation::ChangeObstQuantity(FString& NewQuantity)
 		Obst->UpdateColorMapScale(Min, Max);
 
 		TArray<int> Orientations;
-		Obst->ObstAsset->ObstInfo.Dimensions.GetKeys(Orientations);
+		Cast<UBoundaryDataInfo>(Obst->DataAsset->DataInfo)->Dimensions.GetKeys(Orientations);
 		for (const int Orientation : Orientations)
 		{
 			// Initialize resources for timestep t=-1 and t=0 (for time interpolation)
@@ -631,34 +626,21 @@ bool ASimulation::RegisterTextureLoad(const FString Type, const AActor* Asset, c
 	if (TextureArray.Num() != NumTextures)
 	{
 		FString OriginalDataDirectory, SimName;
-		FImportUtils::SplitPath(SimulationAsset->SimInfo.SmokeViewOriginalFilePath, OriginalDataDirectory, SimName);
+		FImportUtils::SplitPath(SimulationAsset->SimInfo->SmokeViewOriginalFilePath, OriginalDataDirectory, SimName);
 		// If not, load the data now
-		if (Type.Equals("Obst"))
-		{
-			FBoundaryDataInfo& ObstInfo = Cast<AObst>(Asset)->ObstAsset->ObstInfo;
-			FAssetCreationUtils::LoadObstTextures(
-				ObstInfo, FPaths::Combine(OriginalDataDirectory, SimulationAsset->SimInfo.OriginalObstFilesPath));
-		}
-		else if (Type.Equals("Slice"))
-		{
-			FVolumeDataInfo& SliceInfo = Cast<ASlice>(Asset)->SliceAsset->SliceInfo;
-			FAssetCreationUtils::LoadSliceTextures(
-				SliceInfo, FPaths::Combine(OriginalDataDirectory, SimulationAsset->SimInfo.OriginalSliceFilesPath));
-		}
-		else if (Type.Equals("Volume"))
-		{
-			FVolumeDataInfo& VolumeInfo = Cast<ARaymarchVolume>(Asset)->VolumeAsset->VolumeInfo;
-			FAssetCreationUtils::LoadVolumeTextures(
-				VolumeInfo, FPaths::Combine(OriginalDataDirectory, SimulationAsset->SimInfo.OriginalVolumeFilesPath));
-		}
-		else return false;
+		UDataInfo* ObstInfo = Cast<AFdsActor>(Asset)->DataAsset->DataInfo;
+		
+		FAssetCreationUtils::LoadTextures(
+			ObstInfo, Type, FPaths::Combine(OriginalDataDirectory, SimulationAsset->SimInfo->OriginalObstFilesPath));
+
 		// Todo: Load the data in the background and add a loading queue in UI
 
 		TArray<FString> PathsToScan = TArray<FString>();
 		PathsToScan.Add(TextureDirectory);
-		const FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+		const FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(
+			"AssetRegistry");
 		AssetRegistryModule.Get().ScanPathsSynchronous(PathsToScan, true);
-		
+
 		ObjectLibrary->ClearLoaded();
 		ObjectLibrary->LoadAssetDataFromPath(TextureDirectory);
 		ObjectLibrary->GetAssetDataList(TextureArray);
@@ -720,10 +702,10 @@ void ASimulation::NextTimeStep(const FString Type)
 			if (!Obst->IsHidden())
 			{
 				TArray<int> Orientations;
-				Obst->ObstAsset->ObstInfo.Dimensions.GetKeys(Orientations);
+				Cast<UBoundaryDataInfo>(Obst->DataAsset->DataInfo)->Dimensions.GetKeys(Orientations);
 				for (const int Orientation : Orientations)
 				{
-					CurrentTextureArray = Obst->ObstAsset->ObstTextures[ActiveObstQuantity][Orientation];
+					CurrentTextureArray = Cast<UObstAsset>(Obst->DataAsset)->ObstTextures[ActiveObstQuantity][Orientation];
 					StreamableManager.Unload(CurrentTextureArray[PreviousTextureIndex].ToSoftObjectPath());
 					AssetsToLoad.Add(CurrentTextureArray[NextTextureIndex].ToSoftObjectPath());
 				}
@@ -736,7 +718,7 @@ void ASimulation::NextTimeStep(const FString Type)
 		{
 			if (!Slice->IsHidden())
 			{
-				CurrentTextureArray = Slice->SliceAsset->SliceTextures;
+				CurrentTextureArray = Cast<USliceAsset>(Slice->DataAsset)->SliceTextures;
 				StreamableManager.Unload(CurrentTextureArray[PreviousTextureIndex].ToSoftObjectPath());
 				AssetsToLoad.Add(CurrentTextureArray[NextTextureIndex].ToSoftObjectPath());
 			}
@@ -748,7 +730,7 @@ void ASimulation::NextTimeStep(const FString Type)
 		{
 			if (!Volume->IsHidden())
 			{
-				CurrentTextureArray = Volume->VolumeAsset->VolumeTextures;
+				CurrentTextureArray = Cast<UVolumeAsset>(Volume->DataAsset)->VolumeTextures;
 				StreamableManager.Unload(CurrentTextureArray[PreviousTextureIndex].ToSoftObjectPath());
 				AssetsToLoad.Add(CurrentTextureArray[NextTextureIndex].ToSoftObjectPath());
 			}

@@ -4,6 +4,8 @@
 #include "Util/TextureUtilities.h"
 #include "Assets/VolumeAsset.h"
 #include "Actor/Simulation.h"
+#include "Assets/FdsDataAsset.h"
+#include "Assets/VolumeDataInfo.h"
 
 DEFINE_LOG_CATEGORY(LogRaymarchVolume)
 
@@ -12,7 +14,7 @@ DEFINE_LOG_CATEGORY(LogRaymarchVolume)
 #endif
 
 // Sets default values
-ARaymarchVolume::ARaymarchVolume() : AActor()
+ARaymarchVolume::ARaymarchVolume() : AFdsActor()
 {
 	/* Watch out, when changing anything in this function, the child blueprint (BP_RaymarchVolume) will not reflect the
 	 * changes immediately. For the derived blueprint to apply the changes, one has to reparent the blueprint to sth.
@@ -47,7 +49,7 @@ void ARaymarchVolume::BeginPlay()
 {
 	Super::BeginPlay();
 
-	check(VolumeAsset)
+	check(DataAsset)
 
 	Sim = Cast<ASimulation>(GetOwner());
 
@@ -65,17 +67,19 @@ void ARaymarchVolume::BeginPlay()
 		StaticMeshComponent->SetMaterial(0, RaymarchMaterial);
 	}
 
+	const UVolumeDataInfo *VolumeDataInfo = Cast<UVolumeDataInfo>(DataAsset->DataInfo);
+	
 	// Unreal units = cm, FDS has sizes in m -> multiply by 100.
-	StaticMeshComponent->SetRelativeScale3D(VolumeAsset->VolumeInfo.WorldDimensions * 100);
+	StaticMeshComponent->SetRelativeScale3D(VolumeDataInfo->WorldDimensions * 100);
 
-	Sim->InitUpdateRate("Volume", VolumeAsset->VolumeInfo.Spacing.W, VolumeAsset->VolumeInfo.Dimensions.W);
+	Sim->InitUpdateRate("Volume", VolumeDataInfo->Spacing.W, VolumeDataInfo->Dimensions.W);
 }
 
 void ARaymarchVolume::UpdateVolume(const int CurrentTimeStep)
 {
 	// Load the texture for the next time step to interpolate between the next and current one
 	UVolumeTexture* NextTexture = Cast<UVolumeTexture>(
-		VolumeAsset->VolumeTextures[(CurrentTimeStep + 1) % VolumeAsset->VolumeTextures.Num()].GetAsset());
+		Cast<UVolumeAsset>(DataAsset)->VolumeTextures[(CurrentTimeStep + 1) % Cast<UVolumeAsset>(DataAsset)->VolumeTextures.Num()].GetAsset());
 
 	if (!NextTexture)
 	{
@@ -117,14 +121,14 @@ void ARaymarchVolume::Tick(const float DeltaTime)
 
 void ARaymarchVolume::UseSimulationTransform()
 {
-	if (VolumeAsset)
+	if (DataAsset)
 	{
 		SetActorScale3D(FVector{1, 1, 1});
 		StaticMeshComponent->SetRelativeLocation(FVector{0, 0, 0});
 
 		// Unreal units = cm, FDS has sizes in m -> multiply by 100.
-		StaticMeshComponent->SetRelativeScale3D(VolumeAsset->VolumeInfo.WorldDimensions * 100);
-		SetActorRelativeLocation((VolumeAsset->VolumeInfo.MeshPos + VolumeAsset->VolumeInfo.WorldDimensions / 2) * 100);
+		StaticMeshComponent->SetRelativeScale3D(Cast<UVolumeDataInfo>(DataAsset->DataInfo)->WorldDimensions * 100);
+		SetActorRelativeLocation((Cast<UVolumeDataInfo>(DataAsset->DataInfo)->MeshPos + Cast<UVolumeDataInfo>(DataAsset->DataInfo)->WorldDimensions / 2) * 100);
 	}
 }
 

@@ -37,11 +37,11 @@ public:
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class USimControllerUserWidget> SimControllerUserWidgetClass;
 
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
-	class UTimeUserWidget* TimeUserWidget;
-
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class UColorMapUserWidget> ColorMapUserWidgetClass;
+	
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
+	class UTimeUserWidget* TimeUserWidget;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	class UGridPanel* RootGridPanel;

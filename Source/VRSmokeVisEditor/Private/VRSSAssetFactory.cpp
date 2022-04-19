@@ -6,7 +6,6 @@
 #include "UObject/SavePackage.h"
 #include "Util/AssetCreationUtilities.h"
 #include "Util/ImportUtilities.h"
-#include "Util/Preprocessor.h"
 
 DEFINE_LOG_CATEGORY(LogAssetFactory)
 
@@ -16,7 +15,6 @@ UVRSSAssetFactory::UVRSSAssetFactory(const FObjectInitializer& ObjectInitializer
 	Formats.Add(FString(TEXT("smv;")) + NSLOCTEXT("UVRSSAssetFactory", "FormatSmv", ".smv File").ToString());
 	Formats.Add(FString(TEXT("yaml;")) + NSLOCTEXT("UVRSSAssetFactory", "FormatYaml", ".yaml File").ToString());
 
-	// Todo: Is this enough, even though we are also using other classes?
 	SupportedClass = USimulationAsset::StaticClass();
 	bCreateNew = false;
 	bEditorImport = true;
@@ -27,39 +25,10 @@ UObject* UVRSSAssetFactory::FactoryCreateFile(UClass* InClass, UObject* InParent
                                               const FString& FileName, const TCHAR* Params, FFeedbackContext* Warn,
                                               bool& bOutOperationCanceled)
 {
-	FString SimulationIntermediateFile;
-	if (FileName.Contains(".smv"))
-	{
-		FString SmokeViewDir, Temp;
-		FImportUtils::SplitPath(FileName, SmokeViewDir, Temp);
-		const FString OutputDir = FPaths::Combine(SmokeViewDir, TEXT("SmokeVisIntermediate"));
-
-		// First check if there already is intermediate data from a previous run
-		if (FPaths::DirectoryExists(OutputDir))
-		{
-			TArray<FString> FoundFiles;
-			IPlatformFile& FileManager = FPlatformFileManager::Get().GetPlatformFile();
-			FileManager.FindFiles(FoundFiles, *OutputDir, TEXT(".yaml"));
-			for (const FString& File : FoundFiles)
-			{
-				if (File.Contains("-smv.yaml"))
-				{
-					SimulationIntermediateFile = File;
-					break;
-				}
-			}
-		}
-		if (SimulationIntermediateFile.IsEmpty())
-		{
-			FImportUtils::VerifyOrCreateDirectory(OutputDir);
-			UPreprocessor *PythonPreprocessor = NewObject<UPreprocessor>();
-			SimulationIntermediateFile = PythonPreprocessor->RunFdsreader(FileName, OutputDir);
-		}
-	} else
-	{
-		SimulationIntermediateFile = FileName;
-	}
-	
 	bOutOperationCanceled = false;
-	return FAssetCreationUtils::CreateSimulation(InParent, SimulationIntermediateFile);
+
+	FString PackagePath, Temp;
+	FImportUtils::SplitPath(InParent->GetFullName(), PackagePath, Temp);
+	// Chop these 8 characters: "Package "
+	return FAssetCreationUtils::CreateSimulation(FileName, PackagePath.RightChop(8));
 }

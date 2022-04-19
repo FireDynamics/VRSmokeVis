@@ -1,11 +1,12 @@
 #pragma once
+#include "FdsActor.h"
 
 #include "RaymarchVolume.generated.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogRaymarchVolume, Log, All);
 
 UCLASS()
-class VRSMOKEVIS_API ARaymarchVolume : public AActor
+class VRSMOKEVIS_API ARaymarchVolume : public AFdsActor
 {
 	GENERATED_BODY()
 
@@ -38,10 +39,6 @@ public:
 	UPROPERTY(EditAnywhere)
 	UMaterial* BorderMaterial;
 
-	/** The loaded Volume asset belonging to this volume. */
-	UPROPERTY(BlueprintReadOnly)
-	class UVolumeAsset* VolumeAsset;
-	
 protected:
 	UPROPERTY()
 	class ASimulation* Sim;
@@ -68,7 +65,7 @@ protected:
 	/** Cube border mesh - this is just a cube with wireframe borders. */
 	UPROPERTY(EditDefaultsOnly)
 	UStaticMeshComponent* CubeBorderMeshComponent;
-	
+
 	/** MeshComponent that contains the raymarching cube. */
 	UPROPERTY(EditDefaultsOnly)
 	UStaticMeshComponent* StaticMeshComponent;

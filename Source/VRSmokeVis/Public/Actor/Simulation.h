@@ -49,7 +49,7 @@ public:
 
 	/** Gets called from GameInstanceSubsystem. */
 	UFUNCTION()
-	void ChangeObstQuantity(FString& NewQuantity);
+	void ChangeObstQuantity(const FString& NewQuantity);
 
 	UFUNCTION(BlueprintCallable)
 	void GetMaxMins(UPARAM(ref) TMap<FString, float>& Mins, UPARAM(ref) TMap<FString, float>& Maxs) const;
@@ -77,6 +77,10 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void GetObstructionsMaxMinForQuantity(FString Quantity, float& MinOut, float& MaxOut) const;
 
+	/** Spawn meshes for each obstruction with size and location originating from the fds simulation */
+	UFUNCTION(CallInEditor, Category="Simulation")
+	void SpawnSimulationGeometry();
+	
 protected:
 	virtual void BeginPlay() override;
 
@@ -106,10 +110,6 @@ protected:
 	void InitSlices();
 	UFUNCTION()
 	void InitVolumes();
-
-/** Spawn meshes for each obstruction with size and location originating from the fds simulation */
-	UFUNCTION(CallInEditor, Category="Simulation")
-	void SpawnSimulationGeometry();
 
 public:
 	/** The loaded slice asset belonging to this slice. */

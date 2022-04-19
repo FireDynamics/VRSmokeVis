@@ -2,6 +2,11 @@
 
 
 #include "Util/ImportUtilities.h"
+
+#include "Assets/BoundaryDataInfo.h"
+#include "Assets/SliceDataInfo.h"
+#include "Assets/VolumeDataInfo.h"
+#include "Assets/SimulationInfo.h"
 #include "HAL/FileManagerGeneric.h"
 #include "Misc/DefaultValueHelper.h"
 #include "Misc/FileHelper.h"
@@ -76,7 +81,7 @@ uint8* FImportUtils::LoadDatFileIntoArray(const FString FileName, const int64 By
 	return LoadedArray;
 }
 
-void FImportUtils::DensityToTransmission(const float ExtinctionCoefficient, const FVolumeDataInfo& DataInfo,
+void FImportUtils::DensityToTransmission(const float ExtinctionCoefficient, const UVolumeDataInfo* DataInfo,
                                          uint8* Array)
 {
 	// Uses the Beer-Lambert law to convert densities to the corresponding transmission using the extinction coefficient
@@ -87,26 +92,26 @@ void FImportUtils::DensityToTransmission(const float ExtinctionCoefficient, cons
 	// Multiply StepSize and extinction coefficient only once before looping over the array
 	StepSize *= ExtinctionCoefficient * -1;
 
-	ParallelFor(DataInfo.GetByteSize(), [&](const int Idx)
+	ParallelFor(DataInfo->GetByteSize(), [&](const int Idx)
 	{
 		Array[Idx] = FMath::Exp(StepSize * Array[Idx]) * 255.f + .5f;
 	});
 }
 
-void FImportUtils::NormalizeArray(const FVolumeDataInfo& DataInfo, uint8* Array)
+void FImportUtils::NormalizeArray(const UVolumeDataInfo* DataInfo, uint8* Array)
 {
-	const float ValueRange = 255.f / (DataInfo.MaxValue - DataInfo.MinValue);
-	ParallelFor(DataInfo.GetByteSize(), [&](const int Idx)
+	const float ValueRange = 255.f / (DataInfo->MaxValue - DataInfo->MinValue);
+	ParallelFor(DataInfo->GetByteSize(), [&](const int Idx)
 	{
-		Array[Idx] = (Array[Idx] - DataInfo.MinValue) * ValueRange;
+		Array[Idx] = (Array[Idx] - DataInfo->MinValue) * ValueRange;
 	});
 }
 
 uint8* FImportUtils::LoadAndConvertVolumeData(const float ExtinctionCoefficient, const FString& FilePath,
-                                              const FVolumeDataInfo& DataInfo)
+                                              const UVolumeDataInfo* DataInfo)
 {
 	// Load data
-	uint8* LoadedArray = LoadDatFileIntoArray(FilePath, DataInfo.GetByteSize());
+	uint8* LoadedArray = LoadDatFileIntoArray(FilePath, DataInfo->GetByteSize());
 	if (LoadedArray)
 	{
 		DensityToTransmission(ExtinctionCoefficient, DataInfo, LoadedArray);
@@ -114,27 +119,25 @@ uint8* FImportUtils::LoadAndConvertVolumeData(const float ExtinctionCoefficient,
 	return LoadedArray;
 }
 
-uint8* FImportUtils::LoadSliceData(const FString& FilePath, const FVolumeDataInfo& DataInfo)
+uint8* FImportUtils::LoadSliceData(const FString& FilePath, const USliceDataInfo* DataInfo)
 {
-	return LoadDatFileIntoArray(FilePath, DataInfo.GetByteSize());
+	return LoadDatFileIntoArray(FilePath, DataInfo->GetByteSize());
 }
 
-uint8* FImportUtils::LoadObstData(const FString& FilePath, const FBoundaryDataInfo& DataInfo)
+uint8* FImportUtils::LoadObstData(const FString& FilePath, const UBoundaryDataInfo* DataInfo)
 {
 	int TotalByteSize = 0;
 	TArray<int> Orientations;
-	DataInfo.Dimensions.GetKeys(Orientations);
+	DataInfo->Dimensions.GetKeys(Orientations);
 	for (const int Orientation : Orientations)
 	{
-		TotalByteSize += DataInfo.GetByteSize(Orientation);
+		TotalByteSize += DataInfo->GetByteSize(Orientation);
 	}
 	return LoadDatFileIntoArray(FilePath, TotalByteSize);
 }
 
-TMap<FString, FVolumeDataInfo> FImportUtils::ParseSliceVolumeDataInfoFromFile(const FString& FileName)
+void FImportUtils::ParseVolumeDataInfoFromFile(const FString& FileName, UPARAM(ref) TMap<FString, UVolumeDataInfo*>& DataInfos)
 {
-	TMap<FString, FVolumeDataInfo> DataInfos;
-
 	const FString FileString = ReadFileAsString(FileName);
 	TArray<FString> Lines;
 	FileString.ParseIntoArray(Lines, _T("\n"));
@@ -171,9 +174,9 @@ TMap<FString, FVolumeDataInfo> FImportUtils::ParseSliceVolumeDataInfoFromFile(co
 	// Meshes
 	for (int m = 0; m < NMeshes; ++m)
 	{
-		FVolumeDataInfo DataInfo;
-		DataInfo.MaxValue = DataMax;
-		DataInfo.MinValue = DataMin;
+		UVolumeDataInfo *DataInfo = NewObject<UVolumeDataInfo>();
+		DataInfo->MaxValue = DataMax;
+		DataInfo->MinValue = DataMin;
 
 		for (int i = 0; i < 5; ++i)
 		{
@@ -181,10 +184,10 @@ TMap<FString, FVolumeDataInfo> FImportUtils::ParseSliceVolumeDataInfoFromFile(co
 			if (Left.Contains(TEXT("MeshPos")))
 			{
 				Right.Split(TEXT(" "), &Left, &Right);
-				FDefaultValueHelper::ParseDouble(Left, DataInfo.MeshPos.X);
+				FDefaultValueHelper::ParseDouble(Left, DataInfo->MeshPos.X);
 				Right.Split(TEXT(" "), &Left, &Right);
-				FDefaultValueHelper::ParseDouble(Left, DataInfo.MeshPos.Y);
-				FDefaultValueHelper::ParseDouble(Right, DataInfo.MeshPos.Z);
+				FDefaultValueHelper::ParseDouble(Left, DataInfo->MeshPos.Y);
+				FDefaultValueHelper::ParseDouble(Right, DataInfo->MeshPos.Z);
 			}
 			else if (Left.Contains(TEXT("Mesh")))
 			{
@@ -195,52 +198,154 @@ TMap<FString, FVolumeDataInfo> FImportUtils::ParseSliceVolumeDataInfoFromFile(co
 				int Val;
 				Right.Split(TEXT(" "), &Left, &Right);
 				FDefaultValueHelper::ParseInt(Left, Val);
-				DataInfo.Dimensions.W = Val;
+				DataInfo->Dimensions.W = Val;
 				Right.Split(TEXT(" "), &Left, &Right);
 				FDefaultValueHelper::ParseInt(Left, Val);
-				DataInfo.Dimensions.X = Val;
+				DataInfo->Dimensions.X = Val;
 				Right.Split(TEXT(" "), &Left, &Right);
 				FDefaultValueHelper::ParseInt(Left, Val);
-				DataInfo.Dimensions.Y = Val;
+				DataInfo->Dimensions.Y = Val;
 				FDefaultValueHelper::ParseInt(Right, Val);
-				DataInfo.Dimensions.Z = Val;
+				DataInfo->Dimensions.Z = Val;
 			}
 			else if (Left.Contains(TEXT("Spacing")))
 			{
 				Right.Split(TEXT(" "), &Left, &Right);
-				FDefaultValueHelper::ParseDouble(Left, DataInfo.Spacing.W);
+				FDefaultValueHelper::ParseDouble(Left, DataInfo->Spacing.W);
 				Right.Split(TEXT(" "), &Left, &Right);
-				FDefaultValueHelper::ParseDouble(Left, DataInfo.Spacing.X);
+				FDefaultValueHelper::ParseDouble(Left, DataInfo->Spacing.X);
 				Right.Split(TEXT(" "), &Left, &Right);
-				FDefaultValueHelper::ParseDouble(Left, DataInfo.Spacing.Y);
-				FDefaultValueHelper::ParseDouble(Right, DataInfo.Spacing.Z);
+				FDefaultValueHelper::ParseDouble(Left, DataInfo->Spacing.Y);
+				FDefaultValueHelper::ParseDouble(Right, DataInfo->Spacing.Z);
 			}
 			else if (Left.Contains(TEXT("DataFile")))
 			{
-				DataInfo.DataFileName = Right.TrimStartAndEnd();
-				UE_LOG(LogImportUtils, Log, TEXT("Found datafile %s"), *DataInfo.DataFileName);
+				DataInfo->DataFileName = Right.TrimStartAndEnd();
+				UE_LOG(LogImportUtils, Log, TEXT("Found datafile %s"), *DataInfo->DataFileName);
 			}
 		}
 
-		DataInfo.WorldDimensions = DataInfo.Spacing * FVector(DataInfo.Dimensions);
-		DataInfo.ScaleFactor = ScaleFactor;
-		DataInfo.Quantity = Quantity;
+		DataInfo->WorldDimensions = DataInfo->Spacing * FVector(DataInfo->Dimensions);
+		DataInfo->ScaleFactor = ScaleFactor;
+		DataInfo->Quantity = Quantity;
 
-		// Get slice/volume name
-		SplitPath(DataInfo.DataFileName, Left, DataInfo.FdsName);
+		// Get volume name
+		SplitPath(DataInfo->DataFileName, Left, DataInfo->FdsName);
 
 		DataInfos.Add(MeshId, DataInfo);
 	}
-
-	return DataInfos;
 }
 
-FBoundaryDataInfo FImportUtils::ParseObstDataInfoFromFile(const FString& FilePath, TArray<float>& BoundingBoxOut)
+void FImportUtils::ParseSliceDataInfoFromFile(const FString& FileName, UPARAM(ref) TMap<FString, USliceDataInfo*>& DataInfos)
 {
-	FBoundaryDataInfo DataInfo;
+	const FString FileString = ReadFileAsString(FileName);
+	TArray<FString> Lines;
+	FileString.ParseIntoArray(Lines, _T("\n"));
 
+	FString Left, Right, MeshId;
+
+	// CellCentered
+	Lines[0].Split(TEXT(": "), &Left, &Right);
+	int CellCentered;
+	FDefaultValueHelper::ParseInt(Right, CellCentered);
+	
+	// DataValMax
+	Lines[1].Split(TEXT(": "), &Left, &Right);
+	float DataMax;
+	FDefaultValueHelper::ParseFloat(Right, DataMax);
+
+	// DataValMin
+	Lines[2].Split(TEXT(": "), &Left, &Right);
+	float DataMin;
+	FDefaultValueHelper::ParseFloat(Right, DataMin);
+
+	// MeshNum
+	Lines[3].Split(TEXT(": "), &Left, &Right);
+	int NMeshes;
+	FDefaultValueHelper::ParseInt(Right, NMeshes);
+
+	// Quantity
+	FString Quantity;
+	Lines[Lines.Num() - 2].Split(TEXT(": "), &Left, &Quantity);
+	Quantity.TrimStartAndEndInline();
+	Quantity.ToLowerInline();
+
+	//ScaleFactor
+	Lines[Lines.Num() - 1].Split(TEXT(": "), &Left, &Right);
+	float ScaleFactor;
+	FDefaultValueHelper::ParseFloat(Right, ScaleFactor);
+
+	UE_LOG(LogImportUtils, Log, TEXT("Loading volumes, nmeshes: %d"), NMeshes);
+	// Meshes
+	for (int m = 0; m < NMeshes; ++m)
+	{
+		USliceDataInfo *DataInfo = NewObject<USliceDataInfo>();
+		DataInfo->MaxValue = DataMax;
+		DataInfo->MinValue = DataMin;
+		DataInfo->CellCentered = CellCentered != 0;
+
+		for (int i = 0; i < 5; ++i)
+		{
+			Lines[5 + m * 5 + i].Split(TEXT(": "), &Left, &Right);
+			if (Left.Contains(TEXT("MeshPos")))
+			{
+				Right.Split(TEXT(" "), &Left, &Right);
+				FDefaultValueHelper::ParseDouble(Left, DataInfo->MeshPos.X);
+				Right.Split(TEXT(" "), &Left, &Right);
+				FDefaultValueHelper::ParseDouble(Left, DataInfo->MeshPos.Y);
+				FDefaultValueHelper::ParseDouble(Right, DataInfo->MeshPos.Z);
+			}
+			else if (Left.Contains(TEXT("Mesh")))
+			{
+				MeshId = Right.TrimStartAndEnd();
+			}
+			else if (Left.Contains(TEXT("DimSize")))
+			{
+				int Val;
+				Right.Split(TEXT(" "), &Left, &Right);
+				FDefaultValueHelper::ParseInt(Left, Val);
+				DataInfo->Dimensions.W = Val;
+				Right.Split(TEXT(" "), &Left, &Right);
+				FDefaultValueHelper::ParseInt(Left, Val);
+				DataInfo->Dimensions.X = Val;
+				Right.Split(TEXT(" "), &Left, &Right);
+				FDefaultValueHelper::ParseInt(Left, Val);
+				DataInfo->Dimensions.Y = Val;
+				FDefaultValueHelper::ParseInt(Right, Val);
+				DataInfo->Dimensions.Z = Val;
+			}
+			else if (Left.Contains(TEXT("Spacing")))
+			{
+				Right.Split(TEXT(" "), &Left, &Right);
+				FDefaultValueHelper::ParseDouble(Left, DataInfo->Spacing.W);
+				Right.Split(TEXT(" "), &Left, &Right);
+				FDefaultValueHelper::ParseDouble(Left, DataInfo->Spacing.X);
+				Right.Split(TEXT(" "), &Left, &Right);
+				FDefaultValueHelper::ParseDouble(Left, DataInfo->Spacing.Y);
+				FDefaultValueHelper::ParseDouble(Right, DataInfo->Spacing.Z);
+			}
+			else if (Left.Contains(TEXT("DataFile")))
+			{
+				DataInfo->DataFileName = Right.TrimStartAndEnd();
+				UE_LOG(LogImportUtils, Log, TEXT("Found datafile %s"), *DataInfo->DataFileName);
+			}
+		}
+
+		DataInfo->WorldDimensions = DataInfo->Spacing * FVector(DataInfo->Dimensions);
+		DataInfo->ScaleFactor = ScaleFactor;
+		DataInfo->Quantity = Quantity;
+
+		// Get slice name
+		SplitPath(DataInfo->DataFileName, Left, DataInfo->FdsName);
+
+		DataInfos.Add(MeshId, DataInfo);
+	}
+}
+
+void FImportUtils::ParseObstDataInfoFromFile(const FString& FilePath, UPARAM(ref) UBoundaryDataInfo* DataInfo, UPARAM(ref) TArray<float>& BoundingBoxOut)
+{
 	FString Directory;
-	SplitPath(FilePath, Directory, DataInfo.ObstName);
+	SplitPath(FilePath, Directory, DataInfo->FdsName);
 
 	const FString FileString = ReadFileAsString(FilePath);
 	TArray<FString> Lines;
@@ -284,14 +389,14 @@ FBoundaryDataInfo FImportUtils::ParseObstDataInfoFromFile(const FString& FilePat
 	int NumQuantities;
 	FDefaultValueHelper::ParseInt(Right, NumQuantities);
 
-	DataInfo.TextureDirs.Reserve(NumQuantities);
-	DataInfo.DataFileNames.Reserve(NumQuantities);
-	DataInfo.Dimensions.Reserve(NumOrientations);
-	DataInfo.Spacings.Reserve(NumOrientations);
-	DataInfo.WorldDimensions.Reserve(NumOrientations);
-	DataInfo.MinValues.Reserve(NumQuantities);
-	DataInfo.MaxValues.Reserve(NumQuantities);
-	DataInfo.ScaleFactors.Reserve(NumQuantities);
+	DataInfo->TextureDirs.Reserve(NumQuantities);
+	DataInfo->DataFileNames.Reserve(NumQuantities);
+	DataInfo->Dimensions.Reserve(NumOrientations);
+	DataInfo->Spacings.Reserve(NumOrientations);
+	DataInfo->WorldDimensions.Reserve(NumOrientations);
+	DataInfo->MinValues.Reserve(NumQuantities);
+	DataInfo->MaxValues.Reserve(NumQuantities);
+	DataInfo->ScaleFactors.Reserve(NumQuantities);
 
 	// Orientations
 	for (int o = 0; o < NumOrientations; ++o)
@@ -307,7 +412,7 @@ FBoundaryDataInfo FImportUtils::ParseObstDataInfoFromFile(const FString& FilePat
 		Right.Split(TEXT(" "), &Left, &Right);
 		FDefaultValueHelper::ParseInt(Left, DimX);
 		FDefaultValueHelper::ParseInt(Right, DimY);
-		DataInfo.Dimensions.Add(Orientation, FVector4(DimX, DimY, 0, TimeSteps));
+		DataInfo->Dimensions.Add(Orientation, FVector4(DimX, DimY, 0, TimeSteps));
 
 		// Spacing
 		float X, Y, W;
@@ -317,10 +422,10 @@ FBoundaryDataInfo FImportUtils::ParseObstDataInfoFromFile(const FString& FilePat
 		Right.Split(TEXT(" "), &Left, &Right);
 		FDefaultValueHelper::ParseFloat(Left, X);
 		FDefaultValueHelper::ParseFloat(Right, Y);
-		DataInfo.Spacings.Add(Orientation, FVector4(X, Y, 0, W));
+		DataInfo->Spacings.Add(Orientation, FVector4(X, Y, 0, W));
 
-		DataInfo.WorldDimensions.Add(Orientation,
-		                             DataInfo.Spacings[Orientation] * FVector(DataInfo.Dimensions[Orientation]));
+		DataInfo->WorldDimensions.Add(Orientation,
+		                             DataInfo->Spacings[Orientation] * FVector(DataInfo->Dimensions[Orientation]));
 	}
 
 	const int QuantityOffset = 5 + NumOrientations * 3;
@@ -333,26 +438,22 @@ FBoundaryDataInfo FImportUtils::ParseObstDataInfoFromFile(const FString& FilePat
 		Lines[QuantityOffset + m * 5].Split(TEXT(": "), &Left, &Right);
 		FString Quantity = Right.TrimStartAndEnd().ToLower();
 		Lines[QuantityOffset + m * 5 + 1].Split(TEXT(": "), &Left, &Right);
-		DataInfo.DataFileNames.Add(Quantity, Right.TrimStartAndEnd());
+		DataInfo->DataFileNames.Add(Quantity, Right.TrimStartAndEnd());
 		Lines[QuantityOffset + m * 5 + 2].Split(TEXT(": "), &Left, &Right);
 		FDefaultValueHelper::ParseFloat(Right, Val);
-		DataInfo.MaxValues.Add(Quantity, Val);
+		DataInfo->MaxValues.Add(Quantity, Val);
 		Lines[QuantityOffset + m * 5 + 3].Split(TEXT(": "), &Left, &Right);
 		FDefaultValueHelper::ParseFloat(Right, Val);
-		DataInfo.MinValues.Add(Quantity, Val);
+		DataInfo->MinValues.Add(Quantity, Val);
 		Lines[QuantityOffset + m * 5 + 4].Split(TEXT(": "), &Left, &Right);
 		FDefaultValueHelper::ParseFloat(Right, Val);
-		DataInfo.ScaleFactors.Add(Quantity, Val);
+		DataInfo->ScaleFactors.Add(Quantity, Val);
 	}
-
-	return DataInfo;
 }
 
-FSimulationInfo FImportUtils::ParseSimulationInfoFromFile(const FString& FileName)
+void FImportUtils::ParseSimulationInfoFromFile(const FString& FileName, UPARAM(ref) USimulationInfo* SimInfo)
 {
-	FSimulationInfo SimInfo;
-
-	SimInfo.SmokeViewOriginalFilePath = FileName;
+	SimInfo->SmokeViewOriginalFilePath = FileName;
 
 	const FString FileString = ReadFileAsString(FileName);
 	TArray<FString> Lines;
@@ -372,14 +473,12 @@ FSimulationInfo FImportUtils::ParseSimulationInfoFromFile(const FString& FileNam
 	Lines[2].Split(TEXT(": "), &Left, &Right);
 	FDefaultValueHelper::ParseInt(Right, NumVolumes);
 
-	SimInfo.ObstPaths.Reserve(NumObstructions);
-	SimInfo.SlicePaths.Reserve(NumSlices);
-	SimInfo.VolumePaths.Reserve(NumVolumes);
+	SimInfo->ObstPaths.Reserve(NumObstructions);
+	SimInfo->SlicePaths.Reserve(NumSlices);
+	SimInfo->VolumePaths.Reserve(NumVolumes);
 
-	for (i = 0; i < NumObstructions; ++i) SimInfo.ObstPaths.Add(Lines[4 + i].RightChop(2).TrimEnd());
-	for (i = 0; i < NumSlices; ++i) SimInfo.SlicePaths.Add(Lines[5 + NumObstructions + i].RightChop(2).TrimEnd());
-	for (i = 0; i < NumVolumes; ++i) SimInfo.VolumePaths.Add(
+	for (i = 0; i < NumObstructions; ++i) SimInfo->ObstPaths.Add(Lines[4 + i].RightChop(2).TrimEnd());
+	for (i = 0; i < NumSlices; ++i) SimInfo->SlicePaths.Add(Lines[5 + NumObstructions + i].RightChop(2).TrimEnd());
+	for (i = 0; i < NumVolumes; ++i) SimInfo->VolumePaths.Add(
 		Lines[6 + NumObstructions + NumSlices + i].RightChop(2).TrimEnd());
-
-	return SimInfo;
 }

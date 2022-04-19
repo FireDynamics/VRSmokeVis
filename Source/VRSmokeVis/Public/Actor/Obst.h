@@ -1,11 +1,12 @@
 #pragma once
 
+#include "FdsActor.h"
 #include "Obst.generated.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogObst, Log, All);
 
 UCLASS()
-class VRSMOKEVIS_API AObst : public AActor
+class VRSMOKEVIS_API AObst : public AFdsActor
 {
 	GENERATED_BODY()
 
@@ -40,10 +41,6 @@ public:
 
 	UPROPERTY(EditAnywhere)
 	UMaterial* BorderMaterial;
-
-	/** The loaded obst asset belonging to this obst. */
-	UPROPERTY(BlueprintReadOnly)
-	class UObstAsset* ObstAsset;
 	
 protected:
 	UPROPERTY(VisibleAnywhere, Transient)

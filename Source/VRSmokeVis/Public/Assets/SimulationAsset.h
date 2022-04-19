@@ -13,7 +13,7 @@ class VRSMOKEVIS_API USimulationAsset : public UDataAsset
 public:
 	// Holds the general info about the simulation read from disk
 	UPROPERTY(EditAnywhere)
-	FSimulationInfo SimInfo;
+	USimulationInfo *SimInfo;
 
 	UPROPERTY(VisibleAnywhere)
 	FString ObstructionsDirectory;

@@ -1,48 +1,52 @@
 #pragma once
 
 #include "Assets/DataInfo.h"
-#include "VolumeDataInfo.generated.h"
+#include "SliceDataInfo.generated.h"
 
 /** Contains information about the data loaded from the binary data and yaml header file. */
 UCLASS(BlueprintType)
-class VRSMOKEVIS_API UVolumeDataInfo : public UDataInfo
+class VRSMOKEVIS_API USliceDataInfo : public UDataInfo
 {
 	GENERATED_BODY()
-	
+
 public:
-	/** Returns the number of bytes needed to store this volume */
+	/** Returns the number of bytes needed to store this slice */
 	virtual int64 GetByteSize() const override;
 
-	/** Returns the number of voxels in this volume */
-	int64 GetTotalVoxels() const;
+	/** Returns the number of cells in this slice */
+	int64 GetTotalCells() const;
 
 	virtual FString ToString() const override;
 
-	/** Name of the volume file that was loaded */
+	/** Name of the slice file that was loaded */
 	UPROPERTY(VisibleAnywhere)
 	FString DataFileName;
 
+	/** If the slice contains cell-centered or face-centered data */
+	UPROPERTY(VisibleAnywhere)
+	bool CellCentered;
+	
 	/** Name of the quantity for which data has been loaded */
 	UPROPERTY(VisibleAnywhere)
 	FString Quantity;
 
-	/** Path to VolumeTextures */
+	/** Path to SliceTextures */
 	UPROPERTY(VisibleAnywhere)
 	FString TextureDir;
 
-	/** Size of volume in voxels (w equals time in seconds)  */
+	/** Size of slice in cells (w equals time in seconds)  */
 	UPROPERTY(VisibleAnywhere)
 	FVector4 Dimensions;
 
-	/** Size of a voxel in mm (w equals time in seconds)  */
+	/** Size of a cell in mm (w equals time in seconds)  */
 	UPROPERTY(VisibleAnywhere)
 	FVector4 Spacing;
 
-	/** Origin of the volume in simulation */
+	/** Origin of the slice in simulation */
 	UPROPERTY(VisibleAnywhere)
 	FVector MeshPos;
 
-	/** Size of the whole volume in world units (equals Dimensions * Spacing) */
+	/** Size of the whole slice in world units (equals Dimensions * Spacing) */
 	UPROPERTY(VisibleAnywhere)
 	FVector WorldDimensions;
 

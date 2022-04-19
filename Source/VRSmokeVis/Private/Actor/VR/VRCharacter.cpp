@@ -4,6 +4,9 @@
 #include "VRSSGameInstanceSubsystem.h"
 #include "Actor/Simulation.h"
 #include "Kismet/GameplayStatics.h"
+#include "EngineUtils.h"
+#include "ToolBuilderUtil.h"
+#include "UI/SimLoadingPromptUserWidget.h"
 
 AVRCharacter::AVRCharacter()
 {
@@ -59,8 +62,20 @@ void AVRCharacter::BeginPlay()
 	              .bExecuteWhenPaused = true;
 	InputComponent->BindAction("ToggleHUD", IE_Pressed, this, &AVRCharacter::ToggleHUDVisibility)
 	              .bExecuteWhenPaused = true;
+	InputComponent->BindAction("ShowSimLoadingPrompt", IE_Pressed, this, &AVRCharacter::ShowSimLoadingPrompt)
+	              .bExecuteWhenPaused = true;
 
-	// TogglePauseSimulation();
+	// Start the world paused
+	TogglePauseSimulation();
+
+	// Check if there is at least one simulation in the world already, if not show simulation loading UI
+	if(!TActorIterator<AActor>(GetWorld(), ASimulation::StaticClass())) ShowSimLoadingPrompt();
+}
+
+void AVRCharacter::ShowSimLoadingPrompt()
+{
+	CreateWidget<USimLoadingPromptUserWidget>(GetGameInstance(), SimLoadingPromptUserWidgetClass)->AddToViewport();
+	Cast<APlayerController>(GetController())->SetShowMouseCursor(true);
 }
 
 void AVRCharacter::TogglePauseSimulation()

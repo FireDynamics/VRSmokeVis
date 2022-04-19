@@ -1,11 +1,12 @@
 #pragma once
 
+#include "FdsActor.h"
 #include "Slice.generated.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogSlice, Log, All);
 
 UCLASS()
-class VRSMOKEVIS_API ASlice : public AActor
+class VRSMOKEVIS_API ASlice : public AFdsActor
 {
 	GENERATED_BODY()
 
@@ -34,10 +35,6 @@ public:
 	/** The base material for slice rendering. */
 	UPROPERTY(BlueprintReadOnly, EditAnywhere)
 	class UMaterial* SliceMaterialBase;
-
-	/** The loaded slice asset belonging to this slice. */
-	UPROPERTY(BlueprintReadOnly)
-	class USliceAsset* SliceAsset;
 	
 protected:
 	UPROPERTY()

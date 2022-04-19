@@ -6,6 +6,7 @@
 #include "Util/TextureUtilities.h"
 #include "Assets/SliceAsset.h"
 #include "Actor/Simulation.h"
+#include "Assets/SliceDataInfo.h"
 
 DEFINE_LOG_CATEGORY(LogSlice)
 
@@ -14,16 +15,16 @@ DEFINE_LOG_CATEGORY(LogSlice)
 #endif
 
 // Sets default values
-ASlice::ASlice() : AActor()
+ASlice::ASlice() : AFdsActor()
 {
 	/* Watch out, when changing anything in this function, the child blueprint (BP_Slice) will not reflect the changes
 	 * immediately. For the derived blueprint to apply the changes, one has to reparent the blueprint to sth. like
 	 * Actor and then reparent to Slice again. After that all default values in the Slice (M_Slice in RootComponent)
 	 * and the StaticMesh (SM_Plane) have to be set again. */
-	
+
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = true;
-	
+
 	SetActorEnableCollision(false);
 
 	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("Default Scene Root"));
@@ -45,15 +46,16 @@ void ASlice::BeginPlay()
 
 	const UVRSSGameInstanceSubsystem* GI = GetGameInstance()->GetSubsystem<UVRSSGameInstanceSubsystem>();
 
+	const USliceDataInfo* SliceDataInfo = Cast<USliceDataInfo>(DataAsset->DataInfo);
 	if (SliceMaterialBase)
 	{
 		SliceMaterial = UMaterialInstanceDynamic::Create(SliceMaterialBase, this, "Slice Mat Dynamic Inst");
 
-		const float CutOffValue = (GI->Config->GetSliceCutOffValue(SliceAsset->SliceInfo.Quantity) - SliceAsset->
-			SliceInfo.MinValue) * SliceAsset->SliceInfo.ScaleFactor / 255.f;
+		const float CutOffValue = (GI->Config->GetSliceCutOffValue(SliceDataInfo->Quantity) - SliceDataInfo->MinValue) *
+			SliceDataInfo->ScaleFactor / 255.f;
 		SliceMaterial->SetScalarParameterValue("CutOffValue", CutOffValue);
 
-		SliceMaterial->SetTextureParameterValue("ColorMap", GI->Config->GetColorMap(SliceAsset->SliceInfo.Quantity));
+		SliceMaterial->SetTextureParameterValue("ColorMap", GI->Config->GetColorMap(SliceDataInfo->Quantity));
 	}
 
 	if (StaticMeshComponent)
@@ -61,9 +63,9 @@ void ASlice::BeginPlay()
 		StaticMeshComponent->SetMaterial(0, SliceMaterial);
 	}
 
-	if (SliceAsset)
+	if (DataAsset)
 	{
-		Sim->InitUpdateRate("Slice", SliceAsset->SliceInfo.Spacing.W, SliceAsset->SliceInfo.Dimensions.W);
+		Sim->InitUpdateRate("Slice", SliceDataInfo->Spacing.W, SliceDataInfo->Dimensions.W);
 	}
 }
 
@@ -71,7 +73,7 @@ void ASlice::UpdateTexture(const int CurrentTimeStep)
 {
 	// Load the texture for the next time step to interpolate between the next and current one
 	UTexture2D* NextTexture = Cast<UTexture2D>(
-		SliceAsset->SliceTextures[(CurrentTimeStep + 1) % SliceAsset->SliceTextures.Num()].GetAsset());
+		Cast<USliceAsset>(DataAsset)->SliceTextures[(CurrentTimeStep + 1) % Cast<USliceAsset>(DataAsset)->SliceTextures.Num()].GetAsset());
 
 	if (!NextTexture)
 	{
@@ -103,14 +105,15 @@ void ASlice::UpdateTexture(const int CurrentTimeStep)
 
 void ASlice::UpdateColorMapScale(const float NewMin, const float NewMax) const
 {
-	const FString Quantity = SliceAsset->SliceInfo.Quantity;
+	const USliceDataInfo* SliceDataInfo = Cast<USliceDataInfo>(DataAsset->DataInfo);
+	const FString Quantity = SliceDataInfo->Quantity;
 	const float NewRange = NewMax - NewMin;
-	const float NewMinScaled = SliceAsset->SliceInfo.MinValue / NewRange + (SliceAsset->SliceInfo.MinValue - NewMin) /
+	const float NewMinScaled = SliceDataInfo->MinValue / NewRange + (SliceDataInfo->MinValue - NewMin) /
 		NewRange;
 
 	SliceMaterial->SetScalarParameterValue("ColorMapMin", NewMinScaled);
 	SliceMaterial->SetScalarParameterValue("ColorMapRange",
-	                                       (SliceAsset->SliceInfo.MaxValue - SliceAsset->SliceInfo.MinValue) /
+	                                       (SliceDataInfo->MaxValue - SliceDataInfo->MinValue) /
 	                                       NewRange);
 }
 
@@ -123,31 +126,56 @@ void ASlice::Tick(const float DeltaTime)
 
 void ASlice::UseSimulationTransform()
 {
-	if (SliceAsset)
+	if (DataAsset)
 	{
+		USliceDataInfo* SliceDataInfo = Cast<USliceDataInfo>(DataAsset->DataInfo);
 		SetActorScale3D(FVector{1, 1, 1});
 		StaticMeshComponent->SetRelativeLocation(FVector{0, 0, 0});
 
-
 		// Planes always use XY as dimensions, adjust scale and rotation accordingly
-		const bool SwapX = SliceAsset->SliceInfo.Dimensions.X == 1;
-		const bool SwapY = SliceAsset->SliceInfo.Dimensions.Y == 1;
+		const bool SwapX = SliceDataInfo->Dimensions.X == 1;
+		const bool SwapY = SliceDataInfo->Dimensions.Y == 1;
 		if (SwapX)
 		{
-			const float Tmp = SliceAsset->SliceInfo.WorldDimensions.X;
-			SliceAsset->SliceInfo.WorldDimensions.X = SliceAsset->SliceInfo.WorldDimensions.Y;
-			SliceAsset->SliceInfo.WorldDimensions.Y = SliceAsset->SliceInfo.WorldDimensions.Z;
-			SliceAsset->SliceInfo.WorldDimensions.Z = Tmp;
+			SliceDataInfo->WorldDimensions.X = SliceDataInfo->WorldDimensions.Y;
+			SliceDataInfo->WorldDimensions.Y = SliceDataInfo->WorldDimensions.Z;
+			SliceDataInfo->WorldDimensions.Z = 1;
 		}
-		if (SwapY)
+		else if (SwapY)
 		{
-			const float Tmp = SliceAsset->SliceInfo.WorldDimensions.Y;
-			SliceAsset->SliceInfo.WorldDimensions.Y = SliceAsset->SliceInfo.WorldDimensions.Z;
-			SliceAsset->SliceInfo.WorldDimensions.Z = Tmp;
+			SliceDataInfo->WorldDimensions.Y = SliceDataInfo->WorldDimensions.Z;
+			SliceDataInfo->WorldDimensions.Z = 1;
 		}
 
 		// Unreal units = cm, FDS has sizes in m. The default plane however is 1x1m already, so no conversion is needed
-		StaticMeshComponent->SetRelativeScale3D(SliceAsset->SliceInfo.WorldDimensions);
+		StaticMeshComponent->SetRelativeScale3D(SliceDataInfo->WorldDimensions);
+
+		// Correct the dimensions again
+		if (SwapX)
+		{
+			SliceDataInfo->WorldDimensions.Z = SliceDataInfo->WorldDimensions.Y;
+			SliceDataInfo->WorldDimensions.Y = SliceDataInfo->WorldDimensions.X;
+
+			// Slices don't have a thickness, we therefore shouldn't account for that when repositioning the slice
+			SliceDataInfo->WorldDimensions.X = 0;
+			SetActorRelativeLocation((SliceDataInfo->MeshPos + SliceDataInfo->WorldDimensions / 2) * 100);
+			SliceDataInfo->WorldDimensions.X = 1;
+		}
+		else if (SwapY)
+		{
+			SliceDataInfo->WorldDimensions.Z = SliceDataInfo->WorldDimensions.Y;
+
+			SliceDataInfo->WorldDimensions.Y = 0;
+			SetActorRelativeLocation((SliceDataInfo->MeshPos + SliceDataInfo->WorldDimensions / 2) * 100);
+			SliceDataInfo->WorldDimensions.Y = 1;
+		}
+		else
+		{
+			SliceDataInfo->WorldDimensions.Z = 0;
+			SetActorRelativeLocation((SliceDataInfo->MeshPos + SliceDataInfo->WorldDimensions / 2) * 100);
+			SliceDataInfo->WorldDimensions.Z = 1;
+		}
+
 		// Rotations for corresponding plane: XY=0,0,0 - XZ=90,0,0 - YZ=0,90,0
 		if (SwapX) // YZ
 		{
@@ -157,22 +185,6 @@ void ASlice::UseSimulationTransform()
 		{
 			StaticMeshComponent->SetRelativeRotation(FQuat{0.7071068f, 0, 0, 0.7071068f});
 		}
-		// Correct the dimensions again
-		if (SwapX)
-		{
-			const float Tmp = SliceAsset->SliceInfo.WorldDimensions.X;
-			SliceAsset->SliceInfo.WorldDimensions.X = SliceAsset->SliceInfo.WorldDimensions.Z;
-			SliceAsset->SliceInfo.WorldDimensions.Z = SliceAsset->SliceInfo.WorldDimensions.Y;
-			SliceAsset->SliceInfo.WorldDimensions.Y = Tmp;
-		}
-		if (SwapY)
-		{
-			const float Tmp = SliceAsset->SliceInfo.WorldDimensions.Z;
-			SliceAsset->SliceInfo.WorldDimensions.Z = SliceAsset->SliceInfo.WorldDimensions.Y;
-			SliceAsset->SliceInfo.WorldDimensions.Y = Tmp;
-		}
-
-		SetActorRelativeLocation((SliceAsset->SliceInfo.MeshPos + SliceAsset->SliceInfo.WorldDimensions / 2) * 100);
 	}
 }
 

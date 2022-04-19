@@ -6,6 +6,7 @@
 #include "Assets/ObstAsset.h"
 #include "VRSSGameInstanceSubsystem.h"
 #include "Actor/Simulation.h"
+#include "Assets/BoundaryDataInfo.h"
 
 DEFINE_LOG_CATEGORY(LogObst)
 
@@ -14,7 +15,7 @@ DEFINE_LOG_CATEGORY(LogObst)
 #endif
 
 // Sets default values
-AObst::AObst() : AActor()
+AObst::AObst() : AFdsActor()
 {
 	/* Watch out, when changing anything in this function, the child blueprint (BP_Obst) will not reflect the changes
 	 * immediately. For the derived blueprint to apply the changes, one has to reparent the blueprint to sth. like
@@ -52,8 +53,10 @@ void AObst::BeginPlay()
 
 	Sim = Cast<ASimulation>(GetOwner());
 
+	UBoundaryDataInfo* ObstDataInfo = Cast<UBoundaryDataInfo>(DataAsset->DataInfo);
+
 	TArray<int> Orientations;
-	ObstAsset->ObstInfo.Dimensions.GetKeys(Orientations);
+	ObstDataInfo->Dimensions.GetKeys(Orientations);
 
 	for (const int Orientation : Orientations)
 	{
@@ -61,8 +64,7 @@ void AObst::BeginPlay()
 		DataTexturesT1.Add(Orientation, nullptr);
 	}
 
-	Sim->InitUpdateRate("Obst", ObstAsset->ObstInfo.Spacings[Orientations[0]].W,
-	                    ObstAsset->ObstInfo.Dimensions[Orientations[0]].W);
+	Sim->InitUpdateRate("Obst", ObstDataInfo->Spacings[Orientations[0]].W, ObstDataInfo->Dimensions[Orientations[0]].W);
 
 	for (const int Orientation : Orientations)
 	{
@@ -82,7 +84,7 @@ void AObst::UpdateTexture(const int CurrentTimeStep, const int Orientation)
 {
 	// Load the texture for the next time step to interpolate between the next and current one
 	UTexture2D* NextTexture = Cast<UTexture2D>(
-		ObstAsset->ObstTextures[ActiveQuantity][Orientation][(CurrentTimeStep + 1) % ObstAsset->ObstTextures[
+		Cast<UObstAsset>(DataAsset)->ObstTextures[ActiveQuantity][Orientation][(CurrentTimeStep + 1) % Cast<UObstAsset>(DataAsset)->ObstTextures[
 			ActiveQuantity][Orientation].Num()].
 		GetAsset());
 
@@ -117,14 +119,16 @@ void AObst::UpdateColorMapScale(const float NewMin, const float NewMax) const
 {
 	if (ActiveQuantity.IsEmpty()) return;
 
+	UBoundaryDataInfo* ObstDataInfo = Cast<UBoundaryDataInfo>(DataAsset->DataInfo);
+	
 	TArray<int> Orientations;
-	ObstAsset->ObstInfo.Dimensions.GetKeys(Orientations);
+	ObstDataInfo->Dimensions.GetKeys(Orientations);
 
 	const float NewRange = NewMax - NewMin;
-	const float NewMinScaled = ObstAsset->ObstInfo.MinValues[ActiveQuantity] / NewRange + (ObstAsset->ObstInfo.
+	const float NewMinScaled = ObstDataInfo->MinValues[ActiveQuantity] / NewRange + (ObstDataInfo->
 			MinValues[ActiveQuantity] - NewMin)
 		/ NewRange;
-	const float ColorMapRange = (ObstAsset->ObstInfo.MaxValues[ActiveQuantity] - ObstAsset->ObstInfo.MinValues[
+	const float ColorMapRange = (ObstDataInfo->MaxValues[ActiveQuantity] - ObstDataInfo->MinValues[
 		ActiveQuantity]) / NewRange;
 
 	for (const int Orientation : Orientations)
@@ -143,13 +147,15 @@ void AObst::SetActiveQuantity(FString GlobalObstQuantity)
 
 	const UVRSSGameInstanceSubsystem* GI = GetGameInstance()->GetSubsystem<UVRSSGameInstanceSubsystem>();
 
+	UObstAsset *ObstAsset = Cast<UObstAsset>(DataAsset);
+	UBoundaryDataInfo* ObstDataInfo = Cast<UBoundaryDataInfo>(ObstAsset->DataInfo);
 	ObstAsset->ObstTextures.FindOrAdd(ActiveQuantity, TMap<int, TArray<FAssetData>>());
 
 	TArray<int> Orientations;
-	ObstAsset->ObstInfo.Dimensions.GetKeys(Orientations);
+	ObstDataInfo->Dimensions.GetKeys(Orientations);
 
-	const float CutOffValue = (GI->Config->GetObstCutOffValue(ActiveQuantity) - ObstAsset->ObstInfo.
-		MinValues[ActiveQuantity]) * ObstAsset->ObstInfo.ScaleFactors[ActiveQuantity] / 255.f;
+	const float CutOffValue = (GI->Config->GetObstCutOffValue(ActiveQuantity) - ObstDataInfo->
+		MinValues[ActiveQuantity]) * ObstDataInfo->ScaleFactors[ActiveQuantity] / 255.f;
 	for (const int Orientation : Orientations)
 	{
 		ObstAsset->ObstTextures[ActiveQuantity].FindOrAdd(Orientation, TArray<FAssetData>());
@@ -169,8 +175,9 @@ void AObst::Tick(const float DeltaTime)
 
 void AObst::UseSimulationTransform()
 {
-	if (ObstAsset)
+	if (DataAsset)
 	{
+		UObstAsset *ObstAsset = Cast<UObstAsset>(DataAsset);
 		SetActorScale3D(FVector{1, 1, 1});
 		StaticMeshComponent->SetRelativeLocation(FVector{0, 0, 0});
 
