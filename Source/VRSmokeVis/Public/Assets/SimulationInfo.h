@@ -10,17 +10,12 @@ class VRSMOKEVIS_API USimulationInfo : public UObject
 	GENERATED_BODY()
 
 public:
-	UPROPERTY()
+	UPROPERTY(VisibleAnywhere)
 	FString SmokeViewOriginalFilePath;
 
-	UPROPERTY()
-	FString OriginalObstFilesPath;
-
-	UPROPERTY()
-	FString OriginalSliceFilesPath;
-
-	UPROPERTY()
-	FString OriginalVolumeFilesPath;
+	/** Maps a type [Obst, Slice, Volume] to the path of the original data files (.dat) */
+	UPROPERTY(VisibleAnywhere)
+	TMap<FString, FString> OriginalDataFilesPath;
 
 	UPROPERTY()
 	TArray<FString> ObstPaths;

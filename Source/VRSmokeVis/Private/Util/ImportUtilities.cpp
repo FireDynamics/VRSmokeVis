@@ -87,7 +87,7 @@ void FImportUtils::DensityToTransmission(const float ExtinctionCoefficient, cons
 	// Uses the Beer-Lambert law to convert densities to the corresponding transmission using the extinction coefficient
 	// Adding 0.5 before assigning the float value to the uint8 array causes it to round correctly without having to
 	// round manually, as the implicit conversion to an integer simply cuts off the fraction.
-	float StepSize = 0.001; // DataInfo.Spacing.Size3();
+	float StepSize = 0.001;
 
 	// Multiply StepSize and extinction coefficient only once before looping over the array
 	StepSize *= ExtinctionCoefficient * -1;
@@ -344,9 +344,6 @@ void FImportUtils::ParseSliceDataInfoFromFile(const FString& FileName, UPARAM(re
 
 void FImportUtils::ParseObstDataInfoFromFile(const FString& FilePath, UPARAM(ref) UBoundaryDataInfo* DataInfo, UPARAM(ref) TArray<float>& BoundingBoxOut)
 {
-	FString Directory;
-	SplitPath(FilePath, Directory, DataInfo->FdsName);
-
 	const FString FileString = ReadFileAsString(FilePath);
 	TArray<FString> Lines;
 	FileString.ParseIntoArray(Lines, _T("\n"));

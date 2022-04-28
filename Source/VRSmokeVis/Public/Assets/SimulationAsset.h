@@ -10,17 +10,13 @@ class VRSMOKEVIS_API USimulationAsset : public UDataAsset
 {
 	GENERATED_BODY()
 
-public:
-	// Holds the general info about the simulation read from disk
+public:	
+	/** Holds the general info about the simulation read from disk */
 	UPROPERTY(EditAnywhere)
 	USimulationInfo *SimInfo;
 
 	UPROPERTY(VisibleAnywhere)
-	FString ObstructionsDirectory;
-	UPROPERTY(VisibleAnywhere)
-	FString SlicesDirectory;
-	UPROPERTY(VisibleAnywhere)
-	FString VolumesDirectory;
+	TMap<FString, FString> AssetDirectories;
 
 	UPROPERTY(VisibleAnywhere, Transient)
 	TArray<FAssetData> Obstructions;

@@ -56,7 +56,7 @@ void ASimulation::InitObstructions()
 {
 	UObjectLibrary* ObjectLibrary = UObjectLibrary::CreateLibrary(UObstAsset::StaticClass(), false, GIsEditor);
 	ObjectLibrary->AddToRoot();
-	ObjectLibrary->LoadAssetDataFromPath(SimulationAsset->ObstructionsDirectory);
+	ObjectLibrary->LoadAssetDataFromPath(SimulationAsset->AssetDirectories["Obst"]);
 	ObjectLibrary->GetAssetDataList(SimulationAsset->Obstructions);
 
 	if (SimulationAsset->Obstructions.Num() == 0) return;
@@ -98,7 +98,7 @@ void ASimulation::InitSlices()
 {
 	UObjectLibrary* ObjectLibrary = UObjectLibrary::CreateLibrary(USliceAsset::StaticClass(), false, GIsEditor);
 	ObjectLibrary->AddToRoot();
-	ObjectLibrary->LoadAssetDataFromPath(SimulationAsset->SlicesDirectory);
+	ObjectLibrary->LoadAssetDataFromPath(SimulationAsset->AssetDirectories["Slice"]);
 	ObjectLibrary->GetAssetDataList(SimulationAsset->Slices);
 
 	const FTransform ZeroTransform;
@@ -122,7 +122,7 @@ void ASimulation::InitVolumes()
 {
 	UObjectLibrary* ObjectLibrary = UObjectLibrary::CreateLibrary(UVolumeAsset::StaticClass(), false, GIsEditor);
 	ObjectLibrary->AddToRoot();
-	ObjectLibrary->LoadAssetDataFromPath(SimulationAsset->VolumesDirectory);
+	ObjectLibrary->LoadAssetDataFromPath(SimulationAsset->AssetDirectories["Volume"]);
 	ObjectLibrary->GetAssetDataList(SimulationAsset->Volumes);
 
 	const FTransform ZeroTransform;
@@ -147,7 +147,7 @@ void ASimulation::SpawnSimulationGeometry()
 	TArray<FAssetData> Geometries;
 	UObjectLibrary* ObjectLibrary = UObjectLibrary::CreateLibrary(UDataAsset::StaticClass(), false, GIsEditor);
 	ObjectLibrary->AddToRoot();
-	ObjectLibrary->LoadAssetDataFromPath(SimulationAsset->ObstructionsDirectory);
+	ObjectLibrary->LoadAssetDataFromPath(SimulationAsset->AssetDirectories["Obst"]);
 	ObjectLibrary->GetAssetDataList(Geometries);
 	FActorSpawnParameters Params;
 	for (FAssetData& ObstAssetData : Geometries)
@@ -628,10 +628,10 @@ bool ASimulation::RegisterTextureLoad(const FString Type, const AActor* Asset, c
 		FString OriginalDataDirectory, SimName;
 		FImportUtils::SplitPath(SimulationAsset->SimInfo->SmokeViewOriginalFilePath, OriginalDataDirectory, SimName);
 		// If not, load the data now
-		UDataInfo* ObstInfo = Cast<AFdsActor>(Asset)->DataAsset->DataInfo;
+		UDataInfo* DataInfo = Cast<AFdsActor>(Asset)->DataAsset->DataInfo;
 		
 		FAssetCreationUtils::LoadTextures(
-			ObstInfo, Type, FPaths::Combine(OriginalDataDirectory, SimulationAsset->SimInfo->OriginalObstFilesPath));
+			DataInfo, Type, FPaths::Combine(OriginalDataDirectory, SimulationAsset->SimInfo->OriginalDataFilesPath[Type]));
 
 		// Todo: Load the data in the background and add a loading queue in UI
 
@@ -691,12 +691,12 @@ void ASimulation::NextTimeStep(const FString Type)
 	const int NextTextureIndex = (CurrentTimeSteps[Type] + 9) % MaxTimeSteps[Type];
 	TArray<FSoftObjectPath> AssetsToLoad;
 
-	const FString& ActiveObstQuantity = GetGameInstance()->GetSubsystem<UVRSSGameInstanceSubsystem>()->Config->
-	                                                       GetActiveObstQuantity();
-
 	TArray<FAssetData> CurrentTextureArray;
 	if (Type.Equals("Obst"))
 	{
+		const FString& ActiveObstQuantity = GetGameInstance()->GetSubsystem<UVRSSGameInstanceSubsystem>()->Config->
+															   GetActiveObstQuantity();
+
 		for (const AObst* Obst : Obstructions)
 		{
 			if (!Obst->IsHidden())
