@@ -10,7 +10,8 @@ The editor-based version offers everything the editor-free version does, but doe
 - [FDSReader](https://pypi.org/project/fdsreader/) 1.6 or above
 - [PyYAML](https://pypi.org/project/PyYAML/)
 - [Pathos](https://pypi.org/project/pathos/)
-_These requirements are only mandatory if not manually preprocessing the fds data as described [here](../wiki#manually-before-runtime)._
+
+_These requirements are only mandatory if not manually preprocessing the fds data as described [here](../../wiki#manually-before-runtime)._
 
 ### Without editor
 When there is no need for the editor, no further installation 
