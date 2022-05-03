@@ -14,7 +14,8 @@ The editor-based version offers everything the editor-free version does, but doe
 _These requirements are only mandatory if not manually preprocessing the fds data as described [here](../../wiki#manually-before-runtime)._
 
 ### Without editor
-When there is no need for the editor, no further installation 
+When there is no need for the editor, no further installation will be required.  
+Just execute the binary for your system in [the latest release](../../releases/). If there is no binary available for your system, please follow to the _With editor_ instructions below instead.
 
 ### With editor
 
