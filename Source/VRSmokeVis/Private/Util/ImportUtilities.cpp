@@ -46,14 +46,11 @@ TArray<FString> FImportUtils::GetFilesInFolder(const FString& Directory, const F
 	return OutPut;
 }
 
-void FImportUtils::SplitPath(const FString& FullPath, FString& OutFilePath, FString& OutPackageName)
+void FImportUtils::SplitPath(const FString& FullPath, FString& OutFilePath, FString& OutFilename)
 {
 	FString ExtensionPart;
-
-	FPaths::Split(FullPath, OutFilePath, OutPackageName, ExtensionPart);
-	OutPackageName = FPaths::MakeValidFileName(OutPackageName);
-	// Dots are not cool in package names -> replace with underscores
-	OutPackageName.ReplaceCharInline('.', '_');
+	FPaths::Split(FullPath, OutFilePath, OutFilename, ExtensionPart);
+	OutFilename = FPaths::MakeValidFileName(OutFilename);
 }
 
 uint8* FImportUtils::LoadDatFileIntoArray(const FString FileName, const int64 BytesToLoad)
@@ -74,7 +71,7 @@ uint8* FImportUtils::LoadDatFileIntoArray(const FString FileName, const int64 By
 		return nullptr;
 	}
 
-	uint8* LoadedArray = static_cast<uint8*>(FMemory::Malloc(BytesToLoad)); // new uint8[BytesToLoad];
+	uint8* LoadedArray = static_cast<uint8*>(FMemory::Malloc(BytesToLoad));
 	FileHandle->Read(LoadedArray, BytesToLoad);
 	delete FileHandle;
 
@@ -478,4 +475,16 @@ void FImportUtils::ParseSimulationInfoFromFile(const FString& FileName, UPARAM(r
 	for (i = 0; i < NumSlices; ++i) SimInfo->SlicePaths.Add(Lines[5 + NumObstructions + i].RightChop(2).TrimEnd());
 	for (i = 0; i < NumVolumes; ++i) SimInfo->VolumePaths.Add(
 		Lines[6 + NumObstructions + NumSlices + i].RightChop(2).TrimEnd());
+}
+
+bool FImportUtils::VerifyOrCreateDirectory(const FString& TestDir)
+{
+	if (IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+		!PlatformFile.DirectoryExists(*TestDir))
+	{
+		PlatformFile.CreateDirectory(*TestDir);
+
+		if (!PlatformFile.DirectoryExists(*TestDir)) return false;
+	}
+	return true;
 }

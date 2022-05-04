@@ -3,7 +3,9 @@
 #include "Assets/DataInfo.h"
 #include "SliceDataInfo.generated.h"
 
-/** Contains information about the data loaded from the binary data and yaml header file. */
+/**
+ * Contains information about the data loaded from the binary data and yaml header file.
+ */
 UCLASS(BlueprintType)
 class VRSMOKEVIS_API USliceDataInfo : public UDataInfo
 {

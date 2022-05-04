@@ -64,6 +64,7 @@ void UVRSSGameInstanceSubsystem::ToggleHUDVisibility() const
 	if (HUD->UserInterfaceUserWidget->IsInViewport())
 	{
 		HUD->UserInterfaceUserWidget->RemoveFromViewport();
+		// Todo: Check if this would be better
 		// PC->SetInputMode(FInputModeGameOnly());
 		PC->SetShowMouseCursor(false);
 	}

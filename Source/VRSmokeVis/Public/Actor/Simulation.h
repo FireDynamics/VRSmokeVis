@@ -8,6 +8,9 @@ DECLARE_EVENT_OneParam(UVRSSGameInstance, FUpdateDataEvent, int)
 DECLARE_LOG_CATEGORY_EXTERN(LogSimulation, Log, All);
 
 
+/**
+ * 
+ */
 UCLASS()
 class VRSMOKEVIS_API ASimulation : public AActor
 {
@@ -47,7 +50,7 @@ public:
 	UFUNCTION()
 	TArray<class ARaymarchVolume*>& GetAllVolumes();
 
-	/** Gets called from GameInstanceSubsystem. */
+	/** Gets called from GameInstanceSubsystem */
 	UFUNCTION()
 	void ChangeObstQuantity(const FString& NewQuantity);
 
@@ -60,14 +63,14 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void UpdateColorMaps(const TMap<FString, float>& Mins, const TMap<FString, float>& Maxs);
 
-	/** Returns all unique quantities present in this simulation. */
+	/** Returns all unique quantities present in this simulation */
 	UFUNCTION(BlueprintCallable)
 	TArray<FString> GetQuantities(const bool ActiveOnly) const;
 
 	UFUNCTION(BlueprintCallable)
 	bool AnyObstActive() const;
 
-	/** Returns the active quantities of all slices. */
+	/** Returns the active quantities of all slices */
 	UFUNCTION(BlueprintCallable)
 	TArray<FString> GetSliceQuantities(const bool ActiveOnly) const;
 
@@ -112,7 +115,7 @@ protected:
 	void InitVolumes();
 
 public:
-	/** The loaded slice asset belonging to this slice. */
+	/** The loaded slice asset belonging to this slice */
 	UPROPERTY(BlueprintReadOnly, EditAnywhere)
 	class USimulationAsset* SimulationAsset;
 
@@ -127,18 +130,18 @@ public:
 	UPROPERTY(EditAnywhere)
 	class UMaterial* CubeDefaultMaterial;
 	
-	/** The class of the raymarch lights that are dimmed over time. */
+	/** The class of the raymarch lights that are dimmed over time */
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class ARaymarchLight> RaymarchLightClass;
 
-	/** Controls the maximum radius of Jitter that is applied (works as a factor). Defaults to 0 (no Jitter). */
+	/** Controls the maximum radius of Jitter that is applied (works as a factor). Defaults to 0 (no Jitter) */
 	UPROPERTY(EditAnywhere)
 	float JitterRadius = 0;
 
 	UPROPERTY(BlueprintReadOnly)
 	TMap<FString, int> CurrentTimeSteps;
 
-	/** Controls the time between two updates of textures. Defaults to the rate specified by the input from FDS if set to 0. */
+	/** Controls the time between two updates of textures. Defaults to the rate specified by the input from FDS if set to 0 */
 	UPROPERTY(VisibleAnywhere)
 	TMap<FString, float> UpdateRates;
 
@@ -146,20 +149,20 @@ public:
 	class USimControllerUserWidget* SimControllerUserWidget;
 
 protected:
-	/** Lists of currently inactive obstructions. */
+	/** Lists of currently inactive obstructions */
 	UPROPERTY(VisibleAnywhere)
 	TArray<class AObst*> Obstructions;
-	/** Lists of currently inactive slices. */
+	/** Lists of currently inactive slices */
 	UPROPERTY(VisibleAnywhere)
 	TArray<class ASlice*> Slices;
-	/** Lists of currently inactive volumes. */
+	/** Lists of currently inactive volumes */
 	UPROPERTY(VisibleAnywhere)
 	TArray<class ARaymarchVolume*> Volumes;
 
-	/** Used to asynchronously load assets at runtime. */
+	/** Used to asynchronously load assets at runtime */
 	FStreamableManager StreamableManager;
 
-	/** Handles to manage the update timer. */
+	/** Handles to manage the update timer */
 	TMap<FString, FTimerHandle> UpdateTimerHandles;
 
 	TMap<FString, FUpdateDataEvent> UpdateDataEvents;
@@ -170,7 +173,7 @@ protected:
 	UPROPERTY()
 	bool bIsPaused = false;
 
-	/** Maps actor names (obsts, slices and volumes) to DelegateHandles for the texture update event. */
+	/** Maps actor names (obsts, slices and volumes) to DelegateHandles for the texture update event */
 	TMap<FString, TMap<int, FDelegateHandle>> ObstUpdateDataEventDelegateHandles;
 	TMap<FString, FDelegateHandle> SliceUpdateDataEventDelegateHandles;
 	TMap<FString, FDelegateHandle> VolumeUpdateDataEventDelegateHandles;

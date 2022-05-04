@@ -5,6 +5,9 @@
 #include "SimulationAsset.generated.h"
 
 
+/**
+ * DataAsset containing data about a whole FDS simulation.
+ */
 UCLASS()
 class VRSMOKEVIS_API USimulationAsset : public UDataAsset
 {

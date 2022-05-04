@@ -231,7 +231,7 @@ void ASimulation::ActivateObst(AObst* Obst)
 		// Registering the automatic async texture loading each timestep
 		if (!RegisterTextureLoad("Obst", Obst,
 		                         ObstDataInfo->TextureDirs[ActiveObstQuantity].FaceDirs[Orientation],
-		                         Cast<UObstAsset>(Obst->DataAsset)->ObstTextures[ActiveObstQuantity][Orientation],
+		                         Cast<UObstAsset>(Obst->DataAsset)->ObstTextures[ActiveObstQuantity].ForOrientation[Orientation].Textures,
 		                         ObstDataInfo->Dimensions[Orientation].W))
 			return;
 		FDelegateHandle Handle = UpdateDataEvents["Obst"].AddUObject(Obst, &AObst::UpdateTexture, Orientation);
@@ -477,15 +477,15 @@ void ASimulation::TogglePauseSimulation()
 
 	for (AObst* Obst : Obstructions)
 	{
-		Obst->SetActorTickEnabled(bIsPaused);
+		Obst->SetActorTickEnabled(!bIsPaused);
 	}
 	for (ASlice* Slice : Slices)
 	{
-		Slice->SetActorTickEnabled(bIsPaused);
+		Slice->SetActorTickEnabled(!bIsPaused);
 	}
 	for (ARaymarchVolume* Volume : Volumes)
 	{
-		Volume->SetActorTickEnabled(bIsPaused);
+		Volume->SetActorTickEnabled(!bIsPaused);
 	}
 	for (const auto& UpdateTimerHandle : UpdateTimerHandles)
 	{
@@ -705,7 +705,7 @@ void ASimulation::NextTimeStep(const FString Type)
 				Cast<UBoundaryDataInfo>(Obst->DataAsset->DataInfo)->Dimensions.GetKeys(Orientations);
 				for (const int Orientation : Orientations)
 				{
-					CurrentTextureArray = Cast<UObstAsset>(Obst->DataAsset)->ObstTextures[ActiveObstQuantity][Orientation];
+					CurrentTextureArray = Cast<UObstAsset>(Obst->DataAsset)->ObstTextures[ActiveObstQuantity].ForOrientation[Orientation].Textures;
 					StreamableManager.Unload(CurrentTextureArray[PreviousTextureIndex].ToSoftObjectPath());
 					AssetsToLoad.Add(CurrentTextureArray[NextTextureIndex].ToSoftObjectPath());
 				}
@@ -744,4 +744,5 @@ void ASimulation::NextTimeStep(const FString Type)
 	// Update the UI
 	HUD->UserInterfaceUserWidget->TimeUserWidget->GetTextBlockValueTimesteps(Type)->SetText(
 		FText::AsNumber(CurrentTimeSteps[Type]));
+	HUD->UserInterfaceUserWidget->TimeUserWidget->CurrentSimTime = CurrentTimeSteps[Type] * UpdateRates[Type];
 }

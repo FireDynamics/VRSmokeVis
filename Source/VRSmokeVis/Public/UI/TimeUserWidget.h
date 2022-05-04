@@ -4,6 +4,10 @@
 #include "Components/TextBlock.h"
 #include "TimeUserWidget.generated.h"
 
+
+/**
+ * Widget to show game and simulation time for each type of data.
+ */
 UCLASS(Abstract)
 class VRSMOKEVIS_API UTimeUserWidget : public UUserWidget
 {
@@ -16,9 +20,11 @@ public:
 
 	virtual void NativeTick(const FGeometry& MyGeometry, const float DeltaTime) override;
 
+	/** Updates the time values on the screen */
 	UFUNCTION()
 	void UpdateTimeTextBlocks() const;
 
+	/** Get the TextBlock widget for the corresponding data type [Slice, Obst, Volume] */
 	UFUNCTION()
 	UTextBlock* GetTextBlockValueTimesteps(const FString Type) const;
 
@@ -46,7 +52,6 @@ public:
 	UPROPERTY(VisibleAnywhere)
 	bool bIsPaused = false;
 
-protected:
 	UPROPERTY(VisibleAnywhere)
 	float CurrentGameTime = 0;
 };

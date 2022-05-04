@@ -7,6 +7,9 @@
 DECLARE_LOG_CATEGORY_EXTERN(LogAssetUtils, All, All);
 
 
+/**
+ * Utility functions to load data from the intermediate file format (.yaml) and create the corresponding data assets.
+ */
 class VRSMOKEVIS_API FAssetCreationUtils
 {
 public:
@@ -21,17 +24,22 @@ public:
 
 	/** Loads all VolumeTextures for a specific volume */
 	static void LoadVolumeTextures(UVolumeDataInfo* DataInfo, const FString& Directory);
-	
+
+	/** Prepares the simulation asset and also loads all assets defined in the simulation */
 	static UObject* CreateSimulation(const FString& InFileName, const FString& OutDirectory);
 	
 protected:
-	static void CreateObstruction(const FString& RootPackage, const FString& FileName, const bool LazyLoad);
-	static class UObstAsset* CreateObstructionFromFile(UBoundaryDataInfo* DataInfo, const FString& FileName, UObject* Package,
-												const bool LazyLoad);
-	static void CreateSlice(const FString& RootPackage, const FString& FileName, const bool LazyLoad);
-	static class USliceAsset* CreateSliceFromFile(USliceDataInfo* DataInfo, const FString& FileName, UObject* Package,
+	/** Loads the information about an obstruction and creates the obstruction asset */
+	static void LoadAndCreateObstruction(const FString& RootPackage, const FString& FileName, const bool LazyLoad);
+	
+	/** Loads the information about multiple slices read from a .yaml file and creates the slice assets */
+	static void LoadSlice(const FString& RootPackage, const FString& FileName, const bool LazyLoad);
+	/** Creates a single slice containing (meta-)data for one mesh (basically a subslice) */
+	static class USliceAsset* CreateSlice(USliceDataInfo* DataInfo, const FString& FileName, UObject* Package,
 										   const FString& MeshName, const bool LazyLoad);
-	static void CreateVolume(const FString& RootPackage, const FString& FileName, const bool LazyLoad);
-	static class UVolumeAsset* CreateVolumeFromFile(UVolumeDataInfo* DataInfo, const FString& FileName, UObject* Package,
+	/** Loads the information about multiple volumes read from a .yaml file and creates the volume assets */
+	static void LoadVolumes(const FString& RootPackage, const FString& FileName, const bool LazyLoad);
+	/** Creates a single volume containing smoke (meta-)data for one mesh */
+	static class UVolumeAsset* CreateVolume(UVolumeDataInfo* DataInfo, const FString& FileName, UObject* Package,
 											 const FString& MeshName, const bool LazyLoad);
 };

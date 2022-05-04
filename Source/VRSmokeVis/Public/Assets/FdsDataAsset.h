@@ -6,7 +6,10 @@
 
 #include "FdsDataAsset.Generated.h"
 
-UCLASS()
+/**
+ * Abstract base class for DataAssets containing FDS data.
+ */
+UCLASS(Abstract)
 class VRSMOKEVIS_API UFdsDataAsset : public UDataAsset
 {
 	GENERATED_BODY()

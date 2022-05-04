@@ -2,7 +2,9 @@
 
 #include "DataInfo.generated.h"
 
-/** Contains information about the data loaded from the binary data and yaml header file. */
+/**
+ * Contains information about the data loaded from the binary data and yaml header file.
+ */
 UCLASS(Abstract, BlueprintType)
 class VRSMOKEVIS_API UDataInfo : public UObject
 {

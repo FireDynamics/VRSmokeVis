@@ -2,7 +2,9 @@
 
 #include "VRSSGameInstanceSubsystem.generated.h"
 
-
+/**
+ * Singleton which is responsible for connecting all ASimulation instances (in case there are more than one).
+ */
 UCLASS()
 class VRSMOKEVIS_API UVRSSGameInstanceSubsystem : public UGameInstanceSubsystem
 {
@@ -32,5 +34,6 @@ public:
 	class UVRSSConfig* Config;
 
 protected:
+	UPROPERTY()
 	TArray<class ASimulation*> Simulations;
 };

@@ -82,11 +82,9 @@ void AObst::BeginPlay()
 
 void AObst::UpdateTexture(const int CurrentTimeStep, const int Orientation)
 {
+	TArray<FAssetData>& ObstTextures = Cast<UObstAsset>(DataAsset)->ObstTextures[ActiveQuantity].ForOrientation[Orientation].Textures;
 	// Load the texture for the next time step to interpolate between the next and current one
-	UTexture2D* NextTexture = Cast<UTexture2D>(
-		Cast<UObstAsset>(DataAsset)->ObstTextures[ActiveQuantity][Orientation][(CurrentTimeStep + 1) % Cast<UObstAsset>(DataAsset)->ObstTextures[
-			ActiveQuantity][Orientation].Num()].
-		GetAsset());
+	UTexture2D* NextTexture = Cast<UTexture2D>(ObstTextures[(CurrentTimeStep + 1) % ObstTextures.Num()].GetAsset());
 
 	if (!NextTexture)
 	{
@@ -149,7 +147,7 @@ void AObst::SetActiveQuantity(FString GlobalObstQuantity)
 
 	UObstAsset *ObstAsset = Cast<UObstAsset>(DataAsset);
 	UBoundaryDataInfo* ObstDataInfo = Cast<UBoundaryDataInfo>(ObstAsset->DataInfo);
-	ObstAsset->ObstTextures.FindOrAdd(ActiveQuantity, TMap<int, TArray<FAssetData>>());
+	ObstAsset->ObstTextures.FindOrAdd(ActiveQuantity, FFixedQuantityObstTextures());
 
 	TArray<int> Orientations;
 	ObstDataInfo->Dimensions.GetKeys(Orientations);
@@ -158,7 +156,7 @@ void AObst::SetActiveQuantity(FString GlobalObstQuantity)
 		MinValues[ActiveQuantity]) * ObstDataInfo->ScaleFactors[ActiveQuantity] / 255.f;
 	for (const int Orientation : Orientations)
 	{
-		ObstAsset->ObstTextures[ActiveQuantity].FindOrAdd(Orientation, TArray<FAssetData>());
+		ObstAsset->ObstTextures[ActiveQuantity].ForOrientation.FindOrAdd(Orientation, FFixedFaceObstTextures());
 
 		ObstDataMaterials[Orientation]->SetScalarParameterValue("CutOffValue", CutOffValue);
 

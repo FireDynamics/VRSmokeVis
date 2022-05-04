@@ -5,6 +5,11 @@
 
 DECLARE_LOG_CATEGORY_EXTERN(LogRaymarchVolume, Log, All);
 
+
+/**
+ * The actual volume actor that will be spawned in a level which displays a smoke volume (variable quantity, e.g. soot
+ * density or temperature) inside a single FDS mesh.
+ */
 UCLASS()
 class VRSMOKEVIS_API ARaymarchVolume : public AFdsActor
 {
@@ -14,9 +19,10 @@ public:
 	/** Sets default values for this actor's properties*/
 	ARaymarchVolume();
 
-	/** Called every frame. */
+	/** Called every frame */
 	virtual void Tick(float DeltaTime) override;
 
+	/** Update the location and rotation of the actor according to where it was located in FDS */
 	UFUNCTION()
 	void UseSimulationTransform();
 
@@ -28,11 +34,11 @@ protected:
 	virtual void BeginPlay() override;
 
 public:
-	/** The base material for intensity rendering. */
+	/** The base material for intensity rendering */
 	UPROPERTY(BlueprintReadOnly, EditAnywhere)
 	UMaterial* RaymarchMaterialBase;
 
-	/** The number of steps to take when raymarching. This is multiplied by the volume thickness in texture space. */
+	/** The number of steps to take when raymarching. This is multiplied by the volume thickness in texture space */
 	UPROPERTY(EditAnywhere)
 	float RaymarchingSteps = 150;
 
@@ -46,27 +52,27 @@ protected:
 	UPROPERTY()
 	UStaticMesh* CubeBorder;
 
-	/** The % of time that has passed until the next frame is reached. */
+	/** The % of time that has passed until the next frame is reached */
 	UPROPERTY(VisibleAnywhere)
 	float TimePassedPercentage = 0;
 
-	/** Current data volume texture. */
+	/** Current data volume texture */
 	UPROPERTY(BlueprintReadOnly, Transient)
 	UVolumeTexture* DataVolumeTextureT0;
 
-	/** Next data volume texture. */
+	/** Next data volume texture */
 	UPROPERTY(BlueprintReadOnly, Transient)
 	UVolumeTexture* DataVolumeTextureT1;
 
-	/** Dynamic material instance for intensity rendering. */
+	/** Dynamic material instance for intensity rendering */
 	UPROPERTY(BlueprintReadOnly, Transient)
 	UMaterialInstanceDynamic* RaymarchMaterial;
 
-	/** Cube border mesh - this is just a cube with wireframe borders. */
+	/** Cube border mesh - this is just a cube with wireframe borders */
 	UPROPERTY(EditDefaultsOnly)
 	UStaticMeshComponent* CubeBorderMeshComponent;
 
-	/** MeshComponent that contains the raymarching cube. */
+	/** MeshComponent that contains the raymarching cube */
 	UPROPERTY(EditDefaultsOnly)
 	UStaticMeshComponent* StaticMeshComponent;
 };

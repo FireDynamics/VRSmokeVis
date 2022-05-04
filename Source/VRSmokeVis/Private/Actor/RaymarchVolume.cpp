@@ -103,6 +103,8 @@ void ARaymarchVolume::UpdateVolume(const int CurrentTimeStep)
 	DataVolumeTextureT0 = DataVolumeTextureT1;
 	DataVolumeTextureT1 = NextTexture;
 
+	// Todo: The TBRaymarch project reported some bugs when not flushing rendering commands here, however it should be
+	// checked again if this is really necessary or if it might decrease performance
 	FlushRenderingCommands();
 
 	// Update dynamic material instance

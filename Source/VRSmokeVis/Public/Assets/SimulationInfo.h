@@ -3,7 +3,9 @@
 #include "SimulationInfo.generated.h"
 
 
-// Contains information about the data loaded from a postprocessed .smv file
+/**
+ * Contains information about the data loaded from a postprocessed .smv file.
+ */
 UCLASS(BlueprintType)
 class VRSMOKEVIS_API USimulationInfo : public UObject
 {

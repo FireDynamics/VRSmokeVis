@@ -7,6 +7,10 @@
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTextureUtils, All, All);
 
+
+/**
+ * Utility functions for creation of 2D (slices, obsts) and 3D textures (smoke volumes).
+ */
 class VRSMOKEVIS_API FTextureUtils
 {
 public:

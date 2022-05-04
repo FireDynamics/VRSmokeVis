@@ -3,6 +3,10 @@
 #include "GameFramework/HUD.h"
 #include "VRSSHUD.generated.h"
 
+
+/**
+ * Just a simple HUD to display the user interface.
+ */
 UCLASS()
 class VRSMOKEVIS_API AVRSSHUD : public AHUD
 {

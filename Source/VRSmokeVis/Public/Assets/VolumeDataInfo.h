@@ -3,7 +3,9 @@
 #include "Assets/DataInfo.h"
 #include "VolumeDataInfo.generated.h"
 
-/** Contains information about the data loaded from the binary data and yaml header file. */
+/**
+ * Contains information about the data loaded from the binary data and yaml header file.
+ */
 UCLASS(BlueprintType)
 class VRSMOKEVIS_API UVolumeDataInfo : public UDataInfo
 {

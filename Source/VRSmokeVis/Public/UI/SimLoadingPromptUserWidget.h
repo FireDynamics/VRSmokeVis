@@ -5,6 +5,9 @@
 #include "SimLoadingPromptUserWidget.generated.h"
 
 
+/**
+ * Prompt widget where the user has to enter a path to a simulation which he wants to load.  
+ */
 UCLASS(Abstract)
 class VRSMOKEVIS_API USimLoadingPromptUserWidget : public UUserWidget
 {

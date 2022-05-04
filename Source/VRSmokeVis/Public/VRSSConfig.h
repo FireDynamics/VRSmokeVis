@@ -3,6 +3,10 @@
 #include "Engine/StreamableManager.h"
 #include "VRSSConfig.generated.h"
 
+/**
+ * Configuration for the simulations which is especially useful in a packaged game without an editor.
+ * The editor path to the file is typically "[ProjectRoot]/Saved/Config/WindowsEditor/SimulationProperties.ini".
+ */
 UCLASS(Config=SimulationProperties)
 class VRSMOKEVIS_API UVRSSConfig : public UObject
 {

@@ -5,6 +5,10 @@
 #include "Components/Image.h"
 #include "ColorMapUserWidget.generated.h"
 
+
+/**
+ * Widget that displays a colormap as well as the range of the color values.
+ */
 UCLASS(Abstract)
 class VRSMOKEVIS_API UColorMapUserWidget : public UUserWidget
 {

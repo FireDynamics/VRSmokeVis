@@ -69,6 +69,7 @@ void UPreprocessor::TryPython3()
 
 void UPreprocessor::InitPythonAlias()
 {
+	// Todo: Let the user set a custom python alias or the path to a specific python interpreter (e.g. in an environment)
 	// Create a monitored process instance
 	FMonitoredProcess* Proc = new FMonitoredProcess(TEXT("python"), TEXT("--version"), true, true);
 

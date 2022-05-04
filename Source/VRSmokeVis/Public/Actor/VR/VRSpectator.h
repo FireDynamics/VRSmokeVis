@@ -2,6 +2,10 @@
 
 #include "VRSpectator.generated.h"
 
+
+/**
+ * Base class for VRSpectator Blueprint.
+ */
 UCLASS()
 class VRSMOKEVIS_API AVRSpectator : public AActor
 {
