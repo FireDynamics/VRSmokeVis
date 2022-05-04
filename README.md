@@ -15,7 +15,9 @@ _These requirements are only mandatory if not manually preprocessing the fds dat
 
 ### Without editor
 When there is no need for the editor, no further installation will be required.  
-Just execute the binary for your system in [the latest release](../../releases/). If there is no binary available for your system, please follow to the _With editor_ instructions below instead.
+Just execute the binary for your system in [the latest release](../../releases/). If there is no binary available for your system, please follow to the _With editor_ instructions below instead.  
+
+Now you can simply start the application which will prompt you to enter the location of your FDS simulation (either the _[chid].smv_ file without manual preprocessing or the _[chid]-smv.yaml_ file after preprocessing) and the destination where loaded data should be stored. After loading the simulation, the geometry is automatically generated and placed into the world. By pressing "H" (see [keyboard controls](#keyboard-controls) for more shortcuts), a UI will be shown which lets you select the data you want to load and show in the scene. Pressing "P" will then start/unpause the visualization of the simulation.  
 
 ### With editor
 This project is based on Unreal Engine 5 which you have to [download](https://www.unrealengine.com/en-US/download) first.  
@@ -25,11 +27,8 @@ While it is not mandatory, using a suitable IDE like [Visual Studio](https://vis
 ## Keyboard controls
 | Key |  Action  |
 |-----|----------|
-|     |          |
-|     |          |
-|     |          |
-|     |          |
-|     |          |
-|     |          |
-|     |          |
+|  H  | Show/Hide UI |
+|  P  | Pause/Unpause simulation |
+|  F  | Fast-Forward the simulation time by 20 steps |
+|  R  | Rewind the simulation time by 20 steps |
 |     |          |
