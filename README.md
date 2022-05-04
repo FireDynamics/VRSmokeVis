@@ -1,7 +1,7 @@
 # VRSmokeVis
 
 
-## Installation
+## Installation and Usage
 There are two ways to use the visualization toolkit of this project: Either with or without the [Unreal Engine editor](https://www.unrealengine.com/en-US/download).  
 The editor-based version offers everything the editor-free version does, but does also add convenient ways to discover the data of a loaded simulation and to customize the appearance of the visualization, especially of the scenery (e.g. change textures of obstructions or add exit signs).  
 
@@ -22,4 +22,14 @@ This project is based on Unreal Engine 5 which you have to [download](https://ww
 While it is not mandatory, using a suitable IDE like [Visual Studio](https://visualstudio.microsoft.com/) or [Rider](https://www.jetbrains.com/lp/rider-unreal/) is recommended.  
 ...
 
-## Usage
+## Keyboard controls
+| Key |  Action  |
+|-----|----------|
+|     |          |
+|     |          |
+|     |          |
+|     |          |
+|     |          |
+|     |          |
+|     |          |
+|     |          |
