@@ -33,4 +33,4 @@ _Now you can simply drag-and-drop the simulation-file from your explorer into th
 |  P  | Pause/Unpause simulation |
 |  F  | Fast-Forward the simulation time by 20 steps |
 |  R  | Rewind the simulation time by 20 steps |
-|     |          |
+|  O  | Open simulation loading prompt |
