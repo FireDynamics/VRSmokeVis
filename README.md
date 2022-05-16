@@ -28,7 +28,7 @@ _Now you can simply drag-and-drop the simulation-file from your explorer into th
 
 ## Keyboard controls
 | Key |  Action  |
-|-----|----------|
+|:---:|----------|
 |  H  | Show/Hide UI |
 |  P  | Pause/Unpause simulation |
 |  F  | Fast-Forward the simulation time by 20 steps |
