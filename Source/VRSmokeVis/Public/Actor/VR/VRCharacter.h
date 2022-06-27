@@ -8,30 +8,6 @@
 
 class AVRSSPlayerController;
 
-UENUM()
-enum class EVRPlatform
-{
-	Oculus = 0,
-	Vive = 1,
-	Default,
-};
-
-/**
- * The 2 classes of VRMotionController to spawn for each platform
- */
-USTRUCT()
-struct VRSMOKEVIS_API FControllerPlatformClasses
-{
-	GENERATED_BODY()
-	/** Class of AVRMotionController to spawn for left hand */
-	UPROPERTY(EditAnywhere)
-	TSubclassOf<AVRSSPlayerController> LeftControllerClass;
-
-	/** Class of AVRMotionController to spawn for right hand */
-	UPROPERTY(EditAnywhere)
-	TSubclassOf<AVRSSPlayerController> RightControllerClass;
-};
-
 /**
  * VR pawn which the user controls that is also responsible for some interaction of the user with the underlying systems.
  */
@@ -51,10 +27,10 @@ public:
 	UPROPERTY(VisibleAnywhere)
 	UCameraComponent* VRCamera;
 
-	/** Contains the classes of controllers to be spawned per each platform */
+	/** Blueprint class of the controller for both hands */
 	UPROPERTY(EditAnywhere)
-	TMap<EVRPlatform, FControllerPlatformClasses> PerPlatformControllers;
-
+	TSubclassOf<AVRSSPlayerController> PlayerControllerClass;
+	
 	/** Controller spawned for the left hand */
 	UPROPERTY(VisibleAnywhere)
 	AVRSSPlayerController* LeftController;
@@ -68,7 +44,7 @@ public:
 
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class USimLoadingPromptUserWidget> SimLoadingPromptUserWidgetClass;
-	
+
 protected:
 	/** Pause the simulation and propagate the pause to all assets  */
 	UFUNCTION()

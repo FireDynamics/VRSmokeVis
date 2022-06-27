@@ -23,35 +23,18 @@ void AVRCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Todo
 	UHeadMountedDisplayFunctionLibrary::SetTrackingOrigin(EHMDTrackingOrigin::Floor);
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	SpawnParams.Owner = this;
-
-	// Todo
-	const EVRPlatform VRPlatformType = EVRPlatform::Default;
-	FControllerPlatformClasses PlatformClasses;
-
-	if (PerPlatformControllers.Contains(VRPlatformType))
-	{
-		PlatformClasses = PerPlatformControllers[VRPlatformType];
-	}
-
-	if (PlatformClasses.LeftControllerClass && PlatformClasses.RightControllerClass)
-	{
-		RightController = GetWorld()->SpawnActor<AVRSSPlayerController>(PlatformClasses.RightControllerClass,
-		                                                                SpawnParams);
-		LeftController = GetWorld()->SpawnActor<AVRSSPlayerController>(PlatformClasses.LeftControllerClass,
-		                                                               SpawnParams);
-
-		RightController->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
-		LeftController->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
-
-		RightController->SetupInput(InputComponent);
-		LeftController->SetupInput(InputComponent);
-	}
+	
+	RightController = GetWorld()->SpawnActor<AVRSSPlayerController>(PlayerControllerClass, SpawnParams);
+	LeftController = GetWorld()->SpawnActor<AVRSSPlayerController>(PlayerControllerClass, SpawnParams);
+	RightController->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
+	LeftController->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
+	RightController->SetupInput(InputComponent);
+	LeftController->SetupInput(InputComponent);
 
 	// Time controls
 	InputComponent->BindAction("Pause", IE_Pressed, this, &AVRCharacter::TogglePauseSimulation)
