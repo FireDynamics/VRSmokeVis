@@ -14,16 +14,16 @@ class VRSMOKEVIS_API FAssetCreationUtils
 {
 public:
 	/** Loads all Textures for an asset with the specified type */
-	static void LoadTextures(UDataInfo* DataInfo, const FString& Type, const FString& Directory);
+	static void LoadTextures(UDataInfo* DataInfo, const FString& Type);
 	
 	/** Loads all Textures for a specific obst */
-	static void LoadObstTextures(UBoundaryDataInfo* DataInfo, const FString& Directory);
+	static void LoadObstTextures(UBoundaryDataInfo* DataInfo);
 
 	/** Loads all Textures for a specific slice */
-	static void LoadSliceTextures(USliceDataInfo* DataInfo, const FString& Directory);
+	static void LoadSliceTextures(USliceDataInfo* DataInfo);
 
 	/** Loads all VolumeTextures for a specific volume */
-	static void LoadVolumeTextures(UVolumeDataInfo* DataInfo, const FString& Directory);
+	static void LoadVolumeTextures(UVolumeDataInfo* DataInfo);
 
 	/** Prepares the simulation asset and also loads all assets defined in the simulation */
 	static UObject* CreateSimulation(const FString& InFileName, const FString& OutDirectory);

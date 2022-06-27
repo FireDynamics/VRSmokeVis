@@ -9,7 +9,7 @@ UTexture2D* UVRSSConfig::GetColorMap(const FString Quantity)
 
 	UObjectLibrary* ObjectLibrary = UObjectLibrary::CreateLibrary(UTexture2D::StaticClass(), false, GIsEditor);
 	ObjectLibrary->AddToRoot();
-	ObjectLibrary->LoadAssetDataFromPath(ColorMapsPath);
+	ObjectLibrary->LoadAssetDataFromPath(GetColorMapsPath());
 	ObjectLibrary->GetAssetDataList(ColorMapTextures);
 
 	if (const FString* ColorMapName = ColorMaps.Find(Quantity))

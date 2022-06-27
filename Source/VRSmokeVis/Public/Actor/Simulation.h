@@ -91,6 +91,9 @@ protected:
 	void NextTimeStep(const FString Type);
 
 	UFUNCTION()
+	void LoadUnloadTimeStep(int TimeStep, const FString& Type);
+
+	UFUNCTION()
 	bool RegisterTextureLoad(const FString Type, const AActor* Asset, const FString& TextureDirectory,
 							 UPARAM(ref) TArray<FAssetData>& TextureArray, const int NumTextures);
 	

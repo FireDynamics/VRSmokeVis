@@ -39,18 +39,21 @@ public:
 	/** Loads the raw data specified in the DataInfo */
 	static uint8* LoadObstData(const FString& FilePath, const class UBoundaryDataInfo* DataInfo);
 
-	/** Getting info about volumes before loading them */
+	/** Get info about volumes before loading them */
 	static void ParseVolumeDataInfoFromFile(const FString& FileName, UPARAM(ref) TMap<FString, class UVolumeDataInfo*>& DataInfos);
 
-	/** Getting info about slices before loading them */
+	/** Get info about slices before loading them */
 	static void ParseSliceDataInfoFromFile(const FString& FileName, UPARAM(ref) TMap<FString, class USliceDataInfo*>& DataInfos);
 
-	/** Getting info about obstructions before loading them */
+	/** Get info about obstructions before loading them */
 	static void ParseObstDataInfoFromFile(const FString& FilePath, UPARAM(ref) class UBoundaryDataInfo* DataInfo, UPARAM(ref) TArray<float>& BoundingBoxOut);
 
-	/** Getting info about the simulation and the data it contains */
+	/** Get info about the simulation and the data it contains */
 	static void ParseSimulationInfoFromFile(const FString& FileName, UPARAM(ref) class USimulationInfo* SimInfo);
 
+	/** Get the hash of a simulation without reading the whole file */
+	static FString GetSimulationHashFromFile(const FString& FileName);
+	
 	/** If this function cannot find or create the directory, returns false */
 	static bool VerifyOrCreateDirectory(const FString& TestDir);
 };
