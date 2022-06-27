@@ -30,7 +30,7 @@ public:
 	
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	class UEditableText* SimulationOutDirInputText;
-	
+
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	class UButton* CancelButton;
 	

@@ -17,8 +17,11 @@ public:
 
 	/** Maps a type [Obst, Slice, Volume] to the path of the original data files (.dat) */
 	UPROPERTY(VisibleAnywhere)
-	TMap<FString, FString> OriginalDataFilesPath;
+	FString OriginalDataFilesPath;
 
+	UPROPERTY()
+	FString Hash;
+	
 	UPROPERTY()
 	TArray<FString> ObstPaths;
 

@@ -333,7 +333,7 @@ void FImportUtils::ParseSliceDataInfoFromFile(const FString& FileName, UPARAM(re
 		DataInfo->Quantity = Quantity;
 
 		// Get slice name
-		SplitPath(DataInfo->DataFileName, Left, DataInfo->FdsName);
+			SplitPath(DataInfo->DataFileName, Left, DataInfo->FdsName);
 
 		DataInfos.Add(MeshId, DataInfo);
 	}
@@ -457,24 +457,38 @@ void FImportUtils::ParseSimulationInfoFromFile(const FString& FileName, UPARAM(r
 
 	int NumObstructions, NumSlices, NumVolumes, i;
 
+	// Hash
+	Lines[0].Split(TEXT(": "), &Left, &SimInfo->Hash);
 	// NumObstructions
-	Lines[0].Split(TEXT(": "), &Left, &Right);
+	Lines[1].Split(TEXT(": "), &Left, &Right);
 	FDefaultValueHelper::ParseInt(Right, NumObstructions);
 	// NumSlices
-	Lines[1].Split(TEXT(": "), &Left, &Right);
+	Lines[2].Split(TEXT(": "), &Left, &Right);
 	FDefaultValueHelper::ParseInt(Right, NumSlices);
 	// NumVolumes
-	Lines[2].Split(TEXT(": "), &Left, &Right);
+	Lines[3].Split(TEXT(": "), &Left, &Right);
 	FDefaultValueHelper::ParseInt(Right, NumVolumes);
 
 	SimInfo->ObstPaths.Reserve(NumObstructions);
 	SimInfo->SlicePaths.Reserve(NumSlices);
 	SimInfo->VolumePaths.Reserve(NumVolumes);
 
-	for (i = 0; i < NumObstructions; ++i) SimInfo->ObstPaths.Add(Lines[4 + i].RightChop(2).TrimEnd());
-	for (i = 0; i < NumSlices; ++i) SimInfo->SlicePaths.Add(Lines[5 + NumObstructions + i].RightChop(2).TrimEnd());
+	for (i = 0; i < NumObstructions; ++i) SimInfo->ObstPaths.Add(Lines[5 + i].RightChop(2).TrimEnd());
+	for (i = 0; i < NumSlices; ++i) SimInfo->SlicePaths.Add(Lines[6 + NumObstructions + i].RightChop(2).TrimEnd());
 	for (i = 0; i < NumVolumes; ++i) SimInfo->VolumePaths.Add(
-		Lines[6 + NumObstructions + NumSlices + i].RightChop(2).TrimEnd());
+		Lines[7 + NumObstructions + NumSlices + i].RightChop(2).TrimEnd());
+}
+
+FString FImportUtils::GetSimulationHashFromFile(const FString& FileName)
+{
+	FString Left, Hash;
+
+	const FString FileString = ReadFileAsString(FileName);
+	const int FirstLine = FileString.Find("\n");
+	
+	FileString.Left(FirstLine).Split(TEXT(": "), &Left, &Hash);
+
+	return Hash;
 }
 
 bool FImportUtils::VerifyOrCreateDirectory(const FString& TestDir)

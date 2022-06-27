@@ -5,7 +5,6 @@
 #include "Actor/Simulation.h"
 #include "Kismet/GameplayStatics.h"
 #include "EngineUtils.h"
-#include "ToolBuilderUtil.h"
 #include "UI/SimLoadingPromptUserWidget.h"
 
 AVRCharacter::AVRCharacter()
@@ -45,20 +44,33 @@ void AVRCharacter::BeginPlay()
 	              .bExecuteWhenPaused = true;
 	InputComponent->BindAction("ToggleHUD", IE_Pressed, this, &AVRCharacter::ToggleHUDVisibility)
 	              .bExecuteWhenPaused = true;
-	InputComponent->BindAction("ShowSimLoadingPrompt", IE_Pressed, this, &AVRCharacter::ShowSimLoadingPrompt)
+	InputComponent->BindAction("ShowSimLoadingPrompt", IE_Pressed, this, &AVRCharacter::ToggleSimLoadingPrompt)
 	              .bExecuteWhenPaused = true;
 
 	// Start the world paused
 	TogglePauseSimulation();
 
+	// Init loading prompt
+	SimLoadingPromptUserWidget = CreateWidget<USimLoadingPromptUserWidget>(GetGameInstance(), SimLoadingPromptUserWidgetClass);
+	int32 X, Y;
+	Cast<APlayerController>(GetController())->GetViewportSize(X, Y);
+	// Todo: The widgets size is hardcoded for now as getting the size dynamically did not work
+	SimLoadingPromptUserWidget->SetPositionInViewport(FVector2d(X-250.f, Y-100.f)/2);
+	
 	// Check if there is at least one simulation in the world already, if not show simulation loading UI
-	if(!TActorIterator<AActor>(GetWorld(), ASimulation::StaticClass())) ShowSimLoadingPrompt();
+	if(!TActorIterator<AActor>(GetWorld(), ASimulation::StaticClass())) ToggleSimLoadingPrompt();
 }
 
-void AVRCharacter::ShowSimLoadingPrompt()
+void AVRCharacter::ToggleSimLoadingPrompt()
 {
-	CreateWidget<USimLoadingPromptUserWidget>(GetGameInstance(), SimLoadingPromptUserWidgetClass)->AddToViewport();
-	Cast<APlayerController>(GetController())->SetShowMouseCursor(true);
+	if (SimLoadingPromptUserWidget->IsInViewport()){
+		SimLoadingPromptUserWidget->RemoveFromViewport();
+		Cast<APlayerController>(GetController())->SetShowMouseCursor(false);
+	} else
+	{
+		SimLoadingPromptUserWidget->AddToViewport();
+		Cast<APlayerController>(GetController())->SetShowMouseCursor(true);
+	}
 }
 
 void AVRCharacter::TogglePauseSimulation()

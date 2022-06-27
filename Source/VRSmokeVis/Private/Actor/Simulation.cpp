@@ -43,7 +43,7 @@ ASimulation::ASimulation()
 void ASimulation::BeginPlay()
 {
 	Super::BeginPlay();
-
+	
 	// Spawn all obstructions, slices and volumes, but hide them for now
 	InitObstructions();
 	InitSlices();
@@ -54,6 +54,8 @@ void ASimulation::BeginPlay()
 
 void ASimulation::InitObstructions()
 {
+	if (!SimulationAsset->AssetDirectories.Contains("Obst")) return;
+	
 	UObjectLibrary* ObjectLibrary = UObjectLibrary::CreateLibrary(UObstAsset::StaticClass(), false, GIsEditor);
 	ObjectLibrary->AddToRoot();
 	ObjectLibrary->LoadAssetDataFromPath(SimulationAsset->AssetDirectories["Obst"]);
@@ -96,6 +98,8 @@ void ASimulation::InitObstructions()
 
 void ASimulation::InitSlices()
 {
+	if (!SimulationAsset->AssetDirectories.Contains("Slice")) return;
+	
 	UObjectLibrary* ObjectLibrary = UObjectLibrary::CreateLibrary(USliceAsset::StaticClass(), false, GIsEditor);
 	ObjectLibrary->AddToRoot();
 	ObjectLibrary->LoadAssetDataFromPath(SimulationAsset->AssetDirectories["Slice"]);
@@ -120,6 +124,8 @@ void ASimulation::InitSlices()
 
 void ASimulation::InitVolumes()
 {
+	if (!SimulationAsset->AssetDirectories.Contains("Volume")) return;
+	
 	UObjectLibrary* ObjectLibrary = UObjectLibrary::CreateLibrary(UVolumeAsset::StaticClass(), false, GIsEditor);
 	ObjectLibrary->AddToRoot();
 	ObjectLibrary->LoadAssetDataFromPath(SimulationAsset->AssetDirectories["Volume"]);
@@ -144,21 +150,34 @@ void ASimulation::InitVolumes()
 
 void ASimulation::SpawnSimulationGeometry()
 {
+	if (!SimulationAsset->AssetDirectories.Contains("Obst")) return;
+	
 	TArray<FAssetData> Geometries;
 	UObjectLibrary* ObjectLibrary = UObjectLibrary::CreateLibrary(UDataAsset::StaticClass(), false, GIsEditor);
 	ObjectLibrary->AddToRoot();
 	ObjectLibrary->LoadAssetDataFromPath(SimulationAsset->AssetDirectories["Obst"]);
 	ObjectLibrary->GetAssetDataList(Geometries);
-	FActorSpawnParameters Params;
+
 	for (FAssetData& ObstAssetData : Geometries)
 	{
 		UObstAsset* ObstAsset = Cast<UObstAsset>(StreamableManager.LoadSynchronous(ObstAssetData.ToSoftObjectPath()));
-		AStaticMeshActor* ObstCuboid = GetWorld()->SpawnActor<AStaticMeshActor>(Params);
+
+		const FVector ObstScale = FVector(ObstAsset->BoundingBox[1] - ObstAsset->BoundingBox[0],
+										  ObstAsset->BoundingBox[3] - ObstAsset->BoundingBox[2],
+										  ObstAsset->BoundingBox[5] - ObstAsset->BoundingBox[4]);
+		// The pivot point of the mesh is not in the center, but on the lower side instead. We therefore have to adjust
+		// the z-coordinate to re-center the actor
+		const FVector Adjustment = FVector(ObstScale.X, ObstScale.Y, 0);
+		const FVector ObstLocation = FVector(ObstAsset->BoundingBox[0], ObstAsset->BoundingBox[2],
+											 ObstAsset->BoundingBox[4]) + Adjustment / 2;
+		FTransform Transform = FTransform(ObstLocation * 100);
+		
+		AStaticMeshActor* ObstCuboid = GetWorld()->SpawnActorDeferred<AStaticMeshActor>(AStaticMeshActor::StaticClass(), Transform);
 #if WITH_EDITOR
 		ObstCuboid->SetActorLabel(ObstAsset->DataInfo->FdsName + "-Geometry");
 #endif
-		ObstCuboid->SetMobility(EComponentMobility::Static);
 		ObstCuboid->AttachToActor(this, FAttachmentTransformRules::KeepRelativeTransform);
+		ObstCuboid->GetStaticMeshComponent()->SetMobility(EComponentMobility::Movable);
 		ObstCuboid->GetStaticMeshComponent()->SetStaticMesh(CubeStaticMesh);
 		for (int i = -3; i <= 3; ++i)
 			if (i != 0)
@@ -167,16 +186,12 @@ void ASimulation::SpawnSimulationGeometry()
 		ObstCuboid->SetActorScale3D(FVector{1, 1, 1});
 		ObstCuboid->GetStaticMeshComponent()->SetRelativeLocation(FVector{0, 0, 0});
 
-		const FVector ObstScale = FVector(ObstAsset->BoundingBox[1] - ObstAsset->BoundingBox[0],
-		                                  ObstAsset->BoundingBox[3] - ObstAsset->BoundingBox[2],
-		                                  ObstAsset->BoundingBox[5] - ObstAsset->BoundingBox[4]);
 		ObstCuboid->GetStaticMeshComponent()->SetRelativeScale3D(ObstScale);
-		// The pivot point of the mesh is not in the center, but on the lower side instead. We therefore have to adjust
-		// the z-coordinate to re-center the actor
-		const FVector Adjustment = FVector(ObstScale.X, ObstScale.Y, 0);
-		const FVector ObstLocation = FVector(ObstAsset->BoundingBox[0], ObstAsset->BoundingBox[2],
-		                                     ObstAsset->BoundingBox[4]) + Adjustment / 2;
 		ObstCuboid->SetActorRelativeLocation(ObstLocation * 100);
+		ObstCuboid->SetMobility(EComponentMobility::Static);
+		ObstCuboid->GetStaticMeshComponent()->SetMobility(EComponentMobility::Static);
+		
+		ObstCuboid->FinishSpawning(Transform);
 	}
 }
 
@@ -393,10 +408,10 @@ void ASimulation::InitUpdateRate(const FString Type, const float UpdateRateSugge
 	// Set timer to set next frame (update next texture) after some time
 	FTimerDelegate Delegate;
 	Delegate.BindUFunction(this, FName("NextTimeStep"), Type);
-	// Delegate.BindLambda([this, Type](){NextTimeStep(Type);});
-	// Todo: Check first delay
-	GetWorld()->GetTimerManager().SetTimer(UpdateTimerHandles[Type], Delegate, UpdateRates[Type], true, 1.f);
 
+	GetWorld()->GetTimerManager().SetTimer(UpdateTimerHandles[Type], Delegate, UpdateRates[Type], true, UpdateRates[Type]);
+	
+	// For the first update rate that gets initialized, set the length of the timeline for raymarch lights
 	if (UpdateRates.Num() == 1)
 	{
 		// Set the curve length of all (controlled) lights in the scene to the simulation time
@@ -630,8 +645,7 @@ bool ASimulation::RegisterTextureLoad(const FString Type, const AActor* Asset, c
 		// If not, load the data now
 		UDataInfo* DataInfo = Cast<AFdsActor>(Asset)->DataAsset->DataInfo;
 		
-		FAssetCreationUtils::LoadTextures(
-			DataInfo, Type, FPaths::Combine(OriginalDataDirectory, SimulationAsset->SimInfo->OriginalDataFilesPath[Type]));
+		FAssetCreationUtils::LoadTextures(DataInfo, Type);
 
 		// Todo: Load the data in the background and add a loading queue in UI
 
@@ -671,7 +685,7 @@ bool ASimulation::RegisterTextureLoad(const FString Type, const AActor* Asset, c
 
 	for (int i = 0; i < TexturesToLoad; ++i)
 	{
-		StreamableManager.LoadSynchronous(TextureArray[CurrentTimeSteps[Type] + i].ToSoftObjectPath());
+		StreamableManager.LoadSynchronous(TextureArray[(CurrentTimeSteps[Type] + i) % MaxTimeSteps[Type]].ToSoftObjectPath());
 	}
 	return true;
 }
@@ -682,13 +696,46 @@ void ASimulation::NextTimeStep(const FString Type)
 	CurrentTimeSteps[Type] += 1;
 	if (CurrentTimeSteps[Type] >= MaxTimeSteps[Type])
 	{
-		CurrentTimeSteps[Type] = 0;
 		HUD->UserInterfaceUserWidget->TimeUserWidget->CurrentSimTime = .0f;
-	}
 
-	// Unload the VolumeTexture of the second to last time step (not the last one as it might still be referenced
-	const int PreviousTextureIndex = (CurrentTimeSteps[Type] + MaxTimeSteps[Type] - 2) % MaxTimeSteps[Type];
-	const int NextTextureIndex = (CurrentTimeSteps[Type] + 9) % MaxTimeSteps[Type];
+		// If the last time step is reached for one type, set time for ALL types back to 0. Also reset all timers to
+		// synchronize them again. This is necessary because the different types end at a different absolute time,
+		// because the output rate is fixed and might not match with the simulation time. The time remaining after the
+		// last output step will therefore vary for each type. We just end the simulation as soon as one type ends.
+		// This behavior could be changed and is simply a design decision.
+		TArray<FString> Types;
+		CurrentTimeSteps.GetKeys(Types);
+		for (FString& ItType : Types)
+		{			
+			FTimerDelegate Delegate;
+			Delegate.BindUFunction(this, FName("NextTimeStep"), ItType);
+			GetWorld()->GetTimerManager().ClearTimer(UpdateTimerHandles[ItType]);
+			if (Type == ItType)
+			{
+				GetWorld()->GetTimerManager().SetTimer(UpdateTimerHandles[ItType], Delegate, UpdateRates[ItType], true, UpdateRates[ItType]);
+				
+				CurrentTimeSteps[ItType] = 0;
+			} else
+			{
+				GetWorld()->GetTimerManager().SetTimer(UpdateTimerHandles[ItType], Delegate, UpdateRates[ItType], true, 0);
+
+				// Step through all timesteps that will be skipped by setting time back to 0
+				for (int t = CurrentTimeSteps[ItType]; t < MaxTimeSteps[ItType]; ++t){
+					LoadUnloadTimeStep(t, ItType);
+				}
+				
+				CurrentTimeSteps[ItType] = -1;
+			}
+		}
+	}
+	LoadUnloadTimeStep(CurrentTimeSteps[Type], Type);
+}
+
+void ASimulation::LoadUnloadTimeStep(const int TimeStep, const FString& Type){
+	const AVRSSHUD* HUD = Cast<AVRSSHUD>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD());
+	// Unload the VolumeTexture of the second to last time step (not the last one as it might still be referenced)
+	const int PreviousTextureIndex = (TimeStep + MaxTimeSteps[Type] - 2) % MaxTimeSteps[Type];
+	const int NextTextureIndex = (TimeStep + 9) % MaxTimeSteps[Type];
 	TArray<FSoftObjectPath> AssetsToLoad;
 
 	TArray<FAssetData> CurrentTextureArray;
