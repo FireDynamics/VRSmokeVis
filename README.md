@@ -7,7 +7,7 @@ The editor-based version offers everything the editor-free version does, but doe
 
 ### Prerequisites
 - Python version 3.6 or above
-- [FDSReader](https://pypi.org/project/fdsreader/) 1.6 or above
+- [FDSReader](https://pypi.org/project/fdsreader/) 1.8.4 or above
 - [PyYAML](https://pypi.org/project/PyYAML/)
 - [Pathos](https://pypi.org/project/pathos/)
 
