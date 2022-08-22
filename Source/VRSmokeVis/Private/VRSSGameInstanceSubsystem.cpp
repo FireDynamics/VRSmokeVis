@@ -1,6 +1,8 @@
 ﻿#include "VRSSGameInstanceSubsystem.h"
+
 #include "VRSSConfig.h"
 #include "Actor/Simulation.h"
+#include "Actor/VRSSPlayerController.h"
 #include "Kismet/GameplayStatics.h"
 #include "UI/UserInterfaceUserWidget.h"
 #include "UI/VRSSHUD.h"
@@ -44,13 +46,13 @@ void UVRSSGameInstanceSubsystem::RegisterSimulation(ASimulation* Simulation)
 
 	Simulations.Add(Simulation);
 
+	// Todo: Improve UI so multiple simulation controllers actually fit on the screen
 	// Update the colormaps in the UI to reflect the new value range
 	UVRSSGameInstanceSubsystem* GI = GetGameInstance()->GetSubsystem<UVRSSGameInstanceSubsystem>();
-	AVRSSHUD* HUD = Cast<AVRSSHUD>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD());
+	AVRSSHUD* HUD = Cast<AVRSSHUD>(GetWorld()->GetFirstPlayerController()->GetHUD());
 	HUD->InitHUD();
 	HUD->UserInterfaceUserWidget->InitColorMaps(GI->Config, Mins, Maxs);
 	HUD->UserInterfaceUserWidget->AddSimulationController(Simulation);
-	// Todo: Improve UI so multiple simulation controllers actually fit on the screen
 
 	// Update the colormaps for all assets in each simulation, to draw the correct colors for each value
 	for (ASimulation* Sim : Simulations)

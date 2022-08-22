@@ -1,5 +1,6 @@
 ﻿#include "UI/VRSSHUD.h"
 
+#include "Actor/VRSSPlayerController.h"
 #include "UI/UserInterfaceUserWidget.h"
 
 
@@ -19,5 +20,7 @@ void AVRSSHUD::BeginPlay()
 
 void AVRSSHUD::InitHUD()
 {
-	UserInterfaceUserWidget = CreateWidget<UUserInterfaceUserWidget>(GetWorld(), UserInterfaceUserWidgetClass);
+	if (!UserInterfaceUserWidget){
+		UserInterfaceUserWidget = CreateWidget<UUserInterfaceUserWidget>(GetWorld(), UserInterfaceUserWidgetClass);
+	}
 }

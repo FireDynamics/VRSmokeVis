@@ -46,14 +46,14 @@ void AVRSSPlayerController::SetupInput(UInputComponent* InInputComponent)
 
 	MotionControllerComponent->SetTrackingMotionSource(HandSourceId);
 
-	InInputComponent->BindAction(FName(Hand + "_Grip"), IE_Pressed, this, &AVRSSPlayerController::OnGripPressed);
-	InInputComponent->BindAction(FName(Hand + "_Grip"), IE_Released, this, &AVRSSPlayerController::OnGripReleased);
-	InInputComponent->BindAction(FName(Hand + "_Trigger"), IE_Pressed, this, &AVRSSPlayerController::OnTriggerPressed);
-	InInputComponent->BindAction(FName(Hand + "_Trigger"), IE_Released, this,
+	InInputComponent->BindAction(FName("Grab" + Hand), IE_Pressed, this, &AVRSSPlayerController::OnGripPressed);
+	InInputComponent->BindAction(FName("Grab" + Hand), IE_Released, this, &AVRSSPlayerController::OnGripReleased);
+	InInputComponent->BindAction(FName("Trigger" + Hand), IE_Pressed, this, &AVRSSPlayerController::OnTriggerPressed);
+	InInputComponent->BindAction(FName("Trigger" + Hand), IE_Released, this,
 	                             &AVRSSPlayerController::OnTriggerReleased);
-	InInputComponent->BindAxis(FName(Hand + "_Grip_Axis"), this, &AVRSSPlayerController::OnGripAxis);
-	InInputComponent->BindAxis(FName(Hand + "_Trigger_Axis"), this, &AVRSSPlayerController::OnTriggerAxis);
-	InInputComponent->BindAxis(FName(Hand + "_Joystick_Y"), this, &AVRSSPlayerController::OnJoystickYAxis);
+	InInputComponent->BindAxis(FName("GrabAxis" + Hand), this, &AVRSSPlayerController::OnGripAxis);
+	InInputComponent->BindAxis(FName("TriggerAxis" + Hand), this, &AVRSSPlayerController::OnTriggerAxis);
+	InInputComponent->BindAxis(FName("MovementAxisY" + Hand), this, &AVRSSPlayerController::OnJoystickYAxis);
 }
 
 void AVRSSPlayerController::OnGripPressed()

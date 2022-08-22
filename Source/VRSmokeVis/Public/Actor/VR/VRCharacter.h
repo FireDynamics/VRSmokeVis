@@ -24,7 +24,7 @@ public:
 	USceneComponent* HMDScene;
 
 	/** VR Camera component */
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UCameraComponent* VRCamera;
 
 	/** Blueprint class of the controller for both hands */
@@ -32,11 +32,11 @@ public:
 	TSubclassOf<AVRSSPlayerController> PlayerControllerClass;
 	
 	/** Controller spawned for the left hand */
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	AVRSSPlayerController* LeftController;
 
 	/** Controller spawned for the right hand */
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	AVRSSPlayerController* RightController;
 
 	/** Called when the game starts or when spawned */
@@ -44,8 +44,11 @@ public:
 
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class USimLoadingPromptUserWidget> SimLoadingPromptUserWidgetClass;
+	
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<class AVRUI> VRUIClass;
 
-protected:
+protected:	
 	/** Pause the simulation and propagate the pause to all assets  */
 	UFUNCTION()
 	void TogglePauseSimulation();
@@ -64,6 +67,13 @@ protected:
 	UFUNCTION()
 	void ToggleSimLoadingPrompt();
 
+	/** Opens the HUD in VR mode on one controller */
+	UFUNCTION()
+	void VRMenuToggle(const bool IsRightHand);
+	
 	UPROPERTY(Transient)
 	class USimLoadingPromptUserWidget* SimLoadingPromptUserWidget;
+	
+	UPROPERTY()
+	class AVRUI* VRUI;
 };

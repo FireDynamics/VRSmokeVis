@@ -6,6 +6,11 @@
 #include "Kismet/GameplayStatics.h"
 #include "EngineUtils.h"
 #include "UI/SimLoadingPromptUserWidget.h"
+#include "UI/VRSSHUD.h"
+#include "UI/VRUI.h"
+
+
+DECLARE_DELEGATE_OneParam(FVRMenuToggleDelegate, bool)
 
 AVRCharacter::AVRCharacter()
 {
@@ -46,7 +51,9 @@ void AVRCharacter::BeginPlay()
 	              .bExecuteWhenPaused = true;
 	InputComponent->BindAction("ShowSimLoadingPrompt", IE_Pressed, this, &AVRCharacter::ToggleSimLoadingPrompt)
 	              .bExecuteWhenPaused = true;
-
+	InputComponent->BindAction<FVRMenuToggleDelegate>(FName("MenuToggleLeft"), IE_Pressed, this, &AVRCharacter::VRMenuToggle, false);
+	InputComponent->BindAction<FVRMenuToggleDelegate>(FName("MenuToggleRight"), IE_Pressed, this, &AVRCharacter::VRMenuToggle, true);
+	
 	// Start the world paused
 	TogglePauseSimulation();
 
@@ -102,4 +109,20 @@ void AVRCharacter::RewindSimulation()
 void AVRCharacter::ToggleHUDVisibility()
 {
 	GetGameInstance()->GetSubsystem<UVRSSGameInstanceSubsystem>()->ToggleHUDVisibility();
+}
+
+void AVRCharacter::VRMenuToggle(const bool IsRightHand)
+{
+	if (VRUI)
+	{
+		VRUI->CloseMenu();
+	}
+	else
+	{
+		FTransform ZeroTransform;
+		VRUI = GetWorld()->SpawnActorDeferred<AVRUI>(VRUIClass, ZeroTransform);
+		VRUI->ActiveMenuHandRight = IsRightHand;
+		VRUI->Init(Cast<AVRSSHUD>(GetWorld()->GetFirstPlayerController()->GetHUD())->UserInterfaceUserWidget);
+		VRUI->FinishSpawning(ZeroTransform);
+	}
 }

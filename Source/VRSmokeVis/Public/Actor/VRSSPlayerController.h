@@ -38,7 +38,7 @@ public:
 	UStaticMeshComponent* ControllerStaticMeshComponent = nullptr;
 
 	/** Widget interactor which allows interacting with VR UI */
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	UWidgetInteractionComponent* WidgetInteractor;
 
 	/** Skeletal mesh representing the WidgetInteractor ray */
@@ -81,11 +81,12 @@ public:
 
 	UFUNCTION()
 	void OnWidgetInteractorHoverChanged(UWidgetComponent* Old, UWidgetComponent* New);
-
+	
 	/** The actor currently hovered by the sphere collision, if any
 	* Could be remade into an array to allow hovering multiple actors at once */
 	IGrabbable* HoveredActor = nullptr;
 
 	/** The currently grabbed actor, if any */
 	IGrabbable* GrabbedActor = nullptr;
+	
 };

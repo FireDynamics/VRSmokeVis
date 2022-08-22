@@ -23,10 +23,10 @@ public:
 
 	UFUNCTION()
 	void OnActiveAssetsChanged() const;
-	
+
 	UFUNCTION(BlueprintCallable)
 	void ChangeObstQuantity(FString& NewQuantity);
-	
+
 protected:
 public:
 	/** An instance of the configuration for the project which simply uses its default values set in the editor. */
