@@ -168,18 +168,20 @@ void FAssetCreationUtils::LoadAndCreateObstruction(const FString& RootPackage, c
 	UBoundaryDataInfo* DataInfo = NewObject<UBoundaryDataInfo>(ObstDataInfoPackage, UBoundaryDataInfo::StaticClass(),
 	                                                           FName("DI_" + ObstName),
 	                                                           RF_Standalone | RF_Public);
+	DataInfo->ImportName = ObstName;
 	DataInfo->FdsName = ObstName;
+		
 	FImportUtils::ParseObstDataInfoFromFile(FileName, DataInfo, BoundingBox);
 	TMap<FString, TMap<int, TArray<UTexture2D*>>> ObstructionTextures;
 
-	UPackage* ObstPackage = CreatePackage(*FPaths::Combine(RootPackage, DataInfo->FdsName));
+	UPackage* ObstPackage = CreatePackage(*FPaths::Combine(RootPackage, DataInfo->ImportName));
 	// Get valid package name and filepath.
 	FImportUtils::SplitPath(ObstPackage->GetFullName(), PackagePath, Temp);
 	FImportUtils::SplitPath(FileName, Directory, Temp);
 
 	// Create persistent obst asset
 	UObstAsset* ObstAsset = NewObject<UObstAsset>(ObstPackage, UObstAsset::StaticClass(),
-	                                              FName("OA_" + DataInfo->FdsName),
+	                                              FName("OA_" + DataInfo->ImportName),
 	                                              RF_Standalone | RF_Public);
 	ObstAsset->BoundingBox = BoundingBox;
 	// Setup Texture Dirs
@@ -195,7 +197,7 @@ void FAssetCreationUtils::LoadAndCreateObstruction(const FString& RootPackage, c
 		DataInfo->TextureDirs.Add(Quantity, FQuantityDir());
 		for (const int Ori : Orientations)
 		{
-			const FString DirName = DataInfo->FdsName + "_" + Quantity + "_Face" + FString::FromInt(Ori);
+			const FString DirName = DataInfo->ImportName + "_" + Quantity + "_Face" + FString::FromInt(Ori);
 			DataInfo->TextureDirs[Quantity].FaceDirs.Add(Ori, FPaths::Combine(PackagePath.RightChop(8), DirName));
 		}
 	}
@@ -236,14 +238,14 @@ void FAssetCreationUtils::LoadSlice(const FString& RootPackage, const FString& F
 	for (auto It = DataInfos.CreateIterator(); It; ++It)
 	{
 		TArray<UTexture2D*> SliceTextures;
-		UPackage* SlicePackage = CreatePackage(*FPaths::Combine(RootPackage, It.Value()->FdsName));
+		UPackage* SlicePackage = CreatePackage(*FPaths::Combine(RootPackage, It.Value()->ImportName));
 		USliceAsset* Slice = CreateSlice(It.Value(), FileName, SlicePackage, It.Key(), LazyLoad);
 		Slice->SliceTextures.Reserve(It.Value()->Dimensions.W);
 
 		// Copy DataInfo into correct package
-		UPackage* SliceDataInfoPackage = CreatePackage(*FPaths::Combine(RootPackage, "DataInfos", It.Value()->FdsName));
+		UPackage* SliceDataInfoPackage = CreatePackage(*FPaths::Combine(RootPackage, "DataInfos", It.Value()->ImportName));
 		USliceDataInfo* DataInfo = NewObject<USliceDataInfo>(SliceDataInfoPackage, USliceDataInfo::StaticClass(),
-		                                                     FName("DI_" + It.Value()->FdsName),
+		                                                     FName("DI_" + It.Value()->ImportName),
 		                                                     RF_Standalone | RF_Public, It.Value());
 		DataInfo->DataFileName = FPaths::Combine(Directory, DataInfo->DataFileName);
 
@@ -279,16 +281,16 @@ void FAssetCreationUtils::LoadVolumes(const FString& RootPackage, const FString&
 	for (auto It = DataInfos.CreateIterator(); It; ++It)
 	{
 		TArray<UVolumeTexture*> VolumeTextures;
-		UPackage* VolumePackage = CreatePackage(*FPaths::Combine(RootPackage, It.Value()->FdsName));
+		UPackage* VolumePackage = CreatePackage(*FPaths::Combine(RootPackage, It.Value()->ImportName));
 		UVolumeAsset* Volume = CreateVolume(It.Value(), FileName, VolumePackage, It.Key(), LazyLoad);
 
 		Volume->VolumeTextures.Reserve(It.Value()->Dimensions.W);
 
 		// Copy DataInfo into correct package
 		UPackage* VolumeDataInfoPackage =
-			CreatePackage(*FPaths::Combine(RootPackage, "DataInfos", It.Value()->FdsName));
+			CreatePackage(*FPaths::Combine(RootPackage, "DataInfos", It.Value()->ImportName));
 		UVolumeDataInfo* DataInfo = NewObject<UVolumeDataInfo>(VolumeDataInfoPackage, UVolumeDataInfo::StaticClass(),
-		                                                       FName("DI_" + It.Value()->FdsName),
+		                                                       FName("DI_" + It.Value()->ImportName),
 		                                                       RF_Standalone | RF_Public, It.Value());
 		DataInfo->DataFileName = FPaths::Combine(Directory, DataInfo->DataFileName);
 
@@ -319,11 +321,11 @@ USliceAsset* FAssetCreationUtils::CreateSlice(USliceDataInfo* DataInfo, const FS
 
 	// Create persistent slice asset
 	USliceAsset* SliceAsset = NewObject<USliceAsset>(Package, USliceAsset::StaticClass(),
-	                                                 FName("SA_" + DataInfo->FdsName + "_" + MeshName),
+	                                                 FName("SA_" + DataInfo->ImportName + "_" + MeshName),
 	                                                 RF_Standalone | RF_Public);
 
 	// Setup Texture Dirs
-	DataInfo->TextureDir = FPaths::Combine(PackagePath.RightChop(8), DataInfo->FdsName + "_" + MeshName);
+	DataInfo->TextureDir = FPaths::Combine(PackagePath.RightChop(8), DataInfo->ImportName + "_" + MeshName);
 	if (!LazyLoad) LoadSliceTextures(DataInfo);
 
 	return SliceAsset;
@@ -340,7 +342,7 @@ UVolumeAsset* FAssetCreationUtils::CreateVolume(UVolumeDataInfo* DataInfo, const
 
 	// Create persistent volume asset
 	UVolumeAsset* VolumeAsset = NewObject<UVolumeAsset>(Package, UVolumeAsset::StaticClass(),
-	                                                    FName("VA_" + DataInfo->FdsName + "_" + MeshName),
+	                                                    FName("VA_" + DataInfo->ImportName + "_" + MeshName),
 	                                                    RF_Standalone | RF_Public);
 
 	// Setup Texture Dirs
@@ -383,7 +385,7 @@ void FAssetCreationUtils::LoadObstTextures(UBoundaryDataInfo* DataInfo)
 		// Set pointer to current data position at timestep t for each orientation
 		for (const int Ori : Orientations)
 		{
-			const FString DirName = DataInfo->FdsName + "_" + Quantity + "_Face" + FString::FromInt(Ori);
+			const FString DirName = DataInfo->ImportName + "_" + Quantity + "_Face" + FString::FromInt(Ori);
 			for (int t = 0; t < DataInfo->Dimensions[Ori].W; ++t)
 			{
 				const long SingleTextureSize = static_cast<long>(DataInfo->Dimensions[Ori].X) * DataInfo->Dimensions[
@@ -418,7 +420,7 @@ void FAssetCreationUtils::LoadSliceTextures(USliceDataInfo* DataInfo)
 	{
 		const long SingleTextureSize = static_cast<long>(DataInfo->Dimensions.X) * DataInfo->Dimensions.Y * DataInfo
 			->Dimensions.Z;
-		const FString SliceTextureName = "ST_" + DataInfo->FdsName + "_Data_t" + FString::FromInt(t);
+		const FString SliceTextureName = "ST_" + DataInfo->ImportName + "_Data_t" + FString::FromInt(t);
 		UPackage* SubPackage = CreatePackage(*FPaths::Combine(DataInfo->TextureDir, SliceTextureName));
 
 		// Set pointer to current slice position at timestep t
@@ -445,7 +447,7 @@ void FAssetCreationUtils::LoadVolumeTextures(UVolumeDataInfo* DataInfo)
 	// Create the persistent volume textures
 	for (int t = 0; t < DataInfo->Dimensions.W; ++t)
 	{
-		const FString VolumeTextureName = "VT_" + DataInfo->FdsName + "_Data_t" + FString::FromInt(t);
+		const FString VolumeTextureName = "VT_" + DataInfo->ImportName + "_Data_t" + FString::FromInt(t);
 		UPackage* SubPackage = CreatePackage(*FPaths::Combine(DataInfo->TextureDir, VolumeTextureName));
 
 		// Set pointer to current Volume position at timestep t

@@ -12,6 +12,6 @@ int64 USliceDataInfo::GetTotalCells() const
 
 FString USliceDataInfo::ToString() const
 {
-	return "Slicename " + FdsName + " details:" + "\nDimensions = " + Dimensions.ToString() +
+	return "Slicename " + ImportName + " details:" + "\nDimensions = " + Dimensions.ToString() +
 		"\nSpacing : " + Spacing.ToString() + "\nWorld Size MM : " + Dimensions.ToString();
 }

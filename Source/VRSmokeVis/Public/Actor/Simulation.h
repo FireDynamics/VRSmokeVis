@@ -83,7 +83,7 @@ public:
 	/** Spawn meshes for each obstruction with size and location originating from the fds simulation */
 	UFUNCTION(CallInEditor, Category="Simulation")
 	void SpawnSimulationGeometry();
-	
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -95,8 +95,8 @@ protected:
 
 	UFUNCTION()
 	bool RegisterTextureLoad(const FString Type, const AActor* Asset, const FString& TextureDirectory,
-							 UPARAM(ref) TArray<FAssetData>& TextureArray, const int NumTextures);
-	
+	                         UPARAM(ref) TArray<FAssetData>& TextureArray, const int NumTextures);
+
 	UFUNCTION()
 	void ActivateObst(AObst* Obst);
 	UFUNCTION()
@@ -132,14 +132,18 @@ public:
 	class UStaticMesh* CubeStaticMesh;
 	UPROPERTY(EditAnywhere)
 	class UMaterial* CubeDefaultMaterial;
-	
+
 	/** The class of the raymarch lights that are dimmed over time */
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class ARaymarchLight> RaymarchLightClass;
 
 	/** Controls the maximum radius of Jitter that is applied (works as a factor). Defaults to 0 (no Jitter) */
 	UPROPERTY(EditAnywhere)
-	float JitterRadius = 0;
+	float JitterRadius = -1;
+
+	/** The number of steps to take when raymarching. This is multiplied by the volume thickness in texture space */
+	UPROPERTY(EditAnywhere)
+	float RaymarchingSteps = -1;
 
 	UPROPERTY(BlueprintReadOnly)
 	TMap<FString, int> CurrentTimeSteps;

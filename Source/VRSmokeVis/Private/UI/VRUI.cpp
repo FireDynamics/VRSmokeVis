@@ -10,6 +10,7 @@ AVRUI::AVRUI()
 	
 	WidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("Widget"));
 	RootComponent = WidgetComponent;
+	WidgetComponent->SetWorldRotation(FRotator(0, 0, -180));
 }
 
 void AVRUI::BeginPlay()

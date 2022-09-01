@@ -34,7 +34,6 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	bool ActiveMenuHandRight;
 	
-protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	class UWidgetComponent* WidgetComponent;
 };

@@ -38,10 +38,6 @@ public:
 	UPROPERTY(BlueprintReadOnly, EditAnywhere)
 	UMaterial* RaymarchMaterialBase;
 
-	/** The number of steps to take when raymarching. This is multiplied by the volume thickness in texture space */
-	UPROPERTY(EditAnywhere)
-	float RaymarchingSteps = 150;
-
 	UPROPERTY(EditAnywhere)
 	UMaterial* BorderMaterial;
 

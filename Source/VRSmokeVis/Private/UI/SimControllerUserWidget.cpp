@@ -4,9 +4,9 @@
 #include "Actor/RaymarchVolume.h"
 #include "Actor/Simulation.h"
 #include "Actor/Slice.h"
-#include "Assets/ObstAsset.h"
-#include "Assets/SliceAsset.h"
+#include "Assets/SliceDataInfo.h"
 #include "Assets/VolumeAsset.h"
+#include "Assets/VolumeDataInfo.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/CheckBox.h"
 #include "Components/HorizontalBox.h"
@@ -62,7 +62,7 @@ void USimControllerUserWidget::InitSliceCheckboxes() const
 	TArray<ASlice*> Slices = Sim->GetAllSlices();
 	for (int i = 0; i < Slices.Num(); ++i)
 	{
-		const FString SliceName = Slices[i]->DataAsset->DataInfo->FdsName;
+		const FString SliceName = Cast<USliceDataInfo>(Slices[i]->DataAsset->DataInfo)->Quantity + " - " + Slices[i]->DataAsset->DataInfo->FdsName;
 		SlicesScrollBox->AddChild(ConstructCheckboxRow(SlicesDelegate, SliceName));
 	}
 }
@@ -75,7 +75,7 @@ void USimControllerUserWidget::InitVolumeCheckboxes() const
 	TArray<ARaymarchVolume*> Volumes = Sim->GetAllVolumes();
 	for (int i = 0; i < Volumes.Num(); ++i)
 	{
-		const FString VolumeName = Volumes[i]->DataAsset->DataInfo->FdsName;
+		const FString VolumeName = Cast<UVolumeDataInfo>(Volumes[i]->DataAsset->DataInfo)->Quantity + " - " + Volumes[i]->DataAsset->DataInfo->FdsName;
 		VolumesScrollBox->AddChild(ConstructCheckboxRow(VolumesDelegate, VolumeName));
 	}
 }

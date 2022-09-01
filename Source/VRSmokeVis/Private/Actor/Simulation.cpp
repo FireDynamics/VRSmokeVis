@@ -85,7 +85,7 @@ void ASimulation::InitObstructions()
 		Obstructions.Add(NewObst);
 		NewObst->DataAsset = Cast<UObstAsset>(StreamableManager.LoadSynchronous(ObstAsset.ToSoftObjectPath()));
 #if WITH_EDITOR
-		NewObst->SetActorLabel(NewObst->DataAsset->DataInfo->FdsName);
+		NewObst->SetActorLabel(NewObst->DataAsset->DataInfo->ImportName);
 #endif
 		NewObst->SetActorHiddenInGame(true);
 		NewObst->SetActorEnableCollision(false);
@@ -112,7 +112,7 @@ void ASimulation::InitSlices()
 		Slices.Add(NewSlice);
 		NewSlice->DataAsset = Cast<USliceAsset>(StreamableManager.LoadSynchronous(SliceAsset.ToSoftObjectPath()));
 #if WITH_EDITOR
-		NewSlice->SetActorLabel(NewSlice->DataAsset->DataInfo->FdsName);
+		NewSlice->SetActorLabel(NewSlice->DataAsset->DataInfo->ImportName);
 #endif
 		NewSlice->SetActorHiddenInGame(true);
 		NewSlice->SetActorEnableCollision(false);
@@ -138,7 +138,7 @@ void ASimulation::InitVolumes()
 		Volumes.Add(NewVolume);
 		NewVolume->DataAsset = Cast<UVolumeAsset>(StreamableManager.LoadSynchronous(VolumeAsset.ToSoftObjectPath()));
 #if WITH_EDITOR
-		NewVolume->SetActorLabel(NewVolume->DataAsset->DataInfo->FdsName);
+		NewVolume->SetActorLabel(NewVolume->DataAsset->DataInfo->ImportName);
 #endif
 		NewVolume->SetActorHiddenInGame(true);
 		NewVolume->SetActorEnableCollision(false);
@@ -174,7 +174,7 @@ void ASimulation::SpawnSimulationGeometry()
 		
 		AStaticMeshActor* ObstCuboid = GetWorld()->SpawnActorDeferred<AStaticMeshActor>(AStaticMeshActor::StaticClass(), Transform);
 #if WITH_EDITOR
-		ObstCuboid->SetActorLabel(ObstAsset->DataInfo->FdsName + "-Geometry");
+		ObstCuboid->SetActorLabel(ObstAsset->DataInfo->ImportName + "-Geometry");
 #endif
 		ObstCuboid->AttachToActor(this, FAttachmentTransformRules::KeepRelativeTransform);
 		ObstCuboid->GetStaticMeshComponent()->SetMobility(EComponentMobility::Movable);

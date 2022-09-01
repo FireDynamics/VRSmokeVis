@@ -1,10 +1,10 @@
-#include "Actor/VRSSPlayerController.h"
+#include "Actor/VRSSMotionController.h"
 #include "Components/WidgetInteractionComponent.h"
 #include "MotionControllerComponent.h"
 
 DEFINE_LOG_CATEGORY(LogVRSSPlayerController)
 
-AVRSSPlayerController::AVRSSPlayerController()
+AVRSSMotionController::AVRSSMotionController()
 {
 	PrimaryActorTick.bCanEverTick = false;
 	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent"));
@@ -20,10 +20,10 @@ AVRSSPlayerController::AVRSSPlayerController()
 	
 	WidgetInteractor = CreateDefaultSubobject<UWidgetInteractionComponent>(TEXT("WidgetInteractor"));
 	WidgetInteractor->SetupAttachment(MotionControllerAimComponent);
-	WidgetInteractor->TraceChannel = ECC_GameTraceChannel1;  // "3DWidget"
+	WidgetInteractor->TraceChannel = ECC_Pawn; // ECC_GameTraceChannel1;  // = "3DWidget"
 }
 
-void AVRSSPlayerController::SetupInput(UInputComponent* InInputComponent)
+void AVRSSMotionController::SetupInput(UInputComponent* InInputComponent)
 {
 	WidgetInteractor->PointerIndex = bIsInRightHand ? 1 : 0;
 	
@@ -34,7 +34,7 @@ void AVRSSPlayerController::SetupInput(UInputComponent* InInputComponent)
 	// InInputComponent->BindAxis(FName("MovementAxisY" + Hand), this, &AVRSSPlayerController::OnJoystickYAxis);
 }
 
-void AVRSSPlayerController::OnJoystickYAxis(float Axis)
+void AVRSSMotionController::OnJoystickYAxis(float Axis)
 {
 	if (WidgetInteractor)
 	{

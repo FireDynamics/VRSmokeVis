@@ -1,12 +1,12 @@
 #pragma once
 
 #include "Camera/CameraComponent.h"
-#include "Actor/VRSSPlayerController.h"
+// #include "Actor/VRSSMotionController.h"
 #include "GameFramework/Character.h"
 
 #include "VRCharacter.generated.h"
 
-class AVRSSPlayerController;
+class AVRSSMotionController;
 
 /**
  * VR pawn which the user controls that is also responsible for some interaction of the user with the underlying systems.
@@ -29,15 +29,15 @@ public:
 
 	/** Blueprint class of the controller for both hands */
 	UPROPERTY(EditAnywhere)
-	TSubclassOf<AVRSSPlayerController> PlayerControllerClass;
+	TSubclassOf<AVRSSMotionController> PlayerControllerClass;
 	
 	/** Controller spawned for the left hand */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	AVRSSPlayerController* LeftController;
+	AVRSSMotionController* LeftController;
 
 	/** Controller spawned for the right hand */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	AVRSSPlayerController* RightController;
+	AVRSSMotionController* RightController;
 
 	/** Called when the game starts or when spawned */
 	virtual void BeginPlay() override;

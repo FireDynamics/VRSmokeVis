@@ -30,7 +30,7 @@ public:
 	virtual int64 GetByteSize() const override;
 
 	virtual FString ToString() const override;
-
+	
 	/** Name of the obst files per quantity that were loaded */
 	UPROPERTY(VisibleAnywhere)
 	TMap<FString, FString> DataFileNames;

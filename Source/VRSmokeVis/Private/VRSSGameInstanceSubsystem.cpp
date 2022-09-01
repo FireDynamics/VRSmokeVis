@@ -2,7 +2,7 @@
 
 #include "VRSSConfig.h"
 #include "Actor/Simulation.h"
-#include "Actor/VRSSPlayerController.h"
+#include "Actor/VRSSMotionController.h"
 #include "Kismet/GameplayStatics.h"
 #include "UI/UserInterfaceUserWidget.h"
 #include "UI/VRSSHUD.h"

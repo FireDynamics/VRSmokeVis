@@ -58,8 +58,8 @@ void ARaymarchVolume::BeginPlay()
 		RaymarchMaterial =
 			UMaterialInstanceDynamic::Create(RaymarchMaterialBase, this, "Intensity Raymarch Mat Dynamic Inst");
 
-		RaymarchMaterial->SetScalarParameterValue("Steps", RaymarchingSteps);
-		RaymarchMaterial->SetScalarParameterValue("JitterRadius", Sim->JitterRadius);
+		if (Sim->RaymarchingSteps != -1) RaymarchMaterial->SetScalarParameterValue("Steps", Sim->RaymarchingSteps);
+		if (Sim->JitterRadius != -1) RaymarchMaterial->SetScalarParameterValue("JitterRadius", Sim->JitterRadius);
 	}
 
 	if (StaticMeshComponent)

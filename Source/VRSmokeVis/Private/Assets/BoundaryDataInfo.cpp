@@ -19,5 +19,5 @@ int64 UBoundaryDataInfo::GetByteSize() const
 
 FString UBoundaryDataInfo::ToString() const
 {
-	return "Name " + FdsName;
+	return "Obstname " + ImportName;
 }

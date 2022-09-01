@@ -19,7 +19,7 @@ public:
 	int64 GetTotalVoxels() const;
 
 	virtual FString ToString() const override;
-
+	
 	/** Name of the volume file that was loaded */
 	UPROPERTY(VisibleAnywhere)
 	FString DataFileName;

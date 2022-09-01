@@ -133,7 +133,8 @@ uint8* FImportUtils::LoadObstData(const FString& FilePath, const UBoundaryDataIn
 	return LoadDatFileIntoArray(FilePath, TotalByteSize);
 }
 
-void FImportUtils::ParseVolumeDataInfoFromFile(const FString& FileName, UPARAM(ref) TMap<FString, UVolumeDataInfo*>& DataInfos)
+void FImportUtils::ParseVolumeDataInfoFromFile(const FString& FileName,
+                                               UPARAM(ref) TMap<FString, UVolumeDataInfo*>& DataInfos)
 {
 	const FString FileString = ReadFileAsString(FileName);
 	TArray<FString> Lines;
@@ -171,7 +172,7 @@ void FImportUtils::ParseVolumeDataInfoFromFile(const FString& FileName, UPARAM(r
 	// Meshes
 	for (int m = 0; m < NMeshes; ++m)
 	{
-		UVolumeDataInfo *DataInfo = NewObject<UVolumeDataInfo>();
+		UVolumeDataInfo* DataInfo = NewObject<UVolumeDataInfo>();
 		DataInfo->MaxValue = DataMax;
 		DataInfo->MinValue = DataMin;
 
@@ -227,13 +228,15 @@ void FImportUtils::ParseVolumeDataInfoFromFile(const FString& FileName, UPARAM(r
 		DataInfo->Quantity = Quantity;
 
 		// Get volume name
-		SplitPath(DataInfo->DataFileName, Left, DataInfo->FdsName);
+		SplitPath(DataInfo->DataFileName, Left, DataInfo->ImportName);
+		DataInfo->ImportName.Split("_mesh-", &Left, &DataInfo->FdsName);
 
 		DataInfos.Add(MeshId, DataInfo);
 	}
 }
 
-void FImportUtils::ParseSliceDataInfoFromFile(const FString& FileName, UPARAM(ref) TMap<FString, USliceDataInfo*>& DataInfos)
+void FImportUtils::ParseSliceDataInfoFromFile(const FString& FileName,
+                                              UPARAM(ref) TMap<FString, USliceDataInfo*>& DataInfos)
 {
 	const FString FileString = ReadFileAsString(FileName);
 	TArray<FString> Lines;
@@ -245,7 +248,7 @@ void FImportUtils::ParseSliceDataInfoFromFile(const FString& FileName, UPARAM(re
 	Lines[0].Split(TEXT(": "), &Left, &Right);
 	int CellCentered;
 	FDefaultValueHelper::ParseInt(Right, CellCentered);
-	
+
 	// DataValMax
 	Lines[1].Split(TEXT(": "), &Left, &Right);
 	float DataMax;
@@ -276,7 +279,7 @@ void FImportUtils::ParseSliceDataInfoFromFile(const FString& FileName, UPARAM(re
 	// Meshes
 	for (int m = 0; m < NMeshes; ++m)
 	{
-		USliceDataInfo *DataInfo = NewObject<USliceDataInfo>();
+		USliceDataInfo* DataInfo = NewObject<USliceDataInfo>();
 		DataInfo->MaxValue = DataMax;
 		DataInfo->MinValue = DataMin;
 		DataInfo->CellCentered = CellCentered != 0;
@@ -333,13 +336,15 @@ void FImportUtils::ParseSliceDataInfoFromFile(const FString& FileName, UPARAM(re
 		DataInfo->Quantity = Quantity;
 
 		// Get slice name
-			SplitPath(DataInfo->DataFileName, Left, DataInfo->FdsName);
+		SplitPath(DataInfo->DataFileName, Left, DataInfo->ImportName);
+		DataInfo->ImportName.Split("_mesh-", &Left, &DataInfo->FdsName);
 
 		DataInfos.Add(MeshId, DataInfo);
 	}
 }
 
-void FImportUtils::ParseObstDataInfoFromFile(const FString& FilePath, UPARAM(ref) UBoundaryDataInfo* DataInfo, UPARAM(ref) TArray<float>& BoundingBoxOut)
+void FImportUtils::ParseObstDataInfoFromFile(const FString& FilePath, UPARAM(ref) UBoundaryDataInfo* DataInfo,
+                                             UPARAM(ref) TArray<float>& BoundingBoxOut)
 {
 	const FString FileString = ReadFileAsString(FilePath);
 	TArray<FString> Lines;
@@ -419,7 +424,7 @@ void FImportUtils::ParseObstDataInfoFromFile(const FString& FilePath, UPARAM(ref
 		DataInfo->Spacings.Add(Orientation, FVector4(X, Y, 0, W));
 
 		DataInfo->WorldDimensions.Add(Orientation,
-		                             DataInfo->Spacings[Orientation] * FVector(DataInfo->Dimensions[Orientation]));
+		                              DataInfo->Spacings[Orientation] * FVector(DataInfo->Dimensions[Orientation]));
 	}
 
 	const int QuantityOffset = 5 + NumOrientations * 3;
@@ -475,8 +480,9 @@ void FImportUtils::ParseSimulationInfoFromFile(const FString& FileName, UPARAM(r
 
 	for (i = 0; i < NumObstructions; ++i) SimInfo->ObstPaths.Add(Lines[5 + i].RightChop(2).TrimEnd());
 	for (i = 0; i < NumSlices; ++i) SimInfo->SlicePaths.Add(Lines[6 + NumObstructions + i].RightChop(2).TrimEnd());
-	for (i = 0; i < NumVolumes; ++i) SimInfo->VolumePaths.Add(
-		Lines[7 + NumObstructions + NumSlices + i].RightChop(2).TrimEnd());
+	for (i = 0; i < NumVolumes; ++i)
+		SimInfo->VolumePaths.Add(
+			Lines[7 + NumObstructions + NumSlices + i].RightChop(2).TrimEnd());
 }
 
 FString FImportUtils::GetSimulationHashFromFile(const FString& FileName)
@@ -485,7 +491,7 @@ FString FImportUtils::GetSimulationHashFromFile(const FString& FileName)
 
 	const FString FileString = ReadFileAsString(FileName);
 	const int FirstLine = FileString.Find("\n");
-	
+
 	FileString.Left(FirstLine).Split(TEXT(": "), &Left, &Hash);
 
 	return Hash;

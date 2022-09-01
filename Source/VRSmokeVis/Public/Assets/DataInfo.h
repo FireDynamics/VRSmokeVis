@@ -16,7 +16,11 @@ public:
 
 	virtual FString ToString() const PURE_VIRTUAL(UDataInfo::ToString, return FString(););
 
-	/** FDS name of the asset */
+	/** FDS name of the asset as it was imported */
+	UPROPERTY(VisibleAnywhere)
+	FString ImportName;
+
+	/** Actual FDS name of the asset (e.g. id) */
 	UPROPERTY(VisibleAnywhere)
 	FString FdsName;
 };

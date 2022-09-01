@@ -1,5 +1,5 @@
 #include "Actor/VR/VRCharacter.h"
-#include "Actor/VRSSPlayerController.h"
+#include "Actor/VRSSMotionController.h"
 #include "HeadMountedDisplayFunctionLibrary.h"
 #include "VRSSGameInstanceSubsystem.h"
 #include "Actor/Simulation.h"
@@ -33,8 +33,10 @@ void AVRCharacter::BeginPlay()
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	SpawnParams.Owner = this;
 	
-	RightController = GetWorld()->SpawnActor<AVRSSPlayerController>(PlayerControllerClass, SpawnParams);
-	LeftController = GetWorld()->SpawnActor<AVRSSPlayerController>(PlayerControllerClass, SpawnParams);
+	RightController = GetWorld()->SpawnActor<AVRSSMotionController>(PlayerControllerClass, SpawnParams);
+	LeftController = GetWorld()->SpawnActor<AVRSSMotionController>(PlayerControllerClass, SpawnParams);
+	RightController->bIsInRightHand = true;
+	LeftController->bIsInRightHand = false;
 	RightController->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
 	LeftController->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
 	RightController->SetupInput(InputComponent);
@@ -108,7 +110,13 @@ void AVRCharacter::RewindSimulation()
 
 void AVRCharacter::ToggleHUDVisibility()
 {
-	GetGameInstance()->GetSubsystem<UVRSSGameInstanceSubsystem>()->ToggleHUDVisibility();
+	if (VRUI)
+	{
+		VRMenuToggle(true);
+	} else
+	{
+		GetGameInstance()->GetSubsystem<UVRSSGameInstanceSubsystem>()->ToggleHUDVisibility();
+	}
 }
 
 void AVRCharacter::VRMenuToggle(const bool IsRightHand)
@@ -116,6 +124,7 @@ void AVRCharacter::VRMenuToggle(const bool IsRightHand)
 	if (VRUI)
 	{
 		VRUI->CloseMenu();
+		VRUI = nullptr;
 	}
 	else
 	{

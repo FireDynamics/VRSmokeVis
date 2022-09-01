@@ -12,6 +12,6 @@ int64 UVolumeDataInfo::GetTotalVoxels() const
 
 FString UVolumeDataInfo::ToString() const
 {
-	return "Volumename " + FdsName + " details:" + "\nDimensions = " + Dimensions.ToString() +
+	return "Volumename " + ImportName + " details:" + "\nDimensions = " + Dimensions.ToString() +
 		"\nSpacing : " + Spacing.ToString() + "\nWorld Size MM : " + Dimensions.ToString();
 }

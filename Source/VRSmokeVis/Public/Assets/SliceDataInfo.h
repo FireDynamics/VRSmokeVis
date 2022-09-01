@@ -19,7 +19,7 @@ public:
 	int64 GetTotalCells() const;
 
 	virtual FString ToString() const override;
-
+	
 	/** Name of the slice file that was loaded */
 	UPROPERTY(VisibleAnywhere)
 	FString DataFileName;
