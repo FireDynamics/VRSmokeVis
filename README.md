@@ -19,6 +19,8 @@ Just execute the binary for your system in [the latest release](../../releases/)
 
 Now you can simply start the application which will prompt you to enter the location of your FDS simulation (either the _[chid].smv_ file without manual preprocessing or the _[chid]-smv.yaml_ file after preprocessing) and the destination where loaded data should be stored. After loading the simulation, the geometry is automatically generated and placed into the world. By pressing "H" (see [keyboard controls](#keyboard-controls) for more shortcuts), a UI will be shown which lets you select the data you want to load and show in the scene. Pressing "P" will then start/unpause the visualization of the simulation.  
 
+_Be aware: The non-editor version does not yet work with VR as the VR UI is still work in progress and does not yet allow to enter a simulation at runtime._
+
 ### With editor
 This project is based on Unreal Engine 5 which you have to [download](https://www.unrealengine.com/en-US/download) first.  
 While it is not mandatory, using a suitable IDE like [Visual Studio](https://visualstudio.microsoft.com/) or [Rider](https://www.jetbrains.com/lp/rider-unreal/) is recommended.  
