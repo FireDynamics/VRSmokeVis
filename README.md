@@ -30,12 +30,13 @@ Now you can simply drag-and-drop the simulation-file from your explorer into the
 ### Configuration
 After starting the project once, you will find a configuration file to configure ColorMaps, etc. More information about the configuration file [here](../../wiki/config).
 
-## Keyboard controls
-| Key |  Action  |
-|:---:|----------|
-|  H  | Show/Hide UI |
-|  P  | Pause/Unpause simulation |
-|  F  | Fast-Forward the simulation time by 20 steps |
-|  R  | Rewind the simulation time by 20 steps |
-|  O  | Open/Close simulation loading prompt |
-| Tab | Toggle Spectator On/Off |
+## Keyboard and VR controls
+| Keyboard Key | VR Controller Key |  Action  |
+|:---:|:---:|----------|
+|  H  | B | Show/Hide UI |
+|  P  | A | Pause/Unpause simulation |
+|  F  | / | Fast-Forward the simulation time by 20 steps |
+|  R  | / | Rewind the simulation time by 20 steps |
+|  O  | / | Open/Close simulation loading prompt |
+| Tab | / | Toggle Spectator On/Off |
+| Left Mouse Button | Trigger press | Left click |
