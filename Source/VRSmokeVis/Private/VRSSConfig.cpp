@@ -43,8 +43,9 @@ FString UVRSSConfig::GetColorMapsPath() const
 {
 	if (ColorMapsPath.IsEmpty())
 	{
+		return "/Game/Textures/ColorMaps";
 		// Todo: Set final plugin name
-		return FPaths::Combine(FPaths::ProjectPluginsDir(), "VRSmokeVis");
+		// return FPaths::Combine(FPaths::ProjectPluginsDir(), "VRSmokeVis");
 	}
 
 	return ColorMapsPath;

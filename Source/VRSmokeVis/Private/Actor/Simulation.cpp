@@ -211,10 +211,16 @@ void ASimulation::UpdateColorMaps(const TMap<FString, float>& Mins, const TMap<F
 void ASimulation::CheckObstActivations()
 {
 	TArray<UWidget*> CheckBoxes = SimControllerUserWidget->ObstsScrollBox->GetAllChildren();
-
+	TArray<UHorizontalBox*> FilteredCheckboxes = TArray<UHorizontalBox*>(); 
 	for (int i = 0; i < CheckBoxes.Num(); ++i)
 	{
-		const bool CheckBoxChecked = Cast<UCheckBox>(Cast<UHorizontalBox>(CheckBoxes[i])->GetChildAt(1))->IsChecked();
+		if (UHorizontalBox* CheckBox = Cast<UHorizontalBox>(CheckBoxes[i]); CheckBox)
+			FilteredCheckboxes.Add(CheckBox);
+	}
+		
+	for (int i = 0; i < FilteredCheckboxes.Num(); ++i)
+	{
+		const bool CheckBoxChecked = Cast<UCheckBox>(FilteredCheckboxes[i]->GetChildAt(1))->IsChecked();
 		if (AObst* Obst = Obstructions[i]; Obst->IsHidden() && CheckBoxChecked)
 		{
 			ActivateObst(Obst);
@@ -286,10 +292,16 @@ void ASimulation::DeactivateObst(AObst* Obst)
 void ASimulation::CheckSliceActivations()
 {
 	TArray<UWidget*> CheckBoxes = SimControllerUserWidget->SlicesScrollBox->GetAllChildren();
-
+	TArray<UHorizontalBox*> FilteredCheckboxes = TArray<UHorizontalBox*>(); 
 	for (int i = 0; i < CheckBoxes.Num(); ++i)
 	{
-		const bool CheckBoxChecked = Cast<UCheckBox>(Cast<UHorizontalBox>(CheckBoxes[i])->GetChildAt(1))->IsChecked();
+		if (UHorizontalBox* CheckBox = Cast<UHorizontalBox>(CheckBoxes[i]); CheckBox)
+			FilteredCheckboxes.Add(CheckBox);
+	}
+		
+	for (int i = 0; i < FilteredCheckboxes.Num(); ++i)
+	{
+		const bool CheckBoxChecked = Cast<UCheckBox>(FilteredCheckboxes[i]->GetChildAt(1))->IsChecked();
 		if (ASlice* Slice = Slices[i]; Slice->IsHidden() && CheckBoxChecked)
 		{
 			ActivateSlice(Slice);
@@ -343,9 +355,16 @@ void ASimulation::CheckVolumeActivations()
 {
 	TArray<UWidget*> CheckBoxes = SimControllerUserWidget->VolumesScrollBox->GetAllChildren();
 
+	TArray<UHorizontalBox*> FilteredCheckboxes = TArray<UHorizontalBox*>(); 
 	for (int i = 0; i < CheckBoxes.Num(); ++i)
 	{
-		const bool CheckBoxChecked = Cast<UCheckBox>(Cast<UHorizontalBox>(CheckBoxes[i])->GetChildAt(1))->IsChecked();
+		if (UHorizontalBox* CheckBox = Cast<UHorizontalBox>(CheckBoxes[i]); CheckBox)
+			FilteredCheckboxes.Add(CheckBox);
+	}
+		
+	for (int i = 0; i < FilteredCheckboxes.Num(); ++i)
+	{
+		const bool CheckBoxChecked = Cast<UCheckBox>(FilteredCheckboxes[i]->GetChildAt(1))->IsChecked();
 		if (ARaymarchVolume* Volume = Volumes[i]; Volume->IsHidden() && CheckBoxChecked)
 		{
 			ActivateVolume(Volume);

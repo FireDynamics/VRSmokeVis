@@ -25,7 +25,7 @@ public:
 	/** Initializes this widget with a simulation */
 	UFUNCTION()
 	void InitSimulation(class ASimulation* Simulation);
-	
+
 protected:
 	/** Initializes the checkboxes to show or hide obstructions */
 	UFUNCTION()
@@ -38,7 +38,9 @@ protected:
 	void InitVolumeCheckboxes() const;
 
 	/** Creates a single checkbox row including the checkbox and the label */
-	class UHorizontalBox* ConstructCheckboxRow(TScriptDelegate<> CheckboxDelegate, FString CheckboxName) const;
+	class UHorizontalBox* ConstructCheckboxRow(const TScriptDelegate<> CheckboxDelegate,
+	                                           const FString CheckboxUniqueName,
+	                                           const FString CheckboxUIName) const;
 
 public:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
