@@ -10,7 +10,7 @@ The editor-based version offers everything the editor-free version does, but doe
 - [FDSReader](https://pypi.org/project/fdsreader/) 1.8.4 or above
 - [PyYAML](https://pypi.org/project/PyYAML/)
 - [Pathos](https://pypi.org/project/pathos/)
-- [Unreal Engine setup for C++](https://www.reddit.com/r/unrealengine/comments/8yhbq3/visual_studio_related_error/)
+- [Unreal Engine setup for C++-based projects](https://www.reddit.com/r/unrealengine/comments/8yhbq3/visual_studio_related_error/)
 
 _These requirements are only mandatory if not manually preprocessing the fds data as described [here](../../wiki#manually-before-runtime)._
 
